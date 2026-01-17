@@ -13,7 +13,9 @@ interface ReportData {
     status: string
     room: {
       roomNumber: string
-      roomType: string
+      roomType: {
+        name: string
+      }
     }
     invoices: Array<{
       totalAmount: number

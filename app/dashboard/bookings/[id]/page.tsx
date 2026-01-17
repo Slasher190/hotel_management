@@ -14,7 +14,9 @@ interface Booking {
   checkoutDate: string | null
   room: {
     roomNumber: string
-    roomType: string
+    roomType: {
+      name: string
+    }
   }
   foodOrders: Array<{
     id: string
@@ -174,7 +176,7 @@ export default function BookingDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-900 font-medium">Room Type:</span>
-              <span className="font-semibold text-gray-900">{booking.room.roomType}</span>
+              <span className="font-semibold text-gray-900">{booking.room.roomType.name}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-900 font-medium">Room Price:</span>

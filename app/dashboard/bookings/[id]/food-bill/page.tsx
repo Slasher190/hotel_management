@@ -9,7 +9,9 @@ interface Booking {
   guestName: string
   room: {
     roomNumber: string
-    roomType: string
+    roomType: {
+      name: string
+    }
   }
   foodOrders: Array<{
     id: string
@@ -168,7 +170,7 @@ export default function FoodBillPage() {
           <div>
             <span className="text-gray-900 font-medium">Room:</span>
             <span className="font-semibold text-gray-900 ml-2">
-              {booking.room.roomNumber} ({booking.room.roomType})
+              {booking.room.roomNumber} ({booking.room.roomType.name})
             </span>
           </div>
         </div>

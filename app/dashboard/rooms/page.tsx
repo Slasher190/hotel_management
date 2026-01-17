@@ -6,7 +6,9 @@ import Link from 'next/link'
 interface Room {
   id: string
   roomNumber: string
-  roomType: 'AC' | 'NON_AC'
+  roomType: {
+    name: string
+  }
   status: 'AVAILABLE' | 'OCCUPIED'
 }
 
@@ -103,7 +105,7 @@ export default function RoomsPage() {
                   {room.roomNumber}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {room.roomType === 'AC' ? 'AC' : 'Non-AC'}
+                  {room.roomType.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span

@@ -13,7 +13,9 @@ interface Booking {
   checkoutDate: string | null
   room: {
     roomNumber: string
-    roomType: string
+    roomType: {
+      name: string
+    }
   }
 }
 
@@ -100,7 +102,7 @@ export default function CheckoutListPage() {
                     {booking.guestName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {booking.room.roomNumber} ({booking.room.roomType})
+                    {booking.room.roomNumber} ({booking.room.roomType.name})
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(booking.checkInDate).toLocaleString('en-IN', {

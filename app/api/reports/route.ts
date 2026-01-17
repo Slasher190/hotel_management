@@ -28,7 +28,11 @@ export async function GET(request: NextRequest) {
     const bookings = await prisma.booking.findMany({
       where,
       include: {
-        room: true,
+        room: {
+          include: {
+            roomType: true,
+          },
+        },
         invoices: true,
         payments: true,
       },

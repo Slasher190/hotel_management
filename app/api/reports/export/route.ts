@@ -30,7 +30,11 @@ export async function GET(request: NextRequest) {
     const bookings = await prisma.booking.findMany({
       where,
       include: {
-        room: true,
+        room: {
+          include: {
+            roomType: true,
+          },
+        },
         invoices: true,
         payments: true,
       },
@@ -59,7 +63,7 @@ export async function GET(request: NextRequest) {
       return {
         'Guest Name': booking.guestName,
         'Room Number': booking.room.roomNumber,
-        'Room Type': booking.room.roomType,
+        'Room Type': booking.room.roomType.name,
         'Check-In Date': new Date(booking.checkInDate).toLocaleDateString(),
         'Checkout Date': booking.checkoutDate
           ? new Date(booking.checkoutDate).toLocaleDateString()
