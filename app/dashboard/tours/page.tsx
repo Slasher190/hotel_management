@@ -6,7 +6,8 @@ import { useSearchParams } from 'next/navigation'
 interface BusBooking {
   id: string
   busNumber: string
-  bookingDate: string
+  fromDate: string
+  toDate: string
   status: 'BOOKED' | 'PENDING'
   notes: string | null
 }
@@ -21,10 +22,12 @@ function ToursContent() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [formData, setFormData] = useState({
     busNumber: '',
-    bookingDate: selectedDate,
+    fromDate: selectedDate,
+    toDate: selectedDate,
     status: 'PENDING' as 'BOOKED' | 'PENDING',
     notes: '',
   })
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchBookings()
@@ -52,6 +55,18 @@ function ToursContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
+    
+    if (!formData.busNumber || !formData.fromDate || !formData.toDate) {
+      setError('All fields are required')
+      return
+    }
+
+    if (new Date(formData.fromDate) > new Date(formData.toDate)) {
+      setError('From date cannot be after to date')
+      return
+    }
+
     try {
       const token = localStorage.getItem('token')
       const response = await fetch('/api/bus-bookings', {
@@ -67,14 +82,19 @@ function ToursContent() {
         setShowAddModal(false)
         setFormData({
           busNumber: '',
-          bookingDate: selectedDate,
+          fromDate: selectedDate,
+          toDate: selectedDate,
           status: 'PENDING',
           notes: '',
         })
         fetchBookings()
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Failed to create bus booking')
       }
     } catch (error) {
       console.error('Error creating bus booking:', error)
+      setError('An error occurred. Please try again.')
     }
   }
 
@@ -166,7 +186,10 @@ function ToursContent() {
                 Bus Number
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Booking Date
+                From Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                To Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Status
@@ -186,7 +209,10 @@ function ToursContent() {
                   {booking.busNumber}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(booking.bookingDate).toLocaleDateString()}
+                  {new Date(booking.fromDate).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(booking.toDate).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
@@ -239,6 +265,11 @@ function ToursContent() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Bus Booking</h3>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -256,13 +287,26 @@ function ToursContent() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Booking Date *
+                  From Date *
                 </label>
                 <input
                   type="date"
                   required
-                  value={formData.bookingDate}
-                  onChange={(e) => setFormData({ ...formData, bookingDate: e.target.value })}
+                  value={formData.fromDate}
+                  onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  To Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.toDate}
+                  onChange={(e) => setFormData({ ...formData, toDate: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
                 />
               </div>
@@ -300,7 +344,10 @@ function ToursContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false)
+                    setError('')
+                  }}
                   className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancel

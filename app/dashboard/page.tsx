@@ -143,25 +143,25 @@ export default function DashboardPage() {
             href="/dashboard/bookings/new"
             className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-center font-medium"
           >
-            New Check-In
+            Add New Booking
           </Link>
           <Link
-            href="/dashboard/rooms/new"
+            href="/dashboard/bookings?status=ACTIVE"
             className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center font-medium"
           >
-            Add Room
+            Add Food to Booking
           </Link>
           <Link
-            href="/dashboard/food/new"
+            href="/dashboard/police-verification"
             className="px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-center font-medium"
           >
-            Add Food Item
+            Download Daily Record
           </Link>
           <Link
             href="/dashboard/reports"
             className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-center font-medium"
           >
-            View Reports
+            View Record
           </Link>
         </div>
       </div>

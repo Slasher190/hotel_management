@@ -56,19 +56,32 @@ export default function BillGeneratorPage() {
       })
 
       if (response.ok) {
-        const blob = await response.blob()
-        const url = globalThis.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `bill-${Date.now()}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        globalThis.URL.revokeObjectURL(url)
-        a.remove()
-        router.push('/dashboard/bookings')
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/pdf')) {
+          const blob = await response.blob()
+          const url = globalThis.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `bill-${Date.now()}.pdf`
+          document.body.appendChild(a)
+          a.click()
+          globalThis.URL.revokeObjectURL(url)
+          a.remove()
+          router.push('/dashboard/bookings')
+        } else {
+          const data = await response.json()
+          setError(data.error || 'Failed to generate bill')
+        }
       } else {
-        const data = await response.json()
-        setError(data.error || 'Failed to generate bill')
+        const text = await response.text()
+        let errorMessage = 'Failed to generate bill'
+        try {
+          const data = JSON.parse(text)
+          errorMessage = data.error || errorMessage
+        } catch {
+          errorMessage = text || errorMessage
+        }
+        setError(errorMessage)
       }
     } catch (error) {
       setError('An error occurred. Please try again.')

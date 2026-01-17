@@ -34,6 +34,12 @@ export default function SettingsPage() {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Not authenticated')
+        setLoading(false)
+        return
+      }
+
       const response = await fetch('/api/settings', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -43,9 +49,13 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setSettings(data)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || 'Failed to load settings')
       }
     } catch (error) {
       console.error('Error fetching settings:', error)
+      setError('An error occurred while loading settings')
     } finally {
       setLoading(false)
     }
@@ -54,6 +64,8 @@ export default function SettingsPage() {
   const fetchRoomTypes = async () => {
     try {
       const token = localStorage.getItem('token')
+      if (!token) return
+
       const response = await fetch('/api/room-types', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -63,6 +75,8 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setRoomTypes(data)
+      } else {
+        console.error('Failed to fetch room types')
       }
     } catch (error) {
       console.error('Error fetching room types:', error)

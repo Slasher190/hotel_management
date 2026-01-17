@@ -16,14 +16,30 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
     if (date) {
-      const startDate = new Date(date)
-      startDate.setHours(0, 0, 0, 0)
-      const endDate = new Date(date)
-      endDate.setHours(23, 59, 59, 999)
-      where.bookingDate = {
-        gte: startDate,
-        lte: endDate,
-      }
+      const searchDate = new Date(date)
+      searchDate.setHours(0, 0, 0, 0)
+      const searchDateEnd = new Date(date)
+      searchDateEnd.setHours(23, 59, 59, 999)
+      where.OR = [
+        {
+          fromDate: {
+            gte: searchDate,
+            lte: searchDateEnd,
+          },
+        },
+        {
+          toDate: {
+            gte: searchDate,
+            lte: searchDateEnd,
+          },
+        },
+        {
+          AND: [
+            { fromDate: { lte: searchDate } },
+            { toDate: { gte: searchDateEnd } },
+          ],
+        },
+      ]
     }
     if (status) {
       where.status = status
@@ -31,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const bookings = await prisma.busBooking.findMany({
       where,
-      orderBy: { bookingDate: 'desc' },
+      orderBy: { fromDate: 'desc' },
     })
 
     return NextResponse.json(bookings)
@@ -49,11 +65,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { busNumber, bookingDate, status, notes } = await request.json()
+    const { busNumber, fromDate, toDate, status, notes } = await request.json()
 
-    if (!busNumber || !bookingDate) {
+    if (!busNumber || !fromDate || !toDate) {
       return NextResponse.json(
-        { error: 'Bus number and booking date are required' },
+        { error: 'Bus number, from date, and to date are required' },
+        { status: 400 }
+      )
+    }
+
+    if (new Date(fromDate) > new Date(toDate)) {
+      return NextResponse.json(
+        { error: 'From date cannot be after to date' },
         { status: 400 }
       )
     }
@@ -61,7 +84,8 @@ export async function POST(request: NextRequest) {
     const booking = await prisma.busBooking.create({
       data: {
         busNumber,
-        bookingDate: new Date(bookingDate),
+        fromDate: new Date(fromDate),
+        toDate: new Date(toDate),
         status: status || 'PENDING',
         notes: notes || null,
       },

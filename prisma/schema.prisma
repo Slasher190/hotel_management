@@ -194,7 +194,8 @@ model HotelSettings {
 model BusBooking {
   id          String    @id @default(cuid())
   busNumber   String
-  bookingDate DateTime
+  fromDate    DateTime
+  toDate      DateTime
   status      BusStatus @default(PENDING)
   notes       String?
   createdAt   DateTime  @default(now())
