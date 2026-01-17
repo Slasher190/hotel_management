@@ -69,16 +69,52 @@ function BookingsContent() {
     return <div className="text-center py-8">Loading bookings...</div>
   }
 
+  const handlePoliceVerification = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/police-verification?format=pdf', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = globalThis.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `police-verification-${Date.now()}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        globalThis.URL.revokeObjectURL(url)
+        a.remove()
+      } else {
+        alert('Failed to generate police verification report')
+      }
+    } catch (error) {
+      console.error('Error generating police verification:', error)
+      alert('An error occurred while generating the report')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-900">Bookings</h2>
-        <Link
-          href="/dashboard/bookings/new"
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          + New Check-In
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePoliceVerification}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Download Police Verification
+          </button>
+          <Link
+            href="/dashboard/bookings/new"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            + New Check-In
+          </Link>
+        </div>
       </div>
 
       <div className="flex gap-4 flex-wrap">

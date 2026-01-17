@@ -49,6 +49,26 @@ async function main() {
     console.log('Created admin user:', admin.email)
   }
 
+  // Create default room types (always create if not exists)
+  const defaultRoomTypes = ['AC', 'Non-AC', 'Deluxe', 'Single Bed', 'Double Bed']
+  const roomTypeMap: Record<string, string> = {}
+
+  for (const roomTypeName of defaultRoomTypes) {
+    const existing = await prisma.roomType.findUnique({
+      where: { name: roomTypeName },
+    })
+
+    if (!existing) {
+      const roomType = await prisma.roomType.create({
+        data: { name: roomTypeName },
+      })
+      roomTypeMap[roomTypeName] = roomType.id
+      console.log(`Created room type: ${roomTypeName}`)
+    } else {
+      roomTypeMap[roomTypeName] = existing.id
+    }
+  }
+
   // Only seed sample data in development
   if (isProduction) {
     console.log('Production mode: Only admin and manager users seeded')
@@ -57,12 +77,12 @@ async function main() {
 
     // Create sample rooms
     const rooms = [
-      { roomNumber: '101', roomType: 'AC' as const },
-      { roomNumber: '102', roomType: 'AC' as const },
-      { roomNumber: '103', roomType: 'NON_AC' as const },
-      { roomNumber: '201', roomType: 'AC' as const },
-      { roomNumber: '202', roomType: 'AC' as const },
-      { roomNumber: '203', roomType: 'NON_AC' as const },
+      { roomNumber: '101', roomTypeName: 'AC' },
+      { roomNumber: '102', roomTypeName: 'AC' },
+      { roomNumber: '103', roomTypeName: 'Non-AC' },
+      { roomNumber: '201', roomTypeName: 'AC' },
+      { roomNumber: '202', roomTypeName: 'Deluxe' },
+      { roomNumber: '203', roomTypeName: 'Single Bed' },
     ]
 
     for (const room of rooms) {
@@ -70,11 +90,11 @@ async function main() {
         where: { roomNumber: room.roomNumber },
       })
 
-      if (!existingRoom) {
+      if (!existingRoom && roomTypeMap[room.roomTypeName]) {
         await prisma.room.create({
           data: {
             roomNumber: room.roomNumber,
-            roomType: room.roomType,
+            roomTypeId: roomTypeMap[room.roomTypeName],
             status: 'AVAILABLE',
           },
         })

@@ -29,7 +29,11 @@ export async function GET(request: NextRequest) {
     const bookings = await prisma.booking.findMany({
       where,
       include: {
-        room: true,
+        room: {
+          include: {
+            roomType: true,
+          },
+        },
         payments: true,
       },
       orderBy: {
@@ -51,7 +55,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { roomId, guestName, idType, roomPrice } = await request.json()
+    const {
+      roomId,
+      guestName,
+      idType,
+      idNumber,
+      additionalGuests,
+      mattresses,
+      roomPrice,
+    } = await request.json()
 
     if (!roomId || !guestName || !idType || !roomPrice) {
       return NextResponse.json(
@@ -78,7 +90,10 @@ export async function POST(request: NextRequest) {
       data: {
         roomId,
         guestName,
-        idType: idType as 'AADHAAR' | 'DL' | 'PASSPORT' | 'OTHER',
+        idType: idType as 'AADHAAR' | 'DL' | 'VOTER_ID' | 'PASSPORT' | 'OTHER',
+        idNumber: idNumber || null,
+        additionalGuests: parseInt(additionalGuests) || 0,
+        mattresses: parseInt(mattresses) || 0,
         roomPrice: parseFloat(roomPrice),
         status: 'ACTIVE',
       },

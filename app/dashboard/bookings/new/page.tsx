@@ -6,31 +6,72 @@ import { useRouter } from 'next/navigation'
 interface Room {
   id: string
   roomNumber: string
-  roomType: 'AC' | 'NON_AC'
+  roomType: {
+    id: string
+    name: string
+  }
   status: 'AVAILABLE' | 'OCCUPIED'
+}
+
+interface RoomType {
+  id: string
+  name: string
 }
 
 export default function NewBookingPage() {
   const router = useRouter()
   const [rooms, setRooms] = useState<Room[]>([])
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [formData, setFormData] = useState({
     roomId: '',
-    roomType: 'AC' as 'AC' | 'NON_AC',
+    roomTypeId: '',
     guestName: '',
-    idType: 'AADHAAR' as 'AADHAAR' | 'DL' | 'PASSPORT' | 'OTHER',
+    idType: 'AADHAAR' as 'AADHAAR' | 'DL' | 'VOTER_ID' | 'PASSPORT' | 'OTHER',
+    idNumber: '',
+    additionalGuests: '0',
+    mattresses: '0',
     roomPrice: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchAvailableRooms()
-  }, [formData.roomType])
+    fetchRoomTypes()
+  }, [])
+
+  useEffect(() => {
+    if (formData.roomTypeId) {
+      fetchAvailableRooms()
+    } else {
+      setRooms([])
+    }
+  }, [formData.roomTypeId])
+
+  const fetchRoomTypes = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/room-types', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setRoomTypes(data)
+      }
+    } catch (error) {
+      console.error('Error fetching room types:', error)
+    }
+  }
 
   const fetchAvailableRooms = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/rooms?type=${formData.roomType}&status=AVAILABLE`, {
+      const roomType = roomTypes.find((rt) => rt.id === formData.roomTypeId)
+      if (!roomType) return
+
+      const response = await fetch(`/api/rooms?type=${roomType.name}&status=AVAILABLE`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -59,7 +100,12 @@ export default function NewBookingPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ...formData,
+          roomId: formData.roomId,
+          guestName: formData.guestName,
+          idType: formData.idType,
+          idNumber: formData.idNumber || null,
+          additionalGuests: parseInt(formData.additionalGuests) || 0,
+          mattresses: parseInt(formData.mattresses) || 0,
           roomPrice: parseFloat(formData.roomPrice),
         }),
       })
@@ -93,20 +139,24 @@ export default function NewBookingPage() {
           )}
 
           <div>
-            <label htmlFor="roomType" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="roomTypeId" className="block text-sm font-medium text-gray-700 mb-2">
               Room Type *
             </label>
             <select
-              id="roomType"
+              id="roomTypeId"
               required
-              value={formData.roomType}
+              value={formData.roomTypeId}
               onChange={(e) => {
-                setFormData({ ...formData, roomType: e.target.value as 'AC' | 'NON_AC', roomId: '' })
+                setFormData({ ...formData, roomTypeId: e.target.value, roomId: '' })
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
             >
-              <option value="AC">AC</option>
-              <option value="NON_AC">Non-AC</option>
+              <option value="">Select room type</option>
+              {roomTypes.map((rt) => (
+                <option key={rt.id} value={rt.id}>
+                  {rt.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -124,7 +174,7 @@ export default function NewBookingPage() {
               <option value="">Select a room</option>
               {rooms.map((room) => (
                 <option key={room.id} value={room.id}>
-                  {room.roomNumber}
+                  {room.roomNumber} ({room.roomType.name})
                 </option>
               ))}
             </select>
@@ -161,9 +211,54 @@ export default function NewBookingPage() {
             >
               <option value="AADHAAR">Aadhaar</option>
               <option value="DL">Driving License</option>
+              <option value="VOTER_ID">Voter ID</option>
               <option value="PASSPORT">Passport</option>
               <option value="OTHER">Other</option>
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="idNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              ID Number
+            </label>
+            <input
+              id="idNumber"
+              type="text"
+              value={formData.idNumber}
+              onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+              placeholder="Enter ID number"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="additionalGuests" className="block text-sm font-medium text-gray-700 mb-2">
+              Additional Guests
+            </label>
+            <input
+              id="additionalGuests"
+              type="number"
+              min="0"
+              value={formData.additionalGuests}
+              onChange={(e) => setFormData({ ...formData, additionalGuests: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+              placeholder="Number of additional guests"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="mattresses" className="block text-sm font-medium text-gray-700 mb-2">
+              Mattresses
+            </label>
+            <input
+              id="mattresses"
+              type="number"
+              min="0"
+              value={formData.mattresses}
+              onChange={(e) => setFormData({ ...formData, mattresses: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+              placeholder="Number of mattresses"
+            />
           </div>
 
           <div>

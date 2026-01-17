@@ -1,16 +1,44 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+
+interface RoomType {
+  id: string
+  name: string
+}
 
 export default function NewRoomPage() {
   const router = useRouter()
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [formData, setFormData] = useState({
     roomNumber: '',
-    roomType: 'AC' as 'AC' | 'NON_AC',
+    roomTypeId: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchRoomTypes()
+  }, [])
+
+  const fetchRoomTypes = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/room-types', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setRoomTypes(data)
+      }
+    } catch (error) {
+      console.error('Error fetching room types:', error)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,7 +53,10 @@ export default function NewRoomPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          roomNumber: formData.roomNumber,
+          roomTypeId: formData.roomTypeId,
+        }),
       })
 
       if (!response.ok) {
@@ -70,19 +101,28 @@ export default function NewRoomPage() {
           </div>
 
           <div>
-            <label htmlFor="roomType" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="roomTypeId" className="block text-sm font-medium text-gray-700 mb-2">
               Room Type *
             </label>
             <select
-              id="roomType"
+              id="roomTypeId"
               required
-              value={formData.roomType}
-              onChange={(e) => setFormData({ ...formData, roomType: e.target.value as 'AC' | 'NON_AC' })}
+              value={formData.roomTypeId}
+              onChange={(e) => setFormData({ ...formData, roomTypeId: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
             >
-              <option value="AC">AC</option>
-              <option value="NON_AC">Non-AC</option>
+              <option value="">Select room type</option>
+              {roomTypes.map((rt) => (
+                <option key={rt.id} value={rt.id}>
+                  {rt.name}
+                </option>
+              ))}
             </select>
+            {roomTypes.length === 0 && (
+              <p className="mt-2 text-sm text-gray-500">
+                No room types available. Please add room types in Settings first.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-4">

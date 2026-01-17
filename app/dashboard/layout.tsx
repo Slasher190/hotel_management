@@ -36,7 +36,10 @@ export default function DashboardLayout({
     { href: '/dashboard/food', label: 'Food Items', icon: '🍽️' },
     { href: '/dashboard/checkout', label: 'Checkout', icon: '✅' },
     { href: '/dashboard/payments', label: 'Payments', icon: '💳' },
+    { href: '/dashboard/tours', label: 'Tours & Travel', icon: '🚌' },
     { href: '/dashboard/reports', label: 'Reports', icon: '📈' },
+    { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾' },
+    { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
   ]
 
   return (

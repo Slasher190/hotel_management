@@ -8,10 +8,13 @@ interface Booking {
   guestName: string
   idType: string
   roomPrice: number
+  tariff?: number | null
   checkInDate: string
   room: {
     roomNumber: string
-    roomType: string
+    roomType: {
+      name: string
+    }
   }
 }
 
@@ -22,6 +25,7 @@ export default function CheckoutPage() {
 
   const [booking, setBooking] = useState<Booking | null>(null)
   const [baseAmount, setBaseAmount] = useState(0)
+  const [tariff, setTariff] = useState(0)
   const [gstEnabled, setGstEnabled] = useState(false)
   const [gstPercent, setGstPercent] = useState(5)
   const [gstNumber, setGstNumber] = useState('')
@@ -41,6 +45,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (booking) {
       setBaseAmount(booking.roomPrice)
+      setTariff(booking.tariff || 0)
     }
   }, [booking])
 
@@ -108,10 +113,10 @@ export default function CheckoutPage() {
   }
 
   const calculateTotals = () => {
-    const gstAmount = gstEnabled ? (baseAmount * gstPercent) / 100 : 0
-    const total = baseAmount + gstAmount
+    const gstAmount = gstEnabled ? ((baseAmount + tariff) * gstPercent) / 100 : 0
+    const total = baseAmount + tariff + gstAmount
 
-    return { baseAmount, gstAmount, gstPercent, total }
+    return { baseAmount, tariff, gstAmount, gstPercent, total }
   }
 
   const handleCheckout = async () => {
@@ -130,6 +135,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           baseAmount: totals.baseAmount,
+          tariff: totals.tariff,
           gstEnabled,
           gstPercent: gstEnabled ? gstPercent : 0,
           gstNumber: gstEnabled ? gstNumber : null,
@@ -227,7 +233,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between">
               <span className="text-gray-900 font-medium">Room:</span>
               <span className="font-semibold text-gray-900">
-                {booking.room.roomNumber} ({booking.room.roomType})
+                {booking.room.roomNumber} ({booking.room.roomType.name})
               </span>
             </div>
             <div className="flex justify-between">
@@ -259,7 +265,7 @@ export default function CheckoutPage() {
 
           <div>
             <label htmlFor="baseAmount" className="block text-sm font-medium text-gray-700 mb-2">
-              Amount (₹) *
+              Room Charges (₹) *
             </label>
             <input
               id="baseAmount"
@@ -270,7 +276,23 @@ export default function CheckoutPage() {
               value={baseAmount}
               onChange={(e) => setBaseAmount(Number.parseFloat(e.target.value) || 0)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              placeholder="Enter amount"
+              placeholder="Enter room charges"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="tariff" className="block text-sm font-medium text-gray-700 mb-2">
+              Tariff (₹)
+            </label>
+            <input
+              id="tariff"
+              type="number"
+              min="0"
+              step="0.01"
+              value={tariff}
+              onChange={(e) => setTariff(Number.parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+              placeholder="Enter tariff amount"
             />
           </div>
 
@@ -357,9 +379,15 @@ export default function CheckoutPage() {
       <div className="bg-indigo-50 rounded-xl shadow-md p-6">
         <div className="space-y-2 text-lg">
           <div className="flex justify-between">
-            <span className="text-gray-700">Base Amount:</span>
+            <span className="text-gray-700">Room Charges:</span>
             <span className="font-medium">₹{totals.baseAmount.toLocaleString('en-IN')}</span>
           </div>
+          {totals.tariff > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-700">Tariff:</span>
+              <span className="font-medium">₹{totals.tariff.toLocaleString('en-IN')}</span>
+            </div>
+          )}
           {gstEnabled && (
             <div className="flex justify-between">
               <span className="text-gray-700">GST ({gstPercent}%):</span>

@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
 
     const where: any = {}
     if (type) {
-      where.roomType = type
+      where.roomType = {
+        name: type,
+      }
     }
     if (status) {
       where.status = status
@@ -22,6 +24,9 @@ export async function GET(request: NextRequest) {
 
     const rooms = await prisma.room.findMany({
       where,
+      include: {
+        roomType: true,
+      },
       orderBy: {
         roomNumber: 'asc',
       },
@@ -41,9 +46,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { roomNumber, roomType } = await request.json()
+    const { roomNumber, roomTypeId } = await request.json()
 
-    if (!roomNumber || !roomType) {
+    if (!roomNumber || !roomTypeId) {
       return NextResponse.json({ error: 'Room number and type are required' }, { status: 400 })
     }
 
@@ -56,11 +61,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Room number already exists' }, { status: 400 })
     }
 
+    // Verify room type exists
+    const roomType = await prisma.roomType.findUnique({
+      where: { id: roomTypeId },
+    })
+
+    if (!roomType) {
+      return NextResponse.json({ error: 'Room type not found' }, { status: 404 })
+    }
+
     const room = await prisma.room.create({
       data: {
         roomNumber,
-        roomType: roomType as 'AC' | 'NON_AC',
+        roomTypeId,
         status: 'AVAILABLE',
+      },
+      include: {
+        roomType: true,
       },
     })
 

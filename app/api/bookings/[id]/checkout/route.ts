@@ -15,12 +15,16 @@ export async function POST(
     }
 
     const { id } = await params
-    const { baseAmount, gstEnabled, gstPercent, gstNumber, paymentMode, paymentStatus } = await request.json()
+    const { baseAmount, tariff, gstEnabled, gstPercent, gstNumber, paymentMode, paymentStatus } = await request.json()
 
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: {
-        room: true,
+        room: {
+          include: {
+            roomType: true,
+          },
+        },
       },
     })
 
@@ -32,10 +36,17 @@ export async function POST(
       return NextResponse.json({ error: 'Booking already checked out' }, { status: 400 })
     }
 
-    // Calculate totals using editable baseAmount
+    // Calculate totals using editable baseAmount and tariff
     const roomCharges = Number.parseFloat(baseAmount) || booking.roomPrice
-    const gstAmount = gstEnabled ? (roomCharges * (gstPercent || 5)) / 100 : 0
-    const totalAmount = roomCharges + gstAmount
+    const tariffAmount = Number.parseFloat(tariff) || 0
+    const gstAmount = gstEnabled ? ((roomCharges + tariffAmount) * (gstPercent || 5)) / 100 : 0
+    const totalAmount = roomCharges + tariffAmount + gstAmount
+
+    // Update booking with tariff
+    await prisma.booking.update({
+      where: { id },
+      data: { tariff: tariffAmount },
+    })
 
     // Generate invoice number
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
@@ -47,8 +58,9 @@ export async function POST(
         invoiceNumber,
         invoiceType: 'ROOM',
         guestName: booking.guestName,
-        roomType: booking.room.roomType,
+        roomType: booking.room.roomType.name,
         roomCharges,
+        tariff: tariffAmount,
         foodCharges: 0, // Food charges handled separately
         gstEnabled,
         gstNumber: gstEnabled ? gstNumber : null,
@@ -82,57 +94,116 @@ export async function POST(
       data: { status: 'AVAILABLE' },
     })
 
-    // Generate PDF
-    const doc = new jsPDF()
-
-    // Header
-    doc.setFontSize(20)
-    doc.text('Hotel Invoice', 105, 20, { align: 'center' })
-    doc.setFontSize(12)
-    doc.text(`Invoice #: ${invoiceNumber}`, 105, 30, { align: 'center' })
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 105, 36, { align: 'center' })
-
-    // Guest Details
-    doc.setFontSize(14)
-    doc.text('Guest Details', 14, 50)
-    doc.setFontSize(10)
-    doc.text(`Name: ${booking.guestName}`, 14, 58)
-    doc.text(`Room: ${booking.room.roomNumber} (${booking.room.roomType})`, 14, 64)
-    doc.text(`ID Type: ${booking.idType}`, 14, 70)
-
-    // Charges Table
-    const tableData: any[] = [
-      ['Base Amount', `₹${roomCharges.toLocaleString('en-IN')}`],
-    ]
-
-    if (gstEnabled && gstAmount > 0) {
-      tableData.push([`GST (${gstPercent || 5}%)`, `₹${gstAmount.toLocaleString('en-IN')}`])
-      if (gstNumber) {
-        tableData.push(['GST Number', gstNumber])
-      }
+    // Get hotel settings
+    const settings = await prisma.hotelSettings.findFirst()
+    if (!settings) {
+      return NextResponse.json({ error: 'Hotel settings not found' }, { status: 404 })
     }
 
-    tableData.push(['Total Amount', `₹${totalAmount.toLocaleString('en-IN')}`])
+    // Generate PDF matching Hotel Samrat Inn format
+    const doc = new jsPDF()
+
+    // Header with hotel name
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text(settings.name.toUpperCase(), 105, 20, { align: 'center' })
+    
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(settings.address, 105, 28, { align: 'center' })
+    doc.text(`Phone: ${settings.phone}`, 105, 34, { align: 'center' })
+    if (settings.email) {
+      doc.text(`E-Mail Id: ${settings.email}`, 105, 40, { align: 'center' })
+    }
+    if (settings.gstin) {
+      doc.text(`GSTIN: ${settings.gstin}`, 105, 46, { align: 'center' })
+    }
+
+    let yPos = 60
+
+    // Bill Details
+    doc.setFontSize(10)
+    doc.text(`Bill No.: ${invoiceNumber}`, 14, yPos)
+    doc.text(`Bill Date: ${new Date().toLocaleDateString('en-IN')}`, 14, yPos + 6)
+    doc.text(`Room No.: ${booking.room.roomNumber}`, 14, yPos + 12)
+    doc.text(`Particulars: ${booking.room.roomType.name}`, 14, yPos + 18)
+    
+    const days = Math.ceil(
+      (booking.checkoutDate
+        ? new Date(booking.checkoutDate).getTime()
+        : Date.now() - new Date(booking.checkInDate).getTime()) /
+        (1000 * 60 * 60 * 24)
+    )
+    doc.text(`Rent Per Day: ₹${roomCharges.toFixed(2)}`, 14, yPos + 24)
+    doc.text(`No. Of Days: ${days}`, 14, yPos + 30)
+    doc.text(
+      `Check In On: ${new Date(booking.checkInDate).toLocaleString('en-IN')}`,
+      14,
+      yPos + 36
+    )
+    doc.text(
+      `Check Out at: ${new Date().toLocaleString('en-IN')}`,
+      14,
+      yPos + 42
+    )
+
+    yPos += 50
+
+    // Guest Information
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Guest Information', 14, yPos)
+    yPos += 8
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Guest Name and Address: ${booking.guestName}`, 14, yPos)
+    if (booking.idNumber) {
+      doc.text(`ID Type: ${booking.idType}`, 14, yPos + 6)
+      doc.text(`ID Number: ${booking.idNumber}`, 14, yPos + 12)
+    }
+
+    yPos += 25
+
+    // Charges Summary
+    const chargesData: any[] = [
+      ['Room Charges Before Tax', `₹${roomCharges.toFixed(2)}`],
+    ]
+
+    if (tariffAmount > 0) {
+      chargesData.push(['Tariff', `₹${tariffAmount.toFixed(2)}`])
+    }
+
+    if (gstEnabled && gstAmount > 0) {
+      chargesData.push([`Add: GST On Room Charges (${gstPercent || 5}%)`, `₹${gstAmount.toFixed(2)}`])
+    }
+
+    chargesData.push(['Total Bill Amount', `₹${(roomCharges + tariffAmount + gstAmount).toFixed(2)}`])
+    chargesData.push(['Net Payable Amount', `₹${totalAmount.toFixed(2)}`])
 
     autoTable(doc, {
-      startY: 80,
+      startY: yPos,
       head: [['Description', 'Amount']],
-      body: tableData,
+      body: chargesData,
       theme: 'striped',
       headStyles: { fillColor: [99, 102, 241] },
+      styles: { fontSize: 9 },
     })
 
-    // Payment Info
     const finalY = (doc as any).lastAutoTable.finalY + 10
-    doc.setFontSize(12)
-    doc.text('Payment Information', 14, finalY)
+
+    // Payment Info
     doc.setFontSize(10)
-    doc.text(`Mode: ${paymentMode}`, 14, finalY + 8)
-    doc.text(`Status: ${paymentStatus}`, 14, finalY + 14)
+    doc.text(`Bill Cleared Through: ${paymentMode} - @₹${totalAmount.toFixed(2)}`, 14, finalY)
 
     // Footer
     doc.setFontSize(8)
-    doc.text('Thank you for your stay!', 105, doc.internal.pageSize.height - 20, { align: 'center' })
+    doc.text(
+      'I agree that I am responsible for the full payment of this bill in the event if not paid by the company, organisation or person indicated',
+      105,
+      doc.internal.pageSize.height - 40,
+      { align: 'center', maxWidth: 180 }
+    )
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
 

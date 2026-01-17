@@ -10,11 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum RoomType {
-  AC
-  NON_AC
-}
-
 enum RoomStatus {
   AVAILABLE
   OCCUPIED
@@ -38,8 +33,14 @@ enum PaymentStatus {
 enum IdType {
   AADHAAR
   DL
+  VOTER_ID
   PASSPORT
   OTHER
+}
+
+enum BusStatus {
+  BOOKED
+  PENDING
 }
 
 model User {
@@ -54,10 +55,22 @@ model User {
   @@map("users")
 }
 
+model RoomType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rooms Room[]
+
+  @@map("room_types")
+}
+
 model Room {
   id         String     @id @default(cuid())
   roomNumber String     @unique
-  roomType   RoomType
+  roomTypeId String
+  roomType   RoomType   @relation(fields: [roomTypeId], references: [id], onDelete: Restrict)
   status     RoomStatus @default(AVAILABLE)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
@@ -68,17 +81,21 @@ model Room {
 }
 
 model Booking {
-  id            String        @id @default(cuid())
-  roomId        String
-  room          Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  guestName     String
-  idType        IdType
-  roomPrice     Float
-  status        BookingStatus @default(ACTIVE)
-  checkInDate   DateTime      @default(now())
-  checkoutDate  DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  roomId          String
+  room            Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  guestName       String
+  idType          IdType
+  idNumber        String?
+  additionalGuests Int         @default(0)
+  mattresses      Int          @default(0)
+  roomPrice       Float
+  tariff          Float?        // Additional tariff charges
+  status          BookingStatus @default(ACTIVE)
+  checkInDate     DateTime      @default(now())
+  checkoutDate    DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   foodOrders    FoodOrder[]
   invoices      Invoice[]
@@ -115,21 +132,34 @@ model FoodOrder {
 }
 
 model Invoice {
-  id            String    @id @default(cuid())
-  bookingId    String
-  booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  invoiceNumber String   @unique
-  invoiceType  String    // "ROOM" or "FOOD"
-  guestName    String
-  roomType     String?
-  roomCharges  Float     @default(0)
-  foodCharges  Float     @default(0)
-  gstEnabled   Boolean   @default(false)
-  gstNumber    String?
-  gstAmount    Float     @default(0)
-  totalAmount  Float
-  pdfPath      String?
-  createdAt    DateTime  @default(now())
+  id                String    @id @default(cuid())
+  bookingId         String
+  booking           Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  invoiceNumber     String    @unique
+  billNumber        String?   // Visitor's Register Sr. No.
+  invoiceType       String    // "ROOM" or "FOOD"
+  guestName         String
+  guestAddress      String?
+  guestState        String?
+  guestNationality  String?
+  guestGstNumber    String?
+  guestStateCode    String?
+  guestMobile       String?
+  companyName       String?
+  companyCode       String?
+  roomType          String?
+  roomCharges       Float     @default(0)
+  foodCharges       Float     @default(0)
+  tariff            Float     @default(0) // Additional tariff
+  gstEnabled        Boolean   @default(false)
+  gstNumber         String?
+  gstAmount         Float     @default(0)
+  advanceAmount     Float     @default(0)
+  roundOff          Float     @default(0)
+  totalAmount       Float
+  pdfPath           String?
+  billDate          DateTime? // For backdated bills
+  createdAt         DateTime  @default(now())
 
   @@map("invoices")
 }
@@ -145,4 +175,30 @@ model Payment {
   updatedAt     DateTime      @updatedAt
 
   @@map("payments")
+}
+
+model HotelSettings {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  phone       String
+  email       String?
+  gstin       String?
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("hotel_settings")
+}
+
+model BusBooking {
+  id          String    @id @default(cuid())
+  busNumber   String
+  bookingDate DateTime
+  status      BusStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("bus_bookings")
 }

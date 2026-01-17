@@ -18,7 +18,11 @@ export async function GET(
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: {
-        room: true,
+        room: {
+          include: {
+            roomType: true,
+          },
+        },
         foodOrders: {
           include: {
             foodItem: true,
