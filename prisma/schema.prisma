@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoomType {
+  AC
+  NON_AC
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+}
+
+enum BookingStatus {
+  ACTIVE
+  CHECKED_OUT
+}
+
+enum PaymentMode {
+  CASH
+  ONLINE
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+}
+
+enum IdType {
+  AADHAAR
+  DL
+  PASSPORT
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("MANAGER") // MANAGER or ADMIN (hidden)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Room {
+  id         String     @id @default(cuid())
+  roomNumber String     @unique
+  roomType   RoomType
+  status     RoomStatus @default(AVAILABLE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  bookings Booking[]
+
+  @@map("rooms")
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  roomId        String
+  room          Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  guestName     String
+  idType        IdType
+  roomPrice     Float
+  status        BookingStatus @default(ACTIVE)
+  checkInDate   DateTime      @default(now())
+  checkoutDate  DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  foodOrders    FoodOrder[]
+  invoices      Invoice[]
+  payments      Payment[]
+
+  @@map("bookings")
+}
+
+model FoodItem {
+  id        String   @id @default(cuid())
+  name      String
+  category  String
+  price     Float
+  gstPercent Float   @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  foodOrders FoodOrder[]
+
+  @@map("food_items")
+}
+
+model FoodOrder {
+  id         String    @id @default(cuid())
+  bookingId  String
+  booking    Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  foodItemId String
+  foodItem   FoodItem  @relation(fields: [foodItemId], references: [id])
+  quantity   Int
+  createdAt  DateTime  @default(now())
+
+  @@map("food_orders")
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  bookingId    String
+  booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  invoiceNumber String   @unique
+  invoiceType  String    // "ROOM" or "FOOD"
+  guestName    String
+  roomType     String?
+  roomCharges  Float     @default(0)
+  foodCharges  Float     @default(0)
+  gstEnabled   Boolean   @default(false)
+  gstNumber    String?
+  gstAmount    Float     @default(0)
+  totalAmount  Float
+  pdfPath      String?
+  createdAt    DateTime  @default(now())
+
+  @@map("invoices")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  bookingId     String
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  mode          PaymentMode
+  status        PaymentStatus @default(PENDING)
+  amount        Float
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("payments")
+}
