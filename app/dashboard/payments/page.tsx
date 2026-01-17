@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -19,7 +19,7 @@ interface Payment {
   }
 }
 
-export default function PaymentsPage() {
+function PaymentsContent() {
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
   const [payments, setPayments] = useState<Payment[]>([])
@@ -204,5 +204,13 @@ export default function PaymentsPage() {
         </table>
       </div>
     </div>
+  )
+}
+
+export default function PaymentsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">Loading payments...</div>}>
+      <PaymentsContent />
+    </Suspense>
   )
 }

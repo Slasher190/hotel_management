@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 interface ReportData {
@@ -34,7 +34,7 @@ interface ReportData {
   }
 }
 
-export default function ReportsPage() {
+function ReportsContent() {
   const searchParams = useSearchParams()
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -251,5 +251,13 @@ export default function ReportsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">Loading reports...</div>}>
+      <ReportsContent />
+    </Suspense>
   )
 }
