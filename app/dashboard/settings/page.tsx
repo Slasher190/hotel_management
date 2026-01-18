@@ -49,9 +49,12 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setSettings(data)
+        setError('')
       } else {
         const errorData = await response.json().catch(() => ({}))
-        setError(errorData.error || 'Failed to load settings')
+        const errorMsg = errorData.error || 'Failed to load settings'
+        setError(errorMsg)
+        console.error('Settings fetch error:', errorMsg)
       }
     } catch (error) {
       console.error('Error fetching settings:', error)
@@ -102,11 +105,16 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
+        setSettings(data)
         setSuccess('Settings saved successfully!')
         setTimeout(() => setSuccess(''), 3000)
+        setError('')
       } else {
-        const data = await response.json()
-        setError(data.error || 'Failed to save settings')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMsg = errorData.error || 'Failed to save settings'
+        setError(errorMsg)
+        console.error('Settings save error:', errorMsg)
       }
     } catch (error) {
       setError('An error occurred. Please try again.')
@@ -174,6 +182,28 @@ export default function SettingsPage() {
 
   if (loading) {
     return <div className="text-center py-8">Loading settings...</div>
+  }
+
+  if (!settings && !error) {
+    return <div className="text-center py-8">Failed to load settings</div>
+  }
+
+  // Show error state but still allow editing if settings exist
+  if (!settings && error) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+        <button
+          onClick={fetchSettings}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   if (!settings) {

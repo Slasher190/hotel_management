@@ -17,8 +17,13 @@ export function generateToken(userId: string, email: string, role: string): stri
 
 export function verifyToken(token: string): { userId: string; email: string; role: string } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
-  } catch {
+    if (!JWT_SECRET || JWT_SECRET === 'your-super-secret-jwt-key-change-in-production') {
+      console.warn('JWT_SECRET is using default value. This is insecure for production.')
+    }
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
+    return decoded
+  } catch (error: any) {
+    // Token is invalid, expired, or secret is wrong
     return null
   }
 }
