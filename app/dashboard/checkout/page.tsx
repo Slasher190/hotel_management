@@ -38,7 +38,9 @@ export default function CheckoutListPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setBookings(data)
+        // Handle both paginated and non-paginated responses
+        const bookingsData = Array.isArray(data) ? data : (data.bookings || [])
+        setBookings(bookingsData)
       }
     } catch (error) {
       console.error('Error fetching bookings:', error)

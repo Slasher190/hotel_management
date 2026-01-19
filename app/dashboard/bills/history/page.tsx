@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
+import Pagination from '@/app/components/Pagination'
 
 interface Invoice {
   id: string
@@ -37,7 +38,7 @@ function BillsHistoryContent() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(Number.parseInt(searchParams.get('page') || '1'))
   const [totalPages, setTotalPages] = useState(1)
-  const [filterType, setFilterType] = useState<'all' | 'manual' | 'booking'>('all')
+  const [filterType, setFilterType] = useState<'all' | 'manual' | 'booking'>('manual')
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -45,7 +46,7 @@ function BillsHistoryContent() {
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '20',
+        limit: '10',
       })
 
       if (filterType === 'manual') {
@@ -97,7 +98,9 @@ function BillsHistoryContent() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Bill History</h2>
-          <p className="text-gray-600 mt-1">View all generated bills and invoices</p>
+          <p className="text-gray-600 mt-1">
+            View all generated bills - Manual bills (from Generate Bill section) and Booking bills (from checkouts)
+          </p>
         </div>
       </div>
 
@@ -127,7 +130,7 @@ function BillsHistoryContent() {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Manual Bills
+          Manual Bills (Generate Bill)
         </button>
         <button
           onClick={() => {
@@ -191,17 +194,27 @@ function BillsHistoryContent() {
                     {invoice.guestName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        invoice.isManual
-                          ? 'bg-purple-100 text-purple-800'
-                          : invoice.invoiceType === 'FOOD'
-                          ? 'bg-orange-100 text-orange-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {invoice.isManual ? 'Manual' : invoice.invoiceType}
-                    </span>
+                    {(() => {
+                      if (invoice.isManual) {
+                        return (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                            Manual
+                          </span>
+                        )
+                      }
+                      if (invoice.invoiceType === 'FOOD') {
+                        return (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                            {invoice.invoiceType}
+                          </span>
+                        )
+                      }
+                      return (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {invoice.invoiceType}
+                        </span>
+                      )
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {invoice.booking
@@ -228,32 +241,16 @@ function BillsHistoryContent() {
         {invoices.length === 0 && (
           <div className="text-center py-12 text-gray-500">No invoices found</div>
         )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
-            <div className="text-sm text-gray-700">
-              Page {page} of {totalPages}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   )
 }

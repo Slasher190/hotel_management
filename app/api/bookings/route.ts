@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const status = request.nextUrl.searchParams.get('status')
     const paymentPending = request.nextUrl.searchParams.get('paymentPending')
     const page = Number.parseInt(request.nextUrl.searchParams.get('page') || '1')
-    const limit = Number.parseInt(request.nextUrl.searchParams.get('limit') || '20')
+    const limit = Number.parseInt(request.nextUrl.searchParams.get('limit') || '10')
     const showAll = request.nextUrl.searchParams.get('showAll') === 'true'
 
     const where: Prisma.BookingWhereInput = {}

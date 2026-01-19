@@ -243,13 +243,24 @@ export default function BookingDetailPage() {
               Edit Booking
             </button>
           )}
-          {booking.status === 'ACTIVE' && booking.foodOrders.length > 0 && (
-            <Link
-              href={`/dashboard/bookings/${booking.id}/food-bill`}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              Food Bill
-            </Link>
+          {booking.status === 'ACTIVE' && (
+            <>
+              <Link
+                href={`/dashboard/bookings/${booking.id}/add-food`}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                title="Add Food Items"
+              >
+                🍽️ Add Food
+              </Link>
+              {booking.foodOrders.length > 0 && (
+                <Link
+                  href={`/dashboard/bookings/${booking.id}/food-bill`}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Food Bill
+                </Link>
+              )}
+            </>
           )}
           <Link
             href="/dashboard/bookings"

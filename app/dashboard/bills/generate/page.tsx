@@ -133,7 +133,7 @@ export default function BillGeneratorPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Generate Bill</h2>
-          <p className="text-gray-600 mt-1">Create a new invoice or backdated bill</p>
+          <p className="text-gray-600 mt-1">Create independent bills with no constraints - completely isolated from booking system</p>
         </div>
         <button
           type="button"
@@ -160,15 +160,18 @@ export default function BillGeneratorPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Booking ID <span className="text-gray-400 text-xs">(Optional)</span>
+                      Booking ID <span className="text-gray-400 text-xs">(Optional - Leave Empty for Independent Bill)</span>
                     </label>
                     <input
                       type="text"
                       value={formData.bookingId}
                       onChange={(e) => setFormData({ ...formData, bookingId: e.target.value })}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                      placeholder="Leave empty for manual bill"
+                      placeholder="Leave empty to create standalone bill"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 All bills generated here are saved in Bill History, regardless of booking ID
+                    </p>
                   </div>
 
                   <div>
@@ -268,16 +271,18 @@ export default function BillGeneratorPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Guest GST Number</label>
-                    <input
-                      type="text"
-                      value={formData.guestGstNumber}
-                      onChange={(e) => setFormData({ ...formData, guestGstNumber: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                      placeholder="Enter GST number"
-                    />
-                  </div>
+                  {formData.showGst && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Guest GST Number</label>
+                      <input
+                        type="text"
+                        value={formData.guestGstNumber}
+                        onChange={(e) => setFormData({ ...formData, guestGstNumber: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="Enter GST number"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">State Code</label>
@@ -478,8 +483,8 @@ export default function BillGeneratorPage() {
                     </div>
                   </div>
 
-                  {formData.gstEnabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {formData.showGst && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">GST Percentage (%)</label>
                         <input

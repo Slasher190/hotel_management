@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Hotel settings not found' }, { status: 404 })
     }
 
-    // Get booking if bookingId provided
+    // Get booking if bookingId provided (optional - bills can be created independently)
     let booking = null
-    if (bookingId) {
+    if (bookingId && bookingId.trim() !== '') {
       booking = await prisma.booking.findUnique({
         where: { id: bookingId },
         include: { room: { include: { roomType: true } } },
@@ -73,13 +73,14 @@ export async function POST(request: NextRequest) {
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
     // Save invoice to database (for history)
+    // Manual bills are completely independent - no bookingId required
     await prisma.invoice.create({
       data: {
-        bookingId: bookingId || 'MANUAL',
+        bookingId: (bookingId && bookingId.trim() !== '') ? bookingId : null,
         invoiceNumber,
         billNumber: billNumber || null,
-        invoiceType: bookingId ? 'ROOM' : 'MANUAL',
-        isManual: !bookingId, // true if no bookingId
+        invoiceType: (bookingId && bookingId.trim() !== '') ? 'ROOM' : 'MANUAL',
+        isManual: !bookingId || bookingId.trim() === '', // true if no bookingId or empty
         guestName,
         guestAddress: guestAddress || null,
         guestState: guestState || null,
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate PDF using utility function
+    // Only pass guestGstNumber if showGst is true (GSTIN visibility depends only on showGst)
     const doc = generateBillPDF(settings, {
       invoiceNumber,
       billNumber: billNumber || null,
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
       guestAddress: guestAddress || null,
       guestState: guestState || null,
       guestNationality: guestNationality || null,
-      guestGstNumber: guestGstNumber || null,
+      guestGstNumber: showGst ? (guestGstNumber || null) : null, // Only include if showGst is checked
       guestStateCode: guestStateCode || null,
       guestMobile: guestMobile || null,
       companyName: companyName || null,
@@ -139,14 +141,14 @@ export async function POST(request: NextRequest) {
       foodCharges: foodAmount,
       additionalGuestCharges: additionalGuestChargesValue,
       additionalGuests: additionalGuestsCount,
-      gstEnabled: gstEnabled && showGst,
+      gstEnabled: gstEnabled && showGst, // GST calculation still depends on both
       gstPercent: Number.parseFloat(gstPercent) || 5,
       gstAmount,
       advanceAmount: advance,
       roundOff: roundOffValue,
       totalAmount,
       paymentMode,
-      showGst,
+      showGst, // This controls GSTIN visibility
     })
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

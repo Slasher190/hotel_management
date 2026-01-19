@@ -42,9 +42,31 @@ interface BillData {
   showGst?: boolean // Option to show/hide GST section
 }
 
+// Helper function to format currency with rupee symbol
+// Since jsPDF default fonts don't support ₹, we use "Rs." which is universally understood
+function formatCurrencyWithRupee(amount: number): string {
+  const formatted = amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  // Use "Rs." instead of ₹ symbol for reliable rendering in PDF
+  return `Rs. ${formatted}`
+}
+
+// Helper function to add rupee symbol to text in table cells
+function addRupeeToAmount(amount: number): string {
+  return formatCurrencyWithRupee(amount)
+}
+
 export function generateBillPDF(settings: HotelSettings, billData: BillData): jsPDF {
-  const doc = new jsPDF()
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+    compress: true,
+  })
   const showGst = billData.showGst !== false // Default to true unless explicitly false
+  
+  // Note: To properly render ₹ symbol, you need to add a custom font
+  // See FONT_SETUP_INSTRUCTIONS.md for details
+  // For now, we use Unicode ₹ (U+20B9) - may not render in all PDF viewers
 
   // Header Section with better formatting
   doc.setFillColor(99, 102, 241) // Indigo color
@@ -69,7 +91,8 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   if (settings.email) {
     doc.text(`Email: ${settings.email}`, 105, contactY, { align: 'center' })
   }
-  if (settings.gstin) {
+  // Only show GSTIN if "Show GST on Bill" is checked
+  if (settings.gstin && showGst) {
     doc.text(`GSTIN: ${settings.gstin}`, 180, contactY, { align: 'right' })
   }
 
@@ -147,60 +170,105 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   }
 
   // Guest Information Section
-  doc.setFillColor(243, 244, 246)
-  doc.rect(14, yPos - 5, 182, 30, 'F')
+  const guestInfoStartY = yPos - 5
+  let currentY = yPos
   
+  // Calculate height first
+  let leftColHeight = 6 // Title height
+  leftColHeight += 6 // Guest Name
+  if (billData.guestAddress) {
+    const addressLines = doc.splitTextToSize(`Address: ${billData.guestAddress}`, 85)
+    leftColHeight += addressLines.length * 5
+  }
+  if (billData.guestState) leftColHeight += 6
+  if (billData.guestNationality) leftColHeight += 6
+  if (billData.guestMobile) leftColHeight += 6
+  
+  let rightColHeight = 0
+  if (billData.guestGstNumber && showGst) rightColHeight += 6
+  if (billData.companyName) rightColHeight += 6
+  if (billData.companyCode) rightColHeight += 6
+  
+  const guestInfoHeight = Math.max(leftColHeight, rightColHeight) + 5
+  
+  // Draw background
+  doc.setFillColor(243, 244, 246)
+  doc.rect(14, guestInfoStartY, 182, guestInfoHeight, 'F')
+  
+  // Draw text
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
-  doc.text('Guest Information', 16, yPos)
-  yPos += 6
+  doc.text('Guest Information', 16, currentY)
+  currentY += 6
 
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Guest Name: ${billData.guestName}`, 16, yPos)
+  
+  // Left column
+  let leftColY = currentY
+  doc.text(`Guest Name: ${billData.guestName}`, 16, leftColY)
+  leftColY += 6
+  
+  // Address with text wrapping (max width 85mm to prevent overflow)
   if (billData.guestAddress) {
-    doc.text(`Address: ${billData.guestAddress}`, 16, yPos + 6)
+    const addressLines = doc.splitTextToSize(`Address: ${billData.guestAddress}`, 85)
+    doc.text(addressLines, 16, leftColY)
+    leftColY += addressLines.length * 5
   }
+  
   if (billData.guestState) {
-    doc.text(`State/Region: ${billData.guestState}`, 16, yPos + 12)
+    doc.text(`State/Region: ${billData.guestState}`, 16, leftColY)
+    leftColY += 6
   }
   if (billData.guestNationality) {
-    doc.text(`Nationality: ${billData.guestNationality}`, 16, yPos + 18)
+    doc.text(`Nationality: ${billData.guestNationality}`, 16, leftColY)
+    leftColY += 6
   }
   if (billData.guestMobile) {
-    doc.text(`Mobile: ${billData.guestMobile}`, 16, yPos + 24)
+    doc.text(`Mobile: ${billData.guestMobile}`, 16, leftColY)
+    leftColY += 6
   }
-  if (billData.guestGstNumber) {
-    doc.text(`GST No.: ${billData.guestGstNumber}`, 105, yPos)
+  
+  // Right column - only show GST number if "Show GST on Bill" is checked
+  let rightColY = currentY
+  if (billData.guestGstNumber && showGst) {
+    doc.text(`GST No.: ${billData.guestGstNumber}`, 105, rightColY)
+    rightColY += 6
   }
   if (billData.companyName) {
-    doc.text(`Company: ${billData.companyName}`, 105, yPos + 6)
+    doc.text(`Company: ${billData.companyName}`, 105, rightColY)
+    rightColY += 6
+  }
+  if (billData.companyCode) {
+    doc.text(`Company Code: ${billData.companyCode}`, 105, rightColY)
   }
 
-  yPos += 40
+  yPos = Math.max(leftColY, rightColY) + 10
 
   // Charges Summary Table
   const chargesData: [string, string][] = []
   
   // Room Charges
-  chargesData.push(['Room Charges', `₹${billData.roomCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
+  chargesData.push(['Room Charges', addRupeeToAmount(billData.roomCharges)])
   
   // Additional Guest Charges
   if (billData.additionalGuestCharges && billData.additionalGuestCharges > 0 && billData.additionalGuests) {
+    const chargePerGuest = billData.additionalGuestCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const additionalGuestsDesc = `Additional Guests (${billData.additionalGuests} × Rs. ${chargePerGuest})`
     chargesData.push([
-      `Additional Guests (${billData.additionalGuests} × ₹${billData.additionalGuestCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`,
-      `₹${(billData.additionalGuestCharges * billData.additionalGuests).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      additionalGuestsDesc.length > 50 ? `Additional Guests\n(${billData.additionalGuests} × Rs. ${chargePerGuest})` : additionalGuestsDesc,
+      addRupeeToAmount(billData.additionalGuestCharges * billData.additionalGuests)
     ])
   }
   
   // Tariff
   if (billData.tariff > 0) {
-    chargesData.push(['Tariff', `₹${billData.tariff.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
+    chargesData.push(['Tariff', addRupeeToAmount(billData.tariff)])
   }
   
   // Food Charges
   if (billData.foodCharges > 0) {
-    chargesData.push(['Food Charges', `₹${billData.foodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
+    chargesData.push(['Food Charges', addRupeeToAmount(billData.foodCharges)])
   }
   
   // Subtotal
@@ -209,39 +277,40 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
     billData.tariff + 
     billData.foodCharges
   
-  chargesData.push(['Subtotal', `₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
+  chargesData.push(['Subtotal', addRupeeToAmount(subtotal)])
   
   // GST (only if enabled and showGst is true)
   if (billData.gstEnabled && showGst && billData.gstAmount > 0) {
     chargesData.push([
       `GST (${billData.gstPercent || 5}%)`,
-      `₹${billData.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      addRupeeToAmount(billData.gstAmount)
     ])
   }
   
   // Total before deductions
   const totalBeforeDeductions = subtotal + (billData.gstEnabled && showGst ? billData.gstAmount : 0)
-  chargesData.push(['Total Amount', `₹${totalBeforeDeductions.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
+  chargesData.push(['Total Amount', addRupeeToAmount(totalBeforeDeductions)])
   
   // Advance
   if (billData.advanceAmount > 0) {
-    chargesData.push(['Less: Advance Paid', `-₹${billData.advanceAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
+    chargesData.push(['Less: Advance Paid', `-${addRupeeToAmount(billData.advanceAmount)}`])
   }
   
   // Round Off
   if (billData.roundOff !== 0) {
+    const roundOffAmount = Math.abs(billData.roundOff).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     chargesData.push([
       'Round Off',
-      `${billData.roundOff >= 0 ? '+' : ''}₹${Math.abs(billData.roundOff).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      `${billData.roundOff >= 0 ? '+' : '-'}Rs. ${roundOffAmount}`
     ])
   }
   
   // Net Payable
-  chargesData.push(['Net Payable Amount', `₹${billData.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
+  chargesData.push(['Net Payable Amount', addRupeeToAmount(billData.totalAmount)])
 
   autoTable(doc, {
     startY: yPos,
-    head: [['Description', 'Amount (₹)']],
+    head: [['Description', 'Amount (Rs.)']],
     body: chargesData,
     theme: 'striped',
     headStyles: {
@@ -252,11 +321,14 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
     styles: {
       fontSize: 9,
       cellPadding: 3,
+      overflow: 'linebreak',
+      cellWidth: 'wrap',
     },
     columnStyles: {
-      0: { cellWidth: 130 },
+      0: { cellWidth: 130, valign: 'middle' },
       1: { halign: 'right', cellWidth: 60 },
     },
+    margin: { left: 14, right: 14 },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     didParseCell: (data: any) => {
       // Highlight total row
@@ -274,22 +346,19 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   // Payment Information
   doc.setFontSize(9)
   doc.setFont('helvetica', 'bold')
-  doc.text(
-    `Payment Mode: ${billData.paymentMode} | Amount: ₹${billData.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-    14,
-    finalY
-  )
+  const paymentText = `Payment Mode: ${billData.paymentMode} | Amount: ${addRupeeToAmount(billData.totalAmount)}`
+  // Split payment text if too long
+  const paymentLines = doc.splitTextToSize(paymentText, 182)
+  doc.text(paymentLines, 14, finalY)
 
   // Footer
+  const footerY = doc.internal.pageSize.height - 20
   doc.setFontSize(7)
   doc.setFont('helvetica', 'italic')
   doc.setTextColor(100, 100, 100)
-  doc.text(
-    'I agree that I am responsible for the full payment of this bill in the event if not paid by the company, organisation or person indicated.',
-    105,
-    doc.internal.pageSize.height - 20,
-    { align: 'center', maxWidth: 180 }
-  )
+  const footerText = 'I agree that I am responsible for the full payment of this bill in the event if not paid by the company, organisation or person indicated.'
+  const footerLines = doc.splitTextToSize(footerText, 180)
+  doc.text(footerLines, 105, footerY, { align: 'center' })
 
   return doc
 }

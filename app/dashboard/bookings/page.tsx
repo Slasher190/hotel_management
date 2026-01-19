@@ -50,7 +50,7 @@ function BookingsContent() {
         params.append('showAll', 'true')
       } else {
         params.append('page', page.toString())
-        params.append('limit', '20')
+        params.append('limit', '10')
       }
       
       const response = await fetch(`/api/bookings?${params.toString()}`, {
@@ -261,20 +261,31 @@ function BookingsContent() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  {booking.status === 'ACTIVE' && (
+                  <div className="flex items-center justify-end gap-2">
+                    {booking.status === 'ACTIVE' && (
+                      <>
+                        <Link
+                          href={`/dashboard/bookings/${booking.id}/add-food`}
+                          className="text-orange-600 hover:text-orange-900"
+                          title="Add Food Items"
+                        >
+                          🍽️
+                        </Link>
+                        <Link
+                          href={`/dashboard/checkout/${booking.id}`}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Checkout
+                        </Link>
+                      </>
+                    )}
                     <Link
-                      href={`/dashboard/checkout/${booking.id}`}
-                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                      href={`/dashboard/bookings/${booking.id}`}
+                      className="text-gray-600 hover:text-gray-900"
                     >
-                      Checkout
+                      View
                     </Link>
-                  )}
-                  <Link
-                    href={`/dashboard/bookings/${booking.id}`}
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    View
-                  </Link>
+                  </div>
                 </td>
               </tr>
             ))}

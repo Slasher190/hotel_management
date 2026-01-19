@@ -143,8 +143,8 @@ model FoodOrder {
 
 model Invoice {
   id                    String    @id @default(cuid())
-  bookingId             String
-  booking               Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId             String?   // Nullable - allows independent manual bills
+  booking               Booking?   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   invoiceNumber         String     @unique
   billNumber            String?    // Visitor's Register Sr. No.
   invoiceType           String     // "ROOM" or "FOOD"

@@ -37,6 +37,7 @@ export default function DashboardLayout({
     { href: '/dashboard/reports', label: 'Reports', icon: '📈' },
     { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾' },
     { href: '/dashboard/bills/history', label: 'Bill History', icon: '📜' },
+    { href: '/dashboard/kitchen-bills', label: 'Kitchen Bills', icon: '🍳' },
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
     { href: '/dashboard/settings/password', label: 'Reset Password', icon: '🔒' },
   ]
