@@ -23,7 +23,8 @@ export async function POST(
       gstNumber, 
       paymentMode, 
       paymentStatus,
-      showGst = false 
+      showGst = false,
+      kitchenBillPaid = false 
     } = await request.json()
 
     const booking = await prisma.booking.findUnique({

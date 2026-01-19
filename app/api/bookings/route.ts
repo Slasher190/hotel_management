@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
     const page = Number.parseInt(request.nextUrl.searchParams.get('page') || '1')
     const limit = Number.parseInt(request.nextUrl.searchParams.get('limit') || '10')
     const showAll = request.nextUrl.searchParams.get('showAll') === 'true'
+    const search = request.nextUrl.searchParams.get('search')
+    const dateFrom = request.nextUrl.searchParams.get('dateFrom')
+    const dateTo = request.nextUrl.searchParams.get('dateTo')
+    const roomNumber = request.nextUrl.searchParams.get('roomNumber')
+    const sortBy = request.nextUrl.searchParams.get('sortBy') || 'checkInDate'
+    const sortOrder = request.nextUrl.searchParams.get('sortOrder') || 'desc'
 
     const where: Prisma.BookingWhereInput = {}
     
@@ -28,6 +34,26 @@ export async function GET(request: NextRequest) {
       }
     } else if (status) {
       where.status = status as BookingStatus
+    }
+
+    if (search) {
+      where.guestName = { contains: search, mode: Prisma.QueryMode.insensitive }
+    }
+
+    if (dateFrom || dateTo) {
+      where.checkInDate = {}
+      if (dateFrom) {
+        where.checkInDate.gte = new Date(dateFrom)
+      }
+      if (dateTo) {
+        where.checkInDate.lte = new Date(dateTo)
+      }
+    }
+
+    if (roomNumber) {
+      where.room = {
+        roomNumber: { contains: roomNumber, mode: Prisma.QueryMode.insensitive },
+      }
     }
 
     const skip = showAll ? 0 : (page - 1) * limit
@@ -45,7 +71,7 @@ export async function GET(request: NextRequest) {
           payments: true,
         },
         orderBy: {
-          checkInDate: 'desc',
+          [sortBy]: sortOrder,
         },
         skip,
         take,

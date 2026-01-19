@@ -19,6 +19,15 @@ interface Booking {
       name: string
     }
   }
+  foodOrders?: Array<{
+    id: string
+    quantity: number
+    foodItem: {
+      name: string
+      price: number
+      gstPercent: number
+    }
+  }>
 }
 
 export default function CheckoutPage() {
@@ -36,6 +45,7 @@ export default function CheckoutPage() {
   const [gstNumber, setGstNumber] = useState('')
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'ONLINE'>('CASH')
   const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PENDING'>('PENDING')
+  const [kitchenBillPaid, setKitchenBillPaid] = useState(false)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
 
@@ -154,6 +164,7 @@ export default function CheckoutPage() {
           gstNumber: gstEnabled ? gstNumber : null,
           paymentMode,
           paymentStatus,
+          kitchenBillPaid,
         }),
       })
 
@@ -421,6 +432,54 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Kitchen Bill Section */}
+      {booking.foodOrders && booking.foodOrders.length > 0 && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Kitchen Bill</h3>
+          <div className="space-y-4">
+            <div className="bg-orange-50 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium text-gray-700">Food Orders:</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {booking.foodOrders.length} item(s)
+                </span>
+              </div>
+              <div className="space-y-2 text-sm">
+                {booking.foodOrders.map((order) => {
+                  const itemTotal = order.foodItem.price * order.quantity
+                  const gst = (itemTotal * order.foodItem.gstPercent) / 100
+                  return (
+                    <div key={order.id} className="flex justify-between text-gray-600">
+                      <span>
+                        {order.foodItem.name} × {order.quantity}
+                      </span>
+                      <span className="font-medium text-gray-900">
+                        ₹{(itemTotal + gst).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="kitchenBillPaid"
+                checked={kitchenBillPaid}
+                onChange={(e) => setKitchenBillPaid(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <label htmlFor="kitchenBillPaid" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Kitchen bill is paid (Optional - not required for checkout)
+              </label>
+            </div>
+            <div className="text-xs text-gray-500">
+              Note: Kitchen bills can be generated and paid separately. This checkbox is for tracking purposes only.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Total */}
       <div className="bg-indigo-50 rounded-xl shadow-md p-6">

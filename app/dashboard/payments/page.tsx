@@ -29,6 +29,13 @@ function PaymentsContent() {
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [paymentMode, setPaymentMode] = useState('')
+  const [minAmount, setMinAmount] = useState('')
+  const [maxAmount, setMaxAmount] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
 
   const fetchPayments = useCallback(async () => {
     try {
@@ -41,6 +48,24 @@ function PaymentsContent() {
       
       if (statusFilter) {
         params.append('status', statusFilter)
+      }
+      if (searchQuery) {
+        params.append('search', searchQuery)
+      }
+      if (dateFrom) {
+        params.append('dateFrom', dateFrom)
+      }
+      if (dateTo) {
+        params.append('dateTo', dateTo)
+      }
+      if (paymentMode) {
+        params.append('mode', paymentMode)
+      }
+      if (minAmount) {
+        params.append('minAmount', minAmount)
+      }
+      if (maxAmount) {
+        params.append('maxAmount', maxAmount)
       }
       
       const response = await fetch(`/api/payments?${params.toString()}`, {
@@ -65,7 +90,7 @@ function PaymentsContent() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, page])
+  }, [statusFilter, page, searchQuery, dateFrom, dateTo, paymentMode, minAmount, maxAmount])
 
   useEffect(() => {
     setPage(1) // Reset to page 1 when filter changes
@@ -120,6 +145,117 @@ function PaymentsContent() {
         {statusFilter === 'PENDING' && (
           <div className="text-lg font-semibold text-orange-600">
             Total Pending: ₹{pendingTotal.toLocaleString('en-IN')}
+          </div>
+        )}
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setPage(1)
+              }}
+              placeholder="Search by guest name..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </button>
+          {(searchQuery || dateFrom || dateTo || paymentMode || minAmount || maxAmount) && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setDateFrom('')
+                setDateTo('')
+                setPaymentMode('')
+                setMinAmount('')
+                setMaxAmount('')
+                setPage(1)
+              }}
+              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {showFilters && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Mode</label>
+              <select
+                value={paymentMode}
+                onChange={(e) => {
+                  setPaymentMode(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">All Modes</option>
+                <option value="CASH">Cash</option>
+                <option value="ONLINE">Online</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Min Amount (₹)</label>
+              <input
+                type="number"
+                value={minAmount}
+                onChange={(e) => {
+                  setMinAmount(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Max Amount (₹)</label>
+              <input
+                type="number"
+                value={maxAmount}
+                onChange={(e) => {
+                  setMaxAmount(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="999999"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
         )}
       </div>

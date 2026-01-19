@@ -34,6 +34,11 @@ function BookingsContent() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [showAll, setShowAll] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [roomNumber, setRoomNumber] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -51,6 +56,19 @@ function BookingsContent() {
       } else {
         params.append('page', page.toString())
         params.append('limit', '10')
+      }
+
+      if (searchQuery) {
+        params.append('search', searchQuery)
+      }
+      if (dateFrom) {
+        params.append('dateFrom', dateFrom)
+      }
+      if (dateTo) {
+        params.append('dateTo', dateTo)
+      }
+      if (roomNumber) {
+        params.append('roomNumber', roomNumber)
       }
       
       const response = await fetch(`/api/bookings?${params.toString()}`, {
@@ -76,7 +94,7 @@ function BookingsContent() {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, paymentPending, page, showAll])
+  }, [statusFilter, paymentPending, page, showAll, searchQuery, dateFrom, dateTo, roomNumber])
 
   useEffect(() => {
     fetchBookings()
@@ -133,6 +151,87 @@ function BookingsContent() {
             + New Check-In
           </Link>
         </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setPage(1)
+              }}
+              placeholder="Search by guest name..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </button>
+          {(searchQuery || dateFrom || dateTo || roomNumber) && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setDateFrom('')
+                setDateTo('')
+                setRoomNumber('')
+                setPage(1)
+              }}
+              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {showFilters && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Check-In From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Check-In To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
+              <input
+                type="text"
+                value={roomNumber}
+                onChange={(e) => {
+                  setRoomNumber(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="Filter by room number..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-4 flex-wrap items-center">

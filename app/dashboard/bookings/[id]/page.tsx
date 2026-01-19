@@ -609,13 +609,25 @@ export default function BookingDetailPage() {
 
       {/* Actions */}
       {booking.status === 'ACTIVE' && !editing && (
-        <div className="bg-indigo-50 rounded-xl shadow-md p-6">
-          <Link
-            href={`/dashboard/checkout/${booking.id}`}
-            className="block w-full text-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
-          >
-            Proceed to Checkout
-          </Link>
+        <div className="space-y-4">
+          <div className="bg-indigo-50 rounded-xl shadow-md p-6">
+            <Link
+              href={`/dashboard/checkout/${booking.id}`}
+              className="block w-full text-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+            >
+              Proceed to Checkout
+            </Link>
+          </div>
+          {booking.foodOrders && booking.foodOrders.length > 0 && (
+            <div className="bg-orange-50 rounded-xl shadow-md p-6">
+              <Link
+                href={`/dashboard/bookings/${booking.id}/kitchen-bills`}
+                className="block w-full text-center px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
+              >
+                🍽️ Manage Kitchen Bills
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </div>

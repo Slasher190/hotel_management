@@ -38,7 +38,15 @@ function BillsHistoryContent() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(Number.parseInt(searchParams.get('page') || '1'))
   const [totalPages, setTotalPages] = useState(1)
-  const [filterType, setFilterType] = useState<'all' | 'manual' | 'booking'>('manual')
+  const [filterType, setFilterType] = useState<'all' | 'manual' | 'booking' | 'food'>('manual')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [minAmount, setMinAmount] = useState('')
+  const [maxAmount, setMaxAmount] = useState('')
+  const [sortBy, setSortBy] = useState<'createdAt' | 'totalAmount' | 'guestName'>('createdAt')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [showFilters, setShowFilters] = useState(false)
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -53,7 +61,29 @@ function BillsHistoryContent() {
         params.append('isManual', 'true')
       } else if (filterType === 'booking') {
         params.append('isManual', 'false')
+        params.append('type', 'ROOM') // Only show ROOM invoices for booking bills
+      } else if (filterType === 'food') {
+        params.append('type', 'FOOD') // Only show FOOD invoices
       }
+
+      // Add search and filter parameters
+      if (searchQuery) {
+        params.append('search', searchQuery)
+      }
+      if (dateFrom) {
+        params.append('dateFrom', dateFrom)
+      }
+      if (dateTo) {
+        params.append('dateTo', dateTo)
+      }
+      if (minAmount) {
+        params.append('minAmount', minAmount)
+      }
+      if (maxAmount) {
+        params.append('maxAmount', maxAmount)
+      }
+      params.append('sortBy', sortBy)
+      params.append('sortOrder', sortOrder)
 
       const response = await fetch(`/api/invoices?${params.toString()}`, {
         headers: {
@@ -74,7 +104,7 @@ function BillsHistoryContent() {
     } finally {
       setLoading(false)
     }
-  }, [page, filterType])
+  }, [page, filterType, searchQuery, dateFrom, dateTo, minAmount, maxAmount, sortBy, sortOrder])
 
   useEffect(() => {
     fetchInvoices()
@@ -99,9 +129,133 @@ function BillsHistoryContent() {
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Bill History</h2>
           <p className="text-gray-600 mt-1">
-            View all generated bills - Manual bills (from Generate Bill section) and Booking bills (from checkouts)
+            View all generated bills - Manual bills, Booking bills (room), and Food bills (kitchen)
           </p>
         </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setPage(1)
+              }}
+              placeholder="Search by guest name or invoice number..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </button>
+          {(searchQuery || dateFrom || dateTo || minAmount || maxAmount) && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setDateFrom('')
+                setDateTo('')
+                setMinAmount('')
+                setMaxAmount('')
+                setPage(1)
+              }}
+              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {showFilters && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value)
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Min Amount (₹)</label>
+              <input
+                type="number"
+                value={minAmount}
+                onChange={(e) => {
+                  setMinAmount(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Max Amount (₹)</label>
+              <input
+                type="number"
+                value={maxAmount}
+                onChange={(e) => {
+                  setMaxAmount(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="999999"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as 'createdAt' | 'totalAmount' | 'guestName')
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="createdAt">Date</option>
+                <option value="totalAmount">Amount</option>
+                <option value="guestName">Guest Name</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => {
+                  setSortOrder(e.target.value as 'asc' | 'desc')
+                  setPage(1)
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filter Tabs */}
@@ -143,7 +297,20 @@ function BillsHistoryContent() {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Booking Bills
+          Booking Bills (Room)
+        </button>
+        <button
+          onClick={() => {
+            setFilterType('food')
+            setPage(1)
+          }}
+          className={`px-4 py-2 font-medium transition-colors ${
+            filterType === 'food'
+              ? 'border-b-2 border-indigo-600 text-indigo-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Food Bills (Kitchen)
         </button>
       </div>
 
