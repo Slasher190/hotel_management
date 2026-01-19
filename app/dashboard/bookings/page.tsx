@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface Booking {
   id: string
@@ -90,12 +91,13 @@ function BookingsContent() {
         a.click()
         globalThis.URL.revokeObjectURL(url)
         a.remove()
+        toast.success('Police verification report downloaded successfully!')
       } else {
-        alert('Failed to generate police verification report')
+        toast.error('Failed to generate police verification report')
       }
     } catch (error) {
       console.error('Error generating police verification:', error)
-      alert('An error occurred while generating the report')
+      toast.error('An error occurred while generating the report')
     }
   }
 

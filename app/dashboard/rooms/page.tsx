@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
+import Modal from '@/app/components/Modal'
 
 interface Room {
   id: string
@@ -15,6 +17,11 @@ interface Room {
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; roomId: string | null; roomNumber: string }>({
+    isOpen: false,
+    roomId: null,
+    roomNumber: '',
+  })
 
   useEffect(() => {
     fetchRooms()
@@ -40,12 +47,16 @@ export default function RoomsPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this room?')) return
+  const handleDelete = async (id: string, roomNumber: string) => {
+    setDeleteModal({ isOpen: true, roomId: id, roomNumber })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal.roomId) return
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/rooms/${id}`, {
+      const response = await fetch(`/api/rooms/${deleteModal.roomId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -54,13 +65,16 @@ export default function RoomsPage() {
 
       if (response.ok) {
         fetchRooms()
+        toast.success('Room deleted successfully!')
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to delete room')
+        toast.error(data.error || 'Failed to delete room')
       }
     } catch (error) {
       console.error('Error deleting room:', error)
-      alert('An error occurred while deleting the room')
+      toast.error('An error occurred while deleting the room')
+    } finally {
+      setDeleteModal({ isOpen: false, roomId: null, roomNumber: '' })
     }
   }
 
@@ -70,6 +84,17 @@ export default function RoomsPage() {
 
   return (
     <div className="space-y-6">
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, roomId: null, roomNumber: '' })}
+        onConfirm={confirmDelete}
+        title="Delete Room"
+        message={`Are you sure you want to delete room "${deleteModal.roomNumber}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
+
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-900">Room Management</h2>
         <Link
@@ -120,7 +145,7 @@ export default function RoomsPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => handleDelete(room.id)}
+                    onClick={() => handleDelete(room.id, room.roomNumber)}
                     className="text-red-600 hover:text-red-900"
                   >
                     Delete

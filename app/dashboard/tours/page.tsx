@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import toast from 'react-hot-toast'
+import Modal from '@/app/components/Modal'
 
 interface BusBooking {
   id: string
@@ -20,6 +22,11 @@ function ToursContent() {
     searchParams.get('date') || new Date().toISOString().split('T')[0]
   )
   const [showAddModal, setShowAddModal] = useState(false)
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; bookingId: string | null; busNumber: string }>({
+    isOpen: false,
+    bookingId: null,
+    busNumber: '',
+  })
   const [formData, setFormData] = useState({
     busNumber: '',
     fromDate: selectedDate,
@@ -27,7 +34,6 @@ function ToursContent() {
     status: 'PENDING' as 'BOOKED' | 'PENDING',
     notes: '',
   })
-  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchBookings()
@@ -55,15 +61,14 @@ function ToursContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
     
     if (!formData.busNumber || !formData.fromDate || !formData.toDate) {
-      setError('All fields are required')
+      toast.error('All fields are required')
       return
     }
 
     if (new Date(formData.fromDate) > new Date(formData.toDate)) {
-      setError('From date cannot be after to date')
+      toast.error('From date cannot be after to date')
       return
     }
 
@@ -88,13 +93,14 @@ function ToursContent() {
           notes: '',
         })
         fetchBookings()
+        toast.success('Bus booking added successfully!')
       } else {
         const data = await response.json()
-        setError(data.error || 'Failed to create bus booking')
+        toast.error(data.error || 'Failed to create bus booking')
       }
     } catch (error) {
       console.error('Error creating bus booking:', error)
-      setError('An error occurred. Please try again.')
+      toast.error('An error occurred. Please try again.')
     }
   }
 
@@ -112,18 +118,26 @@ function ToursContent() {
 
       if (response.ok) {
         fetchBookings()
+        toast.success(`Status updated to ${newStatus}`)
+      } else {
+        toast.error('Failed to update status')
       }
     } catch (error) {
       console.error('Error updating status:', error)
+      toast.error('An error occurred while updating status')
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this booking?')) return
+  const handleDelete = async (id: string, busNumber: string) => {
+    setDeleteModal({ isOpen: true, bookingId: id, busNumber })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal.bookingId) return
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/bus-bookings/${id}`, {
+      const response = await fetch(`/api/bus-bookings/${deleteModal.bookingId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -132,9 +146,15 @@ function ToursContent() {
 
       if (response.ok) {
         fetchBookings()
+        toast.success('Bus booking deleted successfully!')
+      } else {
+        toast.error('Failed to delete bus booking')
       }
     } catch (error) {
       console.error('Error deleting booking:', error)
+      toast.error('An error occurred while deleting the booking')
+    } finally {
+      setDeleteModal({ isOpen: false, bookingId: null, busNumber: '' })
     }
   }
 
@@ -147,6 +167,17 @@ function ToursContent() {
 
   return (
     <div className="space-y-6">
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, bookingId: null, busNumber: '' })}
+        onConfirm={confirmDelete}
+        title="Delete Bus Booking"
+        message={`Are you sure you want to delete bus booking "${deleteModal.busNumber}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
+
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-900">Tours & Travel - Bus Bookings</h2>
         <button
@@ -244,7 +275,7 @@ function ToursContent() {
                       Mark {booking.status === 'BOOKED' ? 'Pending' : 'Booked'}
                     </button>
                     <button
-                      onClick={() => handleDelete(booking.id)}
+                      onClick={() => handleDelete(booking.id, booking.busNumber)}
                       className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700"
                     >
                       Delete
@@ -265,11 +296,6 @@ function ToursContent() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Bus Booking</h3>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-                {error}
-              </div>
-            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -346,7 +372,13 @@ function ToursContent() {
                   type="button"
                   onClick={() => {
                     setShowAddModal(false)
-                    setError('')
+                    setFormData({
+                      busNumber: '',
+                      fromDate: selectedDate,
+                      toDate: selectedDate,
+                      status: 'PENDING',
+                      notes: '',
+                    })
                   }}
                   className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
                 >

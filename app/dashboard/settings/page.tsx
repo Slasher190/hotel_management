@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
+import Modal from '@/app/components/Modal'
 
 interface HotelSettings {
   id: string
@@ -23,8 +25,11 @@ export default function SettingsPage() {
   const [newRoomType, setNewRoomType] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; roomTypeId: string | null; roomTypeName: string }>({
+    isOpen: false,
+    roomTypeId: null,
+    roomTypeName: '',
+  })
 
   useEffect(() => {
     fetchSettings()
@@ -35,7 +40,7 @@ export default function SettingsPage() {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        setError('Not authenticated')
+        toast.error('Not authenticated')
         setLoading(false)
         return
       }
@@ -49,16 +54,15 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setSettings(data)
-        setError('')
       } else {
         const errorData = await response.json().catch(() => ({}))
         const errorMsg = errorData.error || 'Failed to load settings'
-        setError(errorMsg)
+        toast.error(errorMsg)
         console.error('Settings fetch error:', errorMsg)
       }
     } catch (error) {
       console.error('Error fetching settings:', error)
-      setError('An error occurred while loading settings')
+      toast.error('An error occurred while loading settings')
     } finally {
       setLoading(false)
     }
@@ -80,9 +84,11 @@ export default function SettingsPage() {
         setRoomTypes(data)
       } else {
         console.error('Failed to fetch room types')
+        toast.error('Failed to fetch room types')
       }
     } catch (error) {
       console.error('Error fetching room types:', error)
+      toast.error('An error occurred while fetching room types')
     }
   }
 
@@ -90,8 +96,6 @@ export default function SettingsPage() {
     if (!settings) return
 
     setSaving(true)
-    setError('')
-    setSuccess('')
 
     try {
       const token = localStorage.getItem('token')
@@ -107,27 +111,25 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setSettings(data)
-        setSuccess('Settings saved successfully!')
-        setTimeout(() => setSuccess(''), 3000)
-        setError('')
+        toast.success('Settings saved successfully!')
       } else {
         const errorData = await response.json().catch(() => ({}))
         const errorMsg = errorData.error || 'Failed to save settings'
-        setError(errorMsg)
+        toast.error(errorMsg)
         console.error('Settings save error:', errorMsg)
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      toast.error('An error occurred. Please try again.')
     } finally {
       setSaving(false)
     }
   }
 
   const handleAddRoomType = async () => {
-    if (!newRoomType.trim()) return
-
-    setError('')
-    setSuccess('')
+    if (!newRoomType.trim()) {
+      toast.error('Please enter a room type name')
+      return
+    }
 
     try {
       const token = localStorage.getItem('token')
@@ -144,23 +146,26 @@ export default function SettingsPage() {
         const data = await response.json()
         setRoomTypes([...roomTypes, data])
         setNewRoomType('')
-        setSuccess('Room type added successfully!')
-        setTimeout(() => setSuccess(''), 3000)
+        toast.success('Room type added successfully!')
       } else {
         const data = await response.json()
-        setError(data.error || 'Failed to add room type')
+        toast.error(data.error || 'Failed to add room type')
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      toast.error('An error occurred. Please try again.')
     }
   }
 
-  const handleDeleteRoomType = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this room type?')) return
+  const handleDeleteRoomType = async (id: string, name: string) => {
+    setDeleteModal({ isOpen: true, roomTypeId: id, roomTypeName: name })
+  }
+
+  const confirmDeleteRoomType = async () => {
+    if (!deleteModal.roomTypeId) return
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/room-types/${id}`, {
+      const response = await fetch(`/api/room-types/${deleteModal.roomTypeId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -168,15 +173,16 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
-        setRoomTypes(roomTypes.filter((rt) => rt.id !== id))
-        setSuccess('Room type deleted successfully!')
-        setTimeout(() => setSuccess(''), 3000)
+        setRoomTypes(roomTypes.filter((rt) => rt.id !== deleteModal.roomTypeId))
+        toast.success('Room type deleted successfully!')
       } else {
         const data = await response.json()
-        setError(data.error || 'Failed to delete room type')
+        toast.error(data.error || 'Failed to delete room type')
       }
     } catch (error) {
-      setError('An error occurred. Please try again.')
+      toast.error('An error occurred. Please try again.')
+    } finally {
+      setDeleteModal({ isOpen: false, roomTypeId: null, roomTypeName: '' })
     }
   }
 
@@ -184,17 +190,12 @@ export default function SettingsPage() {
     return <div className="text-center py-8">Loading settings...</div>
   }
 
-  if (!settings && !error) {
-    return <div className="text-center py-8">Failed to load settings</div>
-  }
-
-  // Show error state but still allow editing if settings exist
-  if (!settings && error) {
+  if (!settings) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
+          Failed to load settings. Please try again.
         </div>
         <button
           onClick={fetchSettings}
@@ -206,25 +207,20 @@ export default function SettingsPage() {
     )
   }
 
-  if (!settings) {
-    return <div className="text-center py-8">Failed to load settings</div>
-  }
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold text-gray-900">Settings</h2>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-          {success}
-        </div>
-      )}
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, roomTypeId: null, roomTypeName: '' })}
+        onConfirm={confirmDeleteRoomType}
+        title="Delete Room Type"
+        message={`Are you sure you want to delete "${deleteModal.roomTypeName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
 
       {/* Hotel Information */}
       <div className="bg-white rounded-xl shadow-md p-6">
@@ -304,7 +300,7 @@ export default function SettingsPage() {
               onChange={(e) => setNewRoomType(e.target.value)}
               placeholder="Enter room type (e.g., AC, Non-AC, Deluxe, Single Bed)"
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-500"
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleAddRoomType()
                 }
@@ -326,7 +322,7 @@ export default function SettingsPage() {
               >
                 <span className="text-gray-900 font-medium">{roomType.name}</span>
                 <button
-                  onClick={() => handleDeleteRoomType(roomType.id)}
+                  onClick={() => handleDeleteRoomType(roomType.id, roomType.name)}
                   className="px-4 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                 >
                   Delete

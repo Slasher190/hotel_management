@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import toast from 'react-hot-toast'
 
 interface Booking {
   id: string
@@ -109,9 +110,10 @@ export default function PoliceVerificationPage() {
       a.click()
       globalThis.URL.revokeObjectURL(url)
       a.remove()
+      toast.success('PDF generated successfully!')
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF')
+      toast.error('Failed to generate PDF')
     } finally {
       setSaving(false)
     }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface Booking {
   id: string
@@ -155,14 +156,15 @@ export default function CheckoutPage() {
         globalThis.URL.revokeObjectURL(url)
         a.remove()
 
+        toast.success('Checkout completed successfully! Invoice downloaded.')
         router.push('/dashboard/bookings')
       } else {
         const errorData = await response.json().catch(() => ({}))
-        alert(errorData.error || 'Checkout failed')
+        toast.error(errorData.error || 'Checkout failed')
       }
     } catch (error) {
       console.error('Error during checkout:', error)
-      alert('An error occurred during checkout')
+      toast.error('An error occurred during checkout')
     } finally {
       setProcessing(false)
     }
