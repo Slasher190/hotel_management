@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { Prisma } from '@prisma/client'
 
+// Update payment
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -13,14 +15,22 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const { status } = await request.json()
+    const { status, amount } = await request.json()
 
-    const payment = await prisma.payment.update({
+    const updateData: Prisma.PaymentUpdateInput = {}
+    if (status) {
+      updateData.status = status
+    }
+    if (amount !== undefined) {
+      updateData.amount = Number.parseFloat(amount)
+    }
+
+    const updatedPayment = await prisma.payment.update({
       where: { id },
-      data: { status: status as 'PAID' | 'PENDING' },
+      data: updateData,
     })
 
-    return NextResponse.json(payment)
+    return NextResponse.json(updatedPayment)
   } catch (error) {
     console.error('Error updating payment:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

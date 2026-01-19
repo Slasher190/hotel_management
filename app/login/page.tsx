@@ -35,7 +35,7 @@ export default function LoginPage() {
       localStorage.setItem('token', data.token)
       document.cookie = `token=${data.token}; path=/; max-age=604800` // 7 days
       router.push('/dashboard')
-    } catch (err) {
+    } catch {
       setError('An error occurred. Please try again.')
       setLoading(false)
     }

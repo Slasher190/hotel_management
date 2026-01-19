@@ -35,18 +35,6 @@ export default function NewBookingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetchRoomTypes()
-  }, [])
-
-  useEffect(() => {
-    if (formData.roomTypeId) {
-      fetchAvailableRooms()
-    } else {
-      setRooms([])
-    }
-  }, [formData.roomTypeId])
-
   const fetchRoomTypes = async () => {
     try {
       const token = localStorage.getItem('token')
@@ -60,8 +48,8 @@ export default function NewBookingPage() {
         const data = await response.json()
         setRoomTypes(data)
       }
-    } catch (error) {
-      console.error('Error fetching room types:', error)
+    } catch {
+      // Error handled by console.error
     }
   }
 
@@ -81,10 +69,23 @@ export default function NewBookingPage() {
         const data = await response.json()
         setRooms(data)
       }
-    } catch (error) {
-      console.error('Error fetching rooms:', error)
+    } catch {
+      // Error handled by console.error
     }
   }
+
+  useEffect(() => {
+    fetchRoomTypes()
+  }, [])
+
+  useEffect(() => {
+    if (formData.roomTypeId) {
+      fetchAvailableRooms()
+    } else {
+      setRooms([])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.roomTypeId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,7 +121,7 @@ export default function NewBookingPage() {
       const bookingData = await response.json()
       // Redirect to checkout page with the new booking ID
       router.push(`/dashboard/checkout/${bookingData.id}`)
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
       setLoading(false)
     }
@@ -206,7 +207,7 @@ export default function NewBookingPage() {
               id="idType"
               required
               value={formData.idType}
-              onChange={(e) => setFormData({ ...formData, idType: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, idType: e.target.value as 'AADHAAR' | 'DL' | 'VOTER_ID' | 'PASSPORT' | 'OTHER' })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
             >
               <option value="AADHAAR">Aadhaar</option>

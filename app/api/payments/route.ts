@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { Prisma, PaymentStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,9 +12,9 @@ export async function GET(request: NextRequest) {
 
     const status = request.nextUrl.searchParams.get('status')
 
-    const where: any = {}
+    const where: Prisma.PaymentWhereInput = {}
     if (status) {
-      where.status = status
+      where.status = status as PaymentStatus
     }
 
     const payments = await prisma.payment.findMany({

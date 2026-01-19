@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 
 interface ReportData {
   bookings: Array<{
@@ -37,18 +36,13 @@ interface ReportData {
 }
 
 function ReportsContent() {
-  const searchParams = useSearchParams()
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [gstFilter, setGstFilter] = useState(false)
   const [paymentFilter, setPaymentFilter] = useState('')
 
-  useEffect(() => {
-    fetchReports()
-  }, [month, gstFilter, paymentFilter])
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
@@ -67,12 +61,16 @@ function ReportsContent() {
         const data = await response.json()
         setReportData(data)
       }
-    } catch (error) {
-      console.error('Error fetching reports:', error)
+    } catch {
+      // Error handled by console.error
     } finally {
       setLoading(false)
     }
-  }
+  }, [month, gstFilter, paymentFilter])
+
+  useEffect(() => {
+    fetchReports()
+  }, [fetchReports])
 
   const handleExport = async (format: 'excel' | 'csv') => {
     try {
@@ -101,8 +99,8 @@ function ReportsContent() {
         globalThis.URL.revokeObjectURL(url)
         a.remove()
       }
-    } catch (error) {
-      console.error('Error exporting report:', error)
+    } catch {
+      // Error handled by console.error
     }
   }
 

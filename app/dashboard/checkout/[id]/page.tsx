@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -10,6 +10,8 @@ interface Booking {
   idType: string
   roomPrice: number
   tariff?: number | null
+  additionalGuests?: number | null
+  additionalGuestCharges?: number | null
   checkInDate: string
   room: {
     roomNumber: string
@@ -27,6 +29,8 @@ export default function CheckoutPage() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [baseAmount, setBaseAmount] = useState(0)
   const [tariff, setTariff] = useState(0)
+  const [additionalGuestCharges, setAdditionalGuestCharges] = useState(0)
+  const [showGst, setShowGst] = useState(true) // Default to show GST
   const [gstEnabled, setGstEnabled] = useState(false)
   const [gstPercent, setGstPercent] = useState(5)
   const [gstNumber, setGstNumber] = useState('')
@@ -35,22 +39,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
 
-  useEffect(() => {
-    if (bookingId) {
-      fetchBooking()
-    } else {
-      setLoading(false)
-    }
-  }, [bookingId])
-
-  useEffect(() => {
-    if (booking) {
-      setBaseAmount(booking.roomPrice)
-      setTariff(booking.tariff || 0)
-    }
-  }, [booking])
-
-  const fetchBooking = async () => {
+  const fetchBooking = useCallback(async () => {
     if (!bookingId) {
       setLoading(false)
       return
@@ -94,8 +83,9 @@ export default function CheckoutPage() {
             const errorData = await response.json().catch(() => ({}))
             lastError = `Error ${response.status}: ${errorData.error || response.statusText}`
           }
-        } catch (fetchError: any) {
-          lastError = fetchError?.message || 'Network error'
+        } catch (fetchError: unknown) {
+          const err = fetchError as { message?: string }
+          lastError = err?.message || 'Network error'
         }
         retries--
         if (retries > 0) {
@@ -111,13 +101,33 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [bookingId, router])
+
+  useEffect(() => {
+    if (bookingId) {
+      fetchBooking()
+    } else {
+      setLoading(false)
+    }
+  }, [bookingId, fetchBooking])
+
+  useEffect(() => {
+    if (booking) {
+      setBaseAmount(booking.roomPrice)
+      setTariff(booking.tariff || 0)
+      setAdditionalGuestCharges(booking.additionalGuestCharges || 0)
+    }
+  }, [booking])
 
   const calculateTotals = () => {
-    const gstAmount = gstEnabled ? ((baseAmount + tariff) * gstPercent) / 100 : 0
-    const total = baseAmount + tariff + gstAmount
+    const additionalGuestsTotal = booking && booking.additionalGuests && booking.additionalGuests > 0
+      ? additionalGuestCharges * booking.additionalGuests
+      : 0
+    const baseTotal = baseAmount + tariff + additionalGuestsTotal
+    const gstAmount = (gstEnabled && showGst) ? (baseTotal * gstPercent) / 100 : 0
+    const total = baseTotal + gstAmount
 
-    return { baseAmount, tariff, gstAmount, gstPercent, total }
+    return { baseAmount, tariff, additionalGuestsTotal, gstAmount, gstPercent, total }
   }
 
   const handleCheckout = async () => {
@@ -137,7 +147,9 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           baseAmount: totals.baseAmount,
           tariff: totals.tariff,
+          additionalGuestCharges,
           gstEnabled,
+          showGst,
           gstPercent: gstEnabled ? gstPercent : 0,
           gstNumber: gstEnabled ? gstNumber : null,
           paymentMode,
@@ -298,6 +310,39 @@ export default function CheckoutPage() {
             />
           </div>
 
+          {booking && booking.additionalGuests && booking.additionalGuests > 0 && (
+            <div>
+              <label htmlFor="additionalGuestCharges" className="block text-sm font-medium text-gray-700 mb-2">
+                Additional Guest Charges (₹) - {booking.additionalGuests} guest(s)
+              </label>
+              <input
+                id="additionalGuestCharges"
+                type="number"
+                min="0"
+                step="0.01"
+                value={additionalGuestCharges}
+                onChange={(e) => setAdditionalGuestCharges(Number.parseFloat(e.target.value) || 0)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                placeholder="Enter charges per additional guest"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="showGst"
+                checked={showGst}
+                onChange={(e) => setShowGst(e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="showGst" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Show GST on Bill
+              </label>
+            </div>
+          </div>
+
           <div className="flex items-center">
             <input
               type="checkbox"
@@ -387,19 +432,27 @@ export default function CheckoutPage() {
           {totals.tariff > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-700">Tariff:</span>
-              <span className="font-medium">₹{totals.tariff.toLocaleString('en-IN')}</span>
+              <span className="font-medium">₹{totals.tariff.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
-          {gstEnabled && (
+          {totals.additionalGuestsTotal > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-700">
+                Additional Guests ({booking?.additionalGuests || 0} × ₹{additionalGuestCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}):
+              </span>
+              <span className="font-medium">₹{totals.additionalGuestsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {(gstEnabled && showGst) && (
             <div className="flex justify-between">
               <span className="text-gray-700">GST ({gstPercent}%):</span>
-              <span className="font-medium">₹{totals.gstAmount.toLocaleString('en-IN')}</span>
+              <span className="font-medium">₹{totals.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
           <div className="flex justify-between pt-2 border-t border-indigo-200">
             <span className="text-xl font-semibold text-gray-900">Total Amount:</span>
             <span className="text-xl font-semibold text-indigo-600">
-              ₹{totals.total.toLocaleString('en-IN')}
+              ₹{totals.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>

@@ -35,8 +35,9 @@ export async function GET(request: NextRequest) {
       invoices,
       payments,
     })
-  } catch (error: any) {
-    if (error.message === 'Admin access required') {
+  } catch (error: unknown) {
+    const err = error as { message?: string }
+    if (err.message === 'Admin access required') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
     console.error('Admin API error:', error)
@@ -109,8 +110,9 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
-  } catch (error: any) {
-    if (error.message === 'Admin access required') {
+  } catch (error: unknown) {
+    const err = error as { message?: string }
+    if (err.message === 'Admin access required') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
     console.error('Admin API error:', error)

@@ -21,27 +21,29 @@ export async function GET(request: NextRequest) {
       roomTypes = await prisma.roomType.findMany({
         orderBy: { name: 'asc' },
       })
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       console.error('Database error in GET room-types:', dbError)
       // If table doesn't exist, return empty array
-      if (dbError.code === 'P2021' || dbError.message?.includes('does not exist')) {
+      const err = dbError as { code?: string; message?: string }
+      if (err.code === 'P2021' || err.message?.includes('does not exist')) {
         return NextResponse.json([])
       }
       throw dbError
     }
 
     return NextResponse.json(roomTypes)
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; code?: string; meta?: unknown; stack?: string }
     console.error('Error fetching room types:', error)
     console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
+      message: err.message,
+      code: err.code,
+      meta: err.meta,
     })
     return NextResponse.json(
       { 
-        error: error.message || 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: err.message || 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
       },
       { status: 500 }
     )
@@ -67,8 +69,9 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(roomType)
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    const err = error as { code?: string }
+    if (err.code === 'P2002') {
       return NextResponse.json({ error: 'Room type already exists' }, { status: 400 })
     }
     console.error('Error creating room type:', error)

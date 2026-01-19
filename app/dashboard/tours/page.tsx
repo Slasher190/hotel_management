@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
@@ -21,6 +21,7 @@ function ToursContent() {
   const [selectedDate, setSelectedDate] = useState(
     searchParams.get('date') || new Date().toISOString().split('T')[0]
   )
+  const [showAll, setShowAll] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; bookingId: string | null; busNumber: string }>({
     isOpen: false,
@@ -35,14 +36,16 @@ function ToursContent() {
     notes: '',
   })
 
-  useEffect(() => {
-    fetchBookings()
-  }, [selectedDate])
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/bus-bookings?date=${selectedDate}`, {
+      const params = new URLSearchParams()
+      if (showAll) {
+        params.append('showAll', 'true')
+      } else {
+        params.append('date', selectedDate)
+      }
+      const response = await fetch(`/api/bus-bookings?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -50,14 +53,18 @@ function ToursContent() {
 
       if (response.ok) {
         const data = await response.json()
-        setBookings(data)
+        setBookings(Array.isArray(data) ? data : data.bookings || [])
       }
-    } catch (error) {
-      console.error('Error fetching bus bookings:', error)
+    } catch {
+      // Error handled by console.error
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedDate, showAll])
+
+  useEffect(() => {
+    fetchBookings()
+  }, [fetchBookings])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,14 +195,33 @@ function ToursContent() {
         </button>
       </div>
 
-      <div className="flex gap-4 items-center">
-        <label className="text-sm font-medium text-gray-700">Select Date:</label>
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
-        />
+      <div className="flex gap-4 items-center flex-wrap">
+        {!showAll && (
+          <>
+            <label className="text-sm font-medium text-gray-700">Select Date:</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
+            />
+          </>
+        )}
+        <button
+          onClick={() => {
+            setShowAll(!showAll)
+            if (!showAll) {
+              setSelectedDate(new Date().toISOString().split('T')[0])
+            }
+          }}
+          className={`px-4 py-2 rounded-lg ${
+            showAll
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {showAll ? 'Show by Date' : 'Show All Bookings'}
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

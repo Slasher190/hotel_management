@@ -22,7 +22,10 @@ export default function BillGeneratorPage() {
     roomCharges: '',
     tariff: '',
     foodCharges: '0',
+    additionalGuestCharges: '0',
+    additionalGuests: '0',
     gstEnabled: false,
+    showGst: false, // Default unchecked
     gstPercent: '5',
     gstNumber: '',
     advanceAmount: '0',
@@ -36,18 +39,24 @@ export default function BillGeneratorPage() {
     const roomCharges = Number.parseFloat(formData.roomCharges) || 0
     const tariff = Number.parseFloat(formData.tariff) || 0
     const foodCharges = Number.parseFloat(formData.foodCharges) || 0
+    const additionalGuestCharges = Number.parseFloat(formData.additionalGuestCharges) || 0
+    const additionalGuests = Number.parseInt(formData.additionalGuests) || 0
+    const additionalGuestsTotal = additionalGuestCharges * additionalGuests
     const advance = Number.parseFloat(formData.advanceAmount) || 0
     const roundOff = Number.parseFloat(formData.roundOff) || 0
     const gstPercent = Number.parseFloat(formData.gstPercent) || 0
     
-    const baseAmount = roomCharges + tariff + foodCharges
-    const gstAmount = formData.gstEnabled ? (baseAmount * gstPercent) / 100 : 0
+    const baseAmount = roomCharges + tariff + foodCharges + additionalGuestsTotal
+    const gstAmount = (formData.gstEnabled && formData.showGst) ? (baseAmount * gstPercent) / 100 : 0
     const totalAmount = baseAmount + gstAmount - advance + roundOff
 
     return {
       roomCharges,
       tariff,
       foodCharges,
+      additionalGuestCharges,
+      additionalGuests,
+      additionalGuestsTotal,
       baseAmount,
       gstAmount,
       advance,
@@ -73,9 +82,12 @@ export default function BillGeneratorPage() {
           roomCharges: calculations.roomCharges,
           tariff: calculations.tariff,
           foodCharges: calculations.foodCharges,
+          additionalGuestCharges: calculations.additionalGuestCharges,
+          additionalGuests: calculations.additionalGuests,
           gstPercent: parseFloat(formData.gstPercent) || 5,
           advanceAmount: calculations.advance,
           roundOff: calculations.roundOff,
+          showGst: formData.showGst,
         }),
       })
 
@@ -108,7 +120,7 @@ export default function BillGeneratorPage() {
         }
         toast.error(errorMessage)
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred. Please try again.')
     } finally {
       setLoading(false)
@@ -365,6 +377,35 @@ export default function BillGeneratorPage() {
                   </div>
 
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Additional Guests</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.additionalGuests}
+                      onChange={(e) => setFormData({ ...formData, additionalGuests: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Additional Guest Charges (per guest)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.additionalGuestCharges}
+                        onChange={(e) => setFormData({ ...formData, additionalGuestCharges: e.target.value })}
+                        className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Advance Amount</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₹</span>
@@ -410,17 +451,31 @@ export default function BillGeneratorPage() {
 
                 {/* GST Section */}
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      id="gstEnabled"
-                      checked={formData.gstEnabled}
-                      onChange={(e) => setFormData({ ...formData, gstEnabled: e.target.checked })}
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    />
-                    <label htmlFor="gstEnabled" className="ml-2 text-sm font-medium text-gray-900 cursor-pointer">
-                      Include GST
-                    </label>
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="showGst"
+                        checked={formData.showGst}
+                        onChange={(e) => setFormData({ ...formData, showGst: e.target.checked })}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                      <label htmlFor="showGst" className="ml-2 text-sm font-medium text-gray-900 cursor-pointer">
+                        Show GST on Bill (Default: Unchecked)
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="gstEnabled"
+                        checked={formData.gstEnabled}
+                        onChange={(e) => setFormData({ ...formData, gstEnabled: e.target.checked })}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                      <label htmlFor="gstEnabled" className="ml-2 text-sm font-medium text-gray-900 cursor-pointer">
+                        Include GST in Calculation
+                      </label>
+                    </div>
                   </div>
 
                   {formData.gstEnabled && (
@@ -509,6 +564,16 @@ export default function BillGeneratorPage() {
                     </span>
                   </div>
                 )}
+                {calculations.additionalGuestsTotal > 0 && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">
+                      Additional Guests ({calculations.additionalGuests} × ₹{calculations.additionalGuestCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                    </span>
+                    <span className="text-sm font-semibold text-gray-900">
+                      ₹{calculations.additionalGuestsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                   <span className="text-sm font-medium text-gray-700">Subtotal</span>
                   <span className="text-sm font-semibold text-gray-900">
@@ -517,7 +582,7 @@ export default function BillGeneratorPage() {
                 </div>
               </div>
 
-              {formData.gstEnabled && (
+              {(formData.gstEnabled && formData.showGst) && (
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">

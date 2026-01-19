@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { Prisma, BusStatus } from '@prisma/client'
 
 // Get bus bookings
 export async function GET(request: NextRequest) {
@@ -13,9 +14,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date')
     const status = searchParams.get('status')
+    const showAll = searchParams.get('showAll') === 'true'
 
-    const where: any = {}
-    if (date) {
+    const where: Prisma.BusBookingWhereInput = {}
+    if (!showAll && date) {
       const searchDate = new Date(date)
       searchDate.setHours(0, 0, 0, 0)
       const searchDateEnd = new Date(date)
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
       ]
     }
     if (status) {
-      where.status = status
+      where.status = status as BusStatus
     }
 
     const bookings = await prisma.busBooking.findMany({

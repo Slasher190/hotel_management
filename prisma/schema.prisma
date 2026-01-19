@@ -55,6 +55,15 @@ model User {
   @@map("users")
 }
 
+model SystemSettings {
+  id                    String   @id @default(cuid())
+  passwordResetSecret   String   @default("HOTEL_RESET_2024") // Default secret for password reset
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
 model RoomType {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -81,21 +90,22 @@ model Room {
 }
 
 model Booking {
-  id              String        @id @default(cuid())
-  roomId          String
-  room            Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  guestName       String
-  idType          IdType
-  idNumber        String?
-  additionalGuests Int         @default(0)
-  mattresses      Int          @default(0)
-  roomPrice       Float
-  tariff          Float?        // Additional tariff charges
-  status          BookingStatus @default(ACTIVE)
-  checkInDate     DateTime      @default(now())
-  checkoutDate    DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  roomId                String
+  room                  Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  guestName             String
+  idType                IdType
+  idNumber              String?
+  additionalGuests      Int           @default(0)
+  additionalGuestCharges Float        @default(0) // Extra charges per additional guest
+  mattresses            Int           @default(0)
+  roomPrice             Float
+  tariff                Float?        // Additional tariff charges
+  status                BookingStatus @default(ACTIVE)
+  checkInDate           DateTime      @default(now())
+  checkoutDate          DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   foodOrders    FoodOrder[]
   invoices      Invoice[]
@@ -132,34 +142,36 @@ model FoodOrder {
 }
 
 model Invoice {
-  id                String    @id @default(cuid())
-  bookingId         String
-  booking           Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  invoiceNumber     String    @unique
-  billNumber        String?   // Visitor's Register Sr. No.
-  invoiceType       String    // "ROOM" or "FOOD"
-  guestName         String
-  guestAddress      String?
-  guestState        String?
-  guestNationality  String?
-  guestGstNumber    String?
-  guestStateCode    String?
-  guestMobile       String?
-  companyName       String?
-  companyCode       String?
-  roomType          String?
-  roomCharges       Float     @default(0)
-  foodCharges       Float     @default(0)
-  tariff            Float     @default(0) // Additional tariff
-  gstEnabled        Boolean   @default(false)
-  gstNumber         String?
-  gstAmount         Float     @default(0)
-  advanceAmount     Float     @default(0)
-  roundOff          Float     @default(0)
-  totalAmount       Float
-  pdfPath           String?
-  billDate          DateTime? // For backdated bills
-  createdAt         DateTime  @default(now())
+  id                    String    @id @default(cuid())
+  bookingId             String
+  booking               Booking    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  invoiceNumber         String     @unique
+  billNumber            String?    // Visitor's Register Sr. No.
+  invoiceType           String     // "ROOM" or "FOOD"
+  isManual              Boolean    @default(false) // true for manually generated bills
+  guestName             String
+  guestAddress          String?
+  guestState            String?
+  guestNationality      String?
+  guestGstNumber        String?
+  guestStateCode        String?
+  guestMobile           String?
+  companyName           String?
+  companyCode           String?
+  roomType              String?
+  roomCharges           Float      @default(0)
+  foodCharges           Float      @default(0)
+  tariff                Float      @default(0) // Additional tariff
+  additionalGuestCharges Float     @default(0) // Charges for additional guests
+  gstEnabled            Boolean     @default(false)
+  gstNumber             String?
+  gstAmount             Float       @default(0)
+  advanceAmount         Float       @default(0)
+  roundOff              Float       @default(0)
+  totalAmount           Float
+  pdfPath               String?
+  billDate              DateTime?   // For backdated bills
+  createdAt             DateTime    @default(now())
 
   @@map("invoices")
 }

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Booking {
   id: string
@@ -32,16 +33,12 @@ export default function FoodBillPage() {
 
   const [booking, setBooking] = useState<Booking | null>(null)
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [showGst, setShowGst] = useState(true)
+  const [gstPercent, setGstPercent] = useState(5)
+  const [gstNumber, setGstNumber] = useState('')
 
-  useEffect(() => {
-    if (bookingId) {
-      fetchBooking()
-    } else {
-      setLoading(false)
-    }
-  }, [bookingId])
-
-  const fetchBooking = async () => {
+  const fetchBooking = useCallback(async () => {
     if (!bookingId) {
       setLoading(false)
       return
@@ -66,12 +63,20 @@ export default function FoodBillPage() {
       } else if (response.status === 404) {
         setBooking(null)
       }
-    } catch (error) {
-      console.error('Error fetching booking:', error)
+    } catch {
+      // Error handled by console.error
     } finally {
       setLoading(false)
     }
-  }
+  }, [bookingId, router])
+
+  useEffect(() => {
+    if (bookingId) {
+      fetchBooking()
+    } else {
+      setLoading(false)
+    }
+  }, [bookingId, fetchBooking])
 
   const calculateFoodTotals = () => {
     if (!booking) return { subtotal: 0, totalGst: 0, total: 0 }
@@ -88,6 +93,47 @@ export default function FoodBillPage() {
     const total = subtotal + totalGst
 
     return { subtotal, totalGst, total }
+  }
+
+  const handleGenerateInvoice = async () => {
+    if (!booking) return
+
+    setGenerating(true)
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/bookings/${bookingId}/food-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          showGst,
+          gstPercent,
+          gstNumber: gstNumber || null,
+        }),
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = globalThis.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `food-invoice-${bookingId}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        globalThis.URL.revokeObjectURL(url)
+        a.remove()
+        toast.success('Food invoice generated successfully!')
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        toast.error(errorData.error || 'Failed to generate invoice')
+      }
+    } catch {
+      toast.error('An error occurred while generating invoice')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   if (loading) {
@@ -151,12 +197,21 @@ export default function FoodBillPage() {
     <div className="max-w-4xl space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-900">Food Bill</h2>
-        <Link
-          href={`/dashboard/bookings/${bookingId}`}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-        >
-          ← Back to Booking
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={handleGenerateInvoice}
+            disabled={generating}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {generating ? 'Generating...' : 'Generate Invoice PDF'}
+          </button>
+          <Link
+            href={`/dashboard/bookings/${bookingId}`}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+          >
+            ← Back to Booking
+          </Link>
+        </div>
       </div>
 
       {/* Booking Info */}
@@ -212,21 +267,72 @@ export default function FoodBillPage() {
         </div>
       </div>
 
+      {/* GST Options */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Options</h3>
+        <div className="space-y-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showGst"
+              checked={showGst}
+              onChange={(e) => setShowGst(e.target.checked)}
+              className="mr-2"
+            />
+            <label htmlFor="showGst" className="text-sm font-medium text-gray-900 cursor-pointer">
+              Show GST on Invoice
+            </label>
+          </div>
+          {showGst && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">GST Percentage (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={gstPercent}
+                  onChange={(e) => setGstPercent(Number.parseFloat(e.target.value) || 5)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">GST Number (Optional)</label>
+                <input
+                  type="text"
+                  value={gstNumber}
+                  onChange={(e) => setGstNumber(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Enter GST number"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* Totals */}
       <div className="bg-indigo-50 rounded-xl shadow-md p-6">
         <div className="space-y-2 text-lg">
           <div className="flex justify-between">
             <span className="text-gray-700">Subtotal:</span>
-            <span className="font-medium">₹{totals.subtotal.toLocaleString('en-IN')}</span>
+            <span className="font-medium">₹{totals.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-700">Total GST:</span>
-            <span className="font-medium">₹{totals.totalGst.toLocaleString('en-IN')}</span>
+            <span className="text-gray-700">Total GST (Item-wise):</span>
+            <span className="font-medium">₹{totals.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
+          {showGst && gstPercent > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-700">Additional GST ({gstPercent}%):</span>
+              <span className="font-medium">₹{((totals.total * gstPercent) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
           <div className="flex justify-between pt-2 border-t border-indigo-200">
             <span className="text-xl font-semibold text-gray-900">Total Amount:</span>
             <span className="text-xl font-semibold text-indigo-600">
-              ₹{totals.total.toLocaleString('en-IN')}
+              ₹{(totals.total + (showGst && gstPercent > 0 ? (totals.total * gstPercent) / 100 : 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>

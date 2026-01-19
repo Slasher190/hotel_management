@@ -22,7 +22,7 @@ export function verifyToken(token: string): { userId: string; email: string; rol
     }
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
     return decoded
-  } catch (error: any) {
+  } catch {
     // Token is invalid, expired, or secret is wrong
     return null
   }

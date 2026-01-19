@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 interface FoodItem {
@@ -27,13 +27,7 @@ export default function EditFoodPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (foodId) {
-      fetchFoodItem()
-    }
-  }, [foodId])
-
-  const fetchFoodItem = async () => {
+  const fetchFoodItem = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       const response = await fetch('/api/food', {
@@ -56,13 +50,19 @@ export default function EditFoodPage() {
           setError('Food item not found')
         }
       }
-    } catch (error) {
-      console.error('Error fetching food item:', error)
+    } catch {
+      // Error handled by console.error
       setError('Failed to load food item')
     } finally {
       setLoading(false)
     }
-  }
+  }, [foodId])
+
+  useEffect(() => {
+    if (foodId) {
+      fetchFoodItem()
+    }
+  }, [foodId, fetchFoodItem])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,7 +93,7 @@ export default function EditFoodPage() {
       }
 
       router.push('/dashboard/food')
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
       setSaving(false)
     }

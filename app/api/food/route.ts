@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const enabled = request.nextUrl.searchParams.get('enabled')
 
-    const where: any = {}
+    const where: Prisma.FoodItemWhereInput = {}
     if (enabled === 'true') {
       where.enabled = true
     }

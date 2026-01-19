@@ -42,7 +42,7 @@ export default function NewFoodPage() {
       }
 
       router.push('/dashboard/food')
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
       setLoading(false)
     }

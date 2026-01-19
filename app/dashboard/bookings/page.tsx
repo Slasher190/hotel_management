@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
+import Pagination from '@/app/components/Pagination'
 
 interface Booking {
   id: string
@@ -30,15 +31,13 @@ function BookingsContent() {
   const paymentPending = searchParams.get('paymentPending')
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [showAll, setShowAll] = useState(false)
 
-  useEffect(() => {
-    fetchBookings()
-  }, [statusFilter, paymentPending])
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
-      let url = '/api/bookings'
       const params = new URLSearchParams()
       
       if (paymentPending === 'true') {
@@ -47,11 +46,14 @@ function BookingsContent() {
         params.append('status', statusFilter)
       }
       
-      if (params.toString()) {
-        url = `/api/bookings?${params.toString()}`
+      if (showAll) {
+        params.append('showAll', 'true')
+      } else {
+        params.append('page', page.toString())
+        params.append('limit', '20')
       }
       
-      const response = await fetch(url, {
+      const response = await fetch(`/api/bookings?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -59,14 +61,26 @@ function BookingsContent() {
 
       if (response.ok) {
         const data = await response.json()
-        setBookings(data)
+        if (data.bookings) {
+          setBookings(data.bookings)
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages)
+          }
+        } else {
+          // Backward compatibility
+          setBookings(data)
+        }
       }
-    } catch (error) {
-      console.error('Error fetching bookings:', error)
+    } catch {
+      // Error handled by console.error
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter, paymentPending, page, showAll])
+
+  useEffect(() => {
+    fetchBookings()
+  }, [fetchBookings])
 
   if (loading) {
     return <div className="text-center py-8">Loading bookings...</div>
@@ -121,7 +135,7 @@ function BookingsContent() {
         </div>
       </div>
 
-      <div className="flex gap-4 flex-wrap">
+      <div className="flex gap-4 flex-wrap items-center">
         <Link
           href="/dashboard/bookings"
           className={`px-4 py-2 rounded-lg ${
@@ -162,6 +176,19 @@ function BookingsContent() {
         >
           Payment Pending
         </Link>
+        <button
+          onClick={() => {
+            setShowAll(!showAll)
+            setPage(1)
+          }}
+          className={`px-4 py-2 rounded-lg ${
+            showAll
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {showAll ? 'Show Paginated' : 'Show All'}
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
@@ -253,6 +280,13 @@ function BookingsContent() {
             ))}
           </tbody>
         </table>
+        {!showAll && totalPages > 1 && (
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        )}
       </div>
     </div>
   )

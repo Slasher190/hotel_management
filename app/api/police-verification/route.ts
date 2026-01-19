@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { maskIdNumber } from '@/lib/pdf-utils'
+import { Prisma } from '@prisma/client'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    const where: any = {}
+    const where: Prisma.BookingWhereInput = {}
     if (startDate && endDate) {
       where.checkInDate = {
         gte: new Date(startDate),
@@ -56,7 +58,7 @@ export async function GET(request: NextRequest) {
         guest.sNo.toString(),
         guest.name,
         guest.idType,
-        guest.idNumber,
+        maskIdNumber(guest.idNumber, guest.idType), // Mask ID number
       ])
 
       autoTable(doc, {

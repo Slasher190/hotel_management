@@ -118,7 +118,7 @@ export default function SettingsPage() {
         toast.error(errorMsg)
         console.error('Settings save error:', errorMsg)
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred. Please try again.')
     } finally {
       setSaving(false)
@@ -151,7 +151,7 @@ export default function SettingsPage() {
         const data = await response.json()
         toast.error(data.error || 'Failed to add room type')
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred. Please try again.')
     }
   }
@@ -179,7 +179,7 @@ export default function SettingsPage() {
         const data = await response.json()
         toast.error(data.error || 'Failed to delete room type')
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred. Please try again.')
     } finally {
       setDeleteModal({ isOpen: false, roomTypeId: null, roomTypeName: '' })

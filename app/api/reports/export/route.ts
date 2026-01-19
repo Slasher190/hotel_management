@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { Prisma } from '@prisma/client'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import * as XLSX from 'xlsx'
 
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     const start = startOfMonth(month)
     const end = endOfMonth(month)
 
-    const where: any = {
+    const where: Prisma.BookingWhereInput = {
       checkInDate: {
         gte: start,
         lte: end,

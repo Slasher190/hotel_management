@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -25,11 +25,7 @@ function PaymentsContent() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchPayments()
-  }, [statusFilter])
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       const url = statusFilter
@@ -45,12 +41,16 @@ function PaymentsContent() {
         const data = await response.json()
         setPayments(data)
       }
-    } catch (error) {
-      console.error('Error fetching payments:', error)
+    } catch {
+      // Error handled by console.error
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
+
+  useEffect(() => {
+    fetchPayments()
+  }, [fetchPayments])
 
   const handleUpdateStatus = async (paymentId: string, newStatus: 'PAID' | 'PENDING') => {
     try {

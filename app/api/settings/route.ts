@@ -28,10 +28,11 @@ export async function GET(request: NextRequest) {
     let settings = null
     try {
       settings = await prisma.hotelSettings.findFirst()
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       console.error('Database error in GET settings:', dbError)
       // If table doesn't exist, return default values
-      if (dbError.code === 'P2021' || dbError.message?.includes('does not exist')) {
+      const err = dbError as { code?: string; message?: string }
+      if (err.code === 'P2021' || err.message?.includes('does not exist')) {
         return NextResponse.json({
           id: 'default',
           name: 'HOTEL SAMRAT INN',
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
             gstin: '20AAIFH0390N3ZD',
           },
         })
-      } catch (createError: any) {
+      } catch (createError: unknown) {
         console.error('Error creating default settings:', createError)
         // If creation fails, return default values
         return NextResponse.json({
@@ -73,17 +74,18 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(settings)
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; code?: string; meta?: unknown; stack?: string }
     console.error('Error fetching settings:', error)
     console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
+      message: err.message,
+      code: err.code,
+      meta: err.meta,
     })
     return NextResponse.json(
       { 
-        error: error.message || 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: err.message || 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
       },
       { status: 500 }
     )
@@ -131,10 +133,11 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json(settings)
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string }
     console.error('Error updating settings:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: err.message || 'Internal server error' },
       { status: 500 }
     )
   }

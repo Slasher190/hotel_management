@@ -19,26 +19,26 @@ export default function NewRoomPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/room-types', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setRoomTypes(data)
+        }
+      } catch {
+        // Error handled by console.error
+      }
+    }
+
     fetchRoomTypes()
   }, [])
-
-  const fetchRoomTypes = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/room-types', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setRoomTypes(data)
-      }
-    } catch (error) {
-      console.error('Error fetching room types:', error)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,7 +67,7 @@ export default function NewRoomPage() {
       }
 
       router.push('/dashboard/rooms')
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
       setLoading(false)
     }

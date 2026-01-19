@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import toast from 'react-hot-toast'
+import { maskIdNumber } from '@/lib/pdf-utils'
 
 interface Booking {
   id: string
@@ -22,7 +23,6 @@ interface Booking {
 
 export default function PoliceVerificationPage() {
   const router = useRouter()
-  const [bookings, setBookings] = useState<Booking[]>([])
   const [editableBookings, setEditableBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -42,9 +42,9 @@ export default function PoliceVerificationPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setBookings(data)
+        const bookingsData = Array.isArray(data) ? data : (data.bookings || [])
         setEditableBookings(
-          data.map((b: Booking) => ({
+          bookingsData.map((b: Booking) => ({
             ...b,
             idNumber: b.idNumber || '',
           }))
@@ -89,7 +89,7 @@ export default function PoliceVerificationPage() {
         (index + 1).toString(),
         guest.guestName,
         guest.idType,
-        guest.idNumber || 'N/A',
+        maskIdNumber(guest.idNumber, guest.idType), // Mask ID number
       ])
 
       autoTable(doc, {
@@ -204,6 +204,11 @@ export default function PoliceVerificationPage() {
                         className="px-2 py-1 border border-gray-300 rounded text-gray-900 text-sm w-full"
                         placeholder="Enter ID number"
                       />
+                      {booking.idNumber && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Will show as: {maskIdNumber(booking.idNumber, booking.idType)}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {booking.room.roomNumber} ({booking.room.roomType.name})

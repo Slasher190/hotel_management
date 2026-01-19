@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { Prisma, RoomStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,14 +13,14 @@ export async function GET(request: NextRequest) {
     const type = request.nextUrl.searchParams.get('type')
     const status = request.nextUrl.searchParams.get('status')
 
-    const where: any = {}
+    const where: Prisma.RoomWhereInput = {}
     if (type) {
       where.roomType = {
         name: type,
       }
     }
     if (status) {
-      where.status = status
+      where.status = status as RoomStatus
     }
 
     const rooms = await prisma.room.findMany({

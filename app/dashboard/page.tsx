@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 
 interface DashboardStats {
@@ -18,11 +18,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7))
 
-  useEffect(() => {
-    fetchDashboardStats()
-  }, [currentMonth])
-
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       const response = await fetch(`/api/dashboard/stats?month=${currentMonth}`, {
@@ -35,12 +31,16 @@ export default function DashboardPage() {
         const data = await response.json()
         setStats(data)
       }
-    } catch (error) {
-      console.error('Error fetching stats:', error)
+    } catch {
+      // Error handled by console.error
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentMonth])
+
+  useEffect(() => {
+    fetchDashboardStats()
+  }, [fetchDashboardStats])
 
   if (loading) {
     return (

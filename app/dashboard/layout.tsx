@@ -1,25 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
       router.push('/login')
-      return
     }
-
     // Fetch user info (you can create an API endpoint for this)
     // For now, we'll just check if token exists
   }, [router])
@@ -39,18 +36,23 @@ export default function DashboardLayout({
     { href: '/dashboard/tours', label: 'Tours & Travel', icon: '🚌' },
     { href: '/dashboard/reports', label: 'Reports', icon: '📈' },
     { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾' },
+    { href: '/dashboard/bills/history', label: 'Bill History', icon: '📜' },
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
+    { href: '/dashboard/settings/password', label: 'Reset Password', icon: '🔒' },
   ]
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg">
-        <div className="p-6 border-b">
+      <aside className="fixed left-0 top-0 h-full w-64 bg-white shadow-lg flex flex-col">
+        {/* Header - Fixed at top */}
+        <div className="p-6 border-b shrink-0">
           <h2 className="text-xl font-bold text-gray-900">Hotel Management</h2>
           <p className="text-sm text-gray-500 mt-1">Manager Dashboard</p>
         </div>
-        <nav className="p-4 space-y-2">
+        
+        {/* Navigation - Scrollable */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
             return (
@@ -69,10 +71,12 @@ export default function DashboardLayout({
             )
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
+        
+        {/* Logout Button - Fixed at bottom */}
+        <div className="p-4 border-t shrink-0 bg-white">
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="w-full px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
           >
             Logout
           </button>
@@ -86,13 +90,6 @@ export default function DashboardLayout({
             <h1 className="text-2xl font-semibold text-gray-900">
               {navItems.find((item) => pathname === item.href || pathname?.startsWith(item.href + '/'))?.label || 'Dashboard'}
             </h1>
-            {user && (
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">{user.name}</span>
-                <span className="mx-2">•</span>
-                <span>{user.email}</span>
-              </div>
-            )}
           </div>
         </header>
         <main className="p-8">{children}</main>

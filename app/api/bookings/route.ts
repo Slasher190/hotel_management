@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { Prisma, BookingStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,8 +12,11 @@ export async function GET(request: NextRequest) {
 
     const status = request.nextUrl.searchParams.get('status')
     const paymentPending = request.nextUrl.searchParams.get('paymentPending')
+    const page = Number.parseInt(request.nextUrl.searchParams.get('page') || '1')
+    const limit = Number.parseInt(request.nextUrl.searchParams.get('limit') || '20')
+    const showAll = request.nextUrl.searchParams.get('showAll') === 'true'
 
-    const where: any = {}
+    const where: Prisma.BookingWhereInput = {}
     
     // Filter for checked out bookings with pending payment
     if (paymentPending === 'true') {
@@ -23,25 +27,43 @@ export async function GET(request: NextRequest) {
         },
       }
     } else if (status) {
-      where.status = status
+      where.status = status as BookingStatus
     }
 
-    const bookings = await prisma.booking.findMany({
-      where,
-      include: {
-        room: {
-          include: {
-            roomType: true,
-          },
-        },
-        payments: true,
-      },
-      orderBy: {
-        checkInDate: 'desc',
-      },
-    })
+    const skip = showAll ? 0 : (page - 1) * limit
+    const take = showAll ? undefined : limit
 
-    return NextResponse.json(bookings)
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where,
+        include: {
+          room: {
+            include: {
+              roomType: true,
+            },
+          },
+          payments: true,
+        },
+        orderBy: {
+          checkInDate: 'desc',
+        },
+        skip,
+        take,
+      }),
+      showAll ? Promise.resolve(0) : prisma.booking.count({ where }),
+    ])
+
+    return NextResponse.json({
+      bookings,
+      pagination: showAll
+        ? null
+        : {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+    })
   } catch (error) {
     console.error('Error fetching bookings:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
