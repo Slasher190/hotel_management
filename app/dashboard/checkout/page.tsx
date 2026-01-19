@@ -54,76 +54,90 @@ export default function CheckoutListPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-900">Checkout</h2>
+    <div className="space-y-8 fade-in">
+      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+        <div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            ✅ Checkout
+          </h2>
+          <p className="text-slate-600 font-medium">Select a booking to proceed with checkout</p>
+        </div>
         <Link
           href="/dashboard/bookings"
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+          className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
         >
-          View All Bookings
+          📋 View All Bookings
         </Link>
       </div>
 
       {bookings.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-md p-12 text-center">
-          <p className="text-gray-500 text-lg">No active bookings to checkout</p>
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-16 text-center">
+          <div className="text-6xl mb-4">🏨</div>
+          <p className="text-slate-600 text-xl font-semibold mb-6">No active bookings to checkout</p>
           <Link
             href="/dashboard/bookings/new"
-            className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="inline-block px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:scale-105"
           >
-            Create New Booking
+            ➕ Create New Booking
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Guest Name
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  👤 Guest Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Room
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  🏨 Room
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check-In Date
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  📅 Check-In Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Room Price
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  💰 Room Price
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Action
+                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                  ⚡ Action
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-100">
               {bookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {booking.guestName}
+                <tr key={booking.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-slate-900">{booking.guestName}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {booking.room.roomNumber} ({booking.room.roomType.name})
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-slate-700">
+                      <span className="font-bold text-indigo-600">{booking.room.roomNumber}</span>
+                      <span className="text-slate-500"> ({booking.room.roomType.name})</span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(booking.checkInDate).toLocaleString('en-IN', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-slate-600">
+                      {new Date(booking.checkInDate).toLocaleString('en-IN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ₹{booking.roomPrice.toLocaleString('en-IN')}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-slate-900">
+                      ₹{booking.roomPrice.toLocaleString('en-IN')}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
                     <Link
                       href={`/dashboard/checkout/${booking.id}`}
-                      className="text-indigo-600 hover:text-indigo-900 font-semibold"
+                      className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105 inline-flex items-center gap-2"
                     >
-                      Proceed to Checkout →
+                      <span>Proceed to Checkout</span>
+                      <span>→</span>
                     </Link>
                   </td>
                 </tr>

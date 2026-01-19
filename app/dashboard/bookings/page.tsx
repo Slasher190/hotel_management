@@ -101,7 +101,12 @@ function BookingsContent() {
   }, [fetchBookings])
 
   if (loading) {
-    return <div className="text-center py-8">Loading bookings...</div>
+    return (
+      <div className="text-center py-16">
+        <div className="text-6xl mb-4 animate-pulse">📋</div>
+        <div className="text-lg font-semibold text-slate-500">Loading bookings...</div>
+      </div>
+    )
   }
 
   const handlePoliceVerification = async () => {
@@ -134,30 +139,37 @@ function BookingsContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-900">Bookings</h2>
-        <div className="flex gap-2">
+    <div className="space-y-8 fade-in">
+      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+        <div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            📋 Bookings
+          </h2>
+          <p className="text-slate-600 font-medium">Manage all hotel bookings and guest check-ins</p>
+        </div>
+        <div className="flex gap-3">
           <button
             onClick={handlePoliceVerification}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
           >
-            Download Police Verification
+            <span>📄</span>
+            <span>Police Verification</span>
           </button>
           <Link
             href="/dashboard/bookings/new"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
           >
-            + New Check-In
+            <span className="text-xl">➕</span>
+            <span>New Check-In</span>
           </Link>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">🔍 Search</label>
             <input
               type="text"
               value={searchQuery}
@@ -166,14 +178,14 @@ function BookingsContent() {
                 setPage(1)
               }}
               placeholder="Search by guest name..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
           >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
+            {showFilters ? '🙈 Hide Filters' : '🔧 Show Filters'}
           </button>
           {(searchQuery || dateFrom || dateTo || roomNumber) && (
             <button
@@ -184,17 +196,17 @@ function BookingsContent() {
                 setRoomNumber('')
                 setPage(1)
               }}
-              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
             >
-              Clear Filters
+              🗑️ Clear
             </button>
           )}
         </div>
 
         {showFilters && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-slate-200">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Check-In From</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Check-In From</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -202,11 +214,11 @@ function BookingsContent() {
                   setDateFrom(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Check-In To</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Check-In To</label>
               <input
                 type="date"
                 value={dateTo}
@@ -214,11 +226,11 @@ function BookingsContent() {
                   setDateTo(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">🏨 Room Number</label>
               <input
                 type="text"
                 value={roomNumber}
@@ -227,131 +239,138 @@ function BookingsContent() {
                   setPage(1)
                 }}
                 placeholder="Filter by room number..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-4 flex-wrap items-center">
+      <div className="flex gap-3 flex-wrap items-center">
         <Link
           href="/dashboard/bookings"
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             !statusFilter && !paymentPending
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
           All
         </Link>
         <Link
           href="/dashboard/bookings?status=ACTIVE"
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             statusFilter === 'ACTIVE'
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Active
+          ✅ Active
         </Link>
         <Link
           href="/dashboard/bookings?status=CHECKED_OUT"
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             statusFilter === 'CHECKED_OUT' && !paymentPending
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Checked Out
+          🚪 Checked Out
         </Link>
         <Link
           href="/dashboard/bookings?paymentPending=true"
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             paymentPending === 'true'
-              ? 'bg-orange-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Payment Pending
+          ⏳ Payment Pending
         </Link>
         <button
           onClick={() => {
             setShowAll(!showAll)
             setPage(1)
           }}
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             showAll
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-teal-600 to-green-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          {showAll ? 'Show Paginated' : 'Show All'}
+          {showAll ? '📄 Show Paginated' : '📋 Show All'}
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Guest Name
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                👤 Guest Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                🏨 Room
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-In
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                📅 Check-In
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room Price
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                💰 Room Price
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                📊 Status
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+              <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                ⚡ Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-slate-100">
             {bookings.map((booking) => (
-              <tr key={booking.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {booking.guestName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {booking.room.roomNumber} ({booking.room.roomType.name})
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(booking.checkInDate).toLocaleString('en-IN', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ₹{booking.roomPrice.toLocaleString('en-IN')}
+              <tr key={booking.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-bold text-slate-900">{booking.guestName}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex flex-col gap-1">
+                  <div className="text-sm font-medium text-slate-700">
+                    <span className="font-bold text-indigo-600">{booking.room.roomNumber}</span>
+                    <span className="text-slate-500"> ({booking.room.roomType.name})</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-slate-600">
+                    {new Date(booking.checkInDate).toLocaleString('en-IN', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-bold text-slate-900">
+                    ₹{booking.roomPrice.toLocaleString('en-IN')}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex flex-col gap-2">
                     <span
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
                         booking.status === 'ACTIVE'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                          : 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
                       }`}
                     >
                       {booking.status}
                     </span>
                     {booking.status === 'CHECKED_OUT' && booking.payments && booking.payments.length > 0 && (
                       <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
                           booking.payments.some((p) => p.status === 'PENDING')
-                            ? 'bg-orange-100 text-orange-800'
-                            : 'bg-green-100 text-green-800'
+                            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
+                            : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
                         }`}
                       >
                         {booking.payments.some((p) => p.status === 'PENDING') ? 'Payment Pending' : 'Paid'}
@@ -359,20 +378,20 @@ function BookingsContent() {
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-2">
                     {booking.status === 'ACTIVE' && (
                       <>
                         <Link
                           href={`/dashboard/bookings/${booking.id}/add-food`}
-                          className="text-orange-600 hover:text-orange-900"
+                          className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
                           title="Add Food Items"
                         >
                           🍽️
                         </Link>
                         <Link
                           href={`/dashboard/checkout/${booking.id}`}
-                          className="text-indigo-600 hover:text-indigo-900"
+                          className="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
                         >
                           Checkout
                         </Link>
@@ -380,9 +399,9 @@ function BookingsContent() {
                     )}
                     <Link
                       href={`/dashboard/bookings/${booking.id}`}
-                      className="text-gray-600 hover:text-gray-900"
+                      className="px-4 py-1.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg hover:from-slate-600 hover:to-slate-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
                     >
-                      View
+                      👁️ View
                     </Link>
                   </div>
                 </td>

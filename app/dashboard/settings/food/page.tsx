@@ -12,7 +12,7 @@ interface FoodItem {
   enabled: boolean
 }
 
-export default function FoodPage() {
+export default function FoodItemsPage() {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -61,16 +61,21 @@ export default function FoodPage() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading food items...</div>
+    return (
+      <div className="text-center py-16">
+        <div className="text-6xl mb-4 animate-pulse">🍽️</div>
+        <div className="text-lg font-semibold text-slate-500">Loading food items...</div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8 fade-in">
+    <div className="space-y-6">
       <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
         <div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            🍽️ Food Items
-          </h2>
+          <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            🍽️ Food Items Management
+          </h3>
           <p className="text-slate-600 font-medium">Manage your restaurant menu items</p>
         </div>
         <Link

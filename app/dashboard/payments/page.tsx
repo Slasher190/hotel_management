@@ -131,7 +131,12 @@ function PaymentsContent() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading payments...</div>
+    return (
+      <div className="text-center py-16">
+        <div className="text-6xl mb-4 animate-pulse">💳</div>
+        <div className="text-lg font-semibold text-slate-500">Loading payments...</div>
+      </div>
+    )
   }
 
   const pendingTotal = payments
@@ -139,21 +144,27 @@ function PaymentsContent() {
     .reduce((sum, p) => sum + p.amount, 0)
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-900">Payments</h2>
-        {statusFilter === 'PENDING' && (
-          <div className="text-lg font-semibold text-orange-600">
-            Total Pending: ₹{pendingTotal.toLocaleString('en-IN')}
-          </div>
-        )}
+    <div className="space-y-8 fade-in">
+      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+        <div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            💳 Payments
+          </h2>
+          <p className="text-slate-600 font-medium">
+            {statusFilter === 'PENDING' ? (
+              <>Total Pending: <span className="font-bold text-orange-600">₹{pendingTotal.toLocaleString('en-IN')}</span></>
+            ) : (
+              'Manage and track all payment transactions'
+            )}
+          </p>
+        </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">🔍 Search</label>
             <input
               type="text"
               value={searchQuery}
@@ -162,14 +173,14 @@ function PaymentsContent() {
                 setPage(1)
               }}
               placeholder="Search by guest name..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
           >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
+            {showFilters ? '🙈 Hide Filters' : '🔧 Show Filters'}
           </button>
           {(searchQuery || dateFrom || dateTo || paymentMode || minAmount || maxAmount) && (
             <button
@@ -182,17 +193,17 @@ function PaymentsContent() {
                 setMaxAmount('')
                 setPage(1)
               }}
-              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
             >
-              Clear Filters
+              🗑️ Clear
             </button>
           )}
         </div>
 
         {showFilters && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t border-slate-200">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Date From</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -200,11 +211,11 @@ function PaymentsContent() {
                   setDateFrom(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Date To</label>
               <input
                 type="date"
                 value={dateTo}
@@ -212,18 +223,18 @@ function PaymentsContent() {
                   setDateTo(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Mode</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">💳 Payment Mode</label>
               <select
                 value={paymentMode}
                 onChange={(e) => {
                   setPaymentMode(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               >
                 <option value="">All Modes</option>
                 <option value="CASH">Cash</option>
@@ -231,7 +242,7 @@ function PaymentsContent() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Min Amount (₹)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">💰 Min Amount (₹)</label>
               <input
                 type="number"
                 value={minAmount}
@@ -240,11 +251,11 @@ function PaymentsContent() {
                   setPage(1)
                 }}
                 placeholder="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Max Amount (₹)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">💰 Max Amount (₹)</label>
               <input
                 type="number"
                 value={maxAmount}
@@ -253,110 +264,116 @@ function PaymentsContent() {
                   setPage(1)
                 }}
                 placeholder="999999"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-3 flex-wrap">
         <Link
           href="/dashboard/payments"
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-6 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             statusFilter === null
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          All
+          📋 All
         </Link>
         <Link
           href="/dashboard/payments?status=PENDING"
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-6 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             statusFilter === 'PENDING'
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Pending
+          ⏳ Pending
         </Link>
         <Link
           href="/dashboard/payments?status=PAID"
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-6 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             statusFilter === 'PAID'
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Paid
+          ✅ Paid
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Guest
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                👤 Guest
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                🏨 Room
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                💰 Amount
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mode
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                💳 Mode
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                📊 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                📅 Date
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+              <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                ⚡ Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-slate-100">
             {payments.map((payment) => {
               const isUpdating = updatingPaymentId === payment.id
               return (
-              <tr key={payment.id} className={`hover:bg-gray-50 ${isUpdating ? 'opacity-60' : ''}`}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {payment.booking.guestName}
+              <tr key={payment.id} className={`hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200 ${isUpdating ? 'opacity-60' : ''}`}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-bold text-slate-900">{payment.booking.guestName}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {payment.booking.room.roomNumber}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-slate-700">
+                    <span className="font-bold text-indigo-600">{payment.booking.room.roomNumber}</span>
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ₹{payment.amount.toLocaleString('en-IN')}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-bold text-slate-900">
+                    ₹{payment.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {payment.mode}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-slate-600">{payment.mode}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
                       payment.status === 'PAID'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                        : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
                     }`}
                   >
                     {payment.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(payment.createdAt).toLocaleDateString()}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-slate-600">
+                    {new Date(payment.createdAt).toLocaleDateString('en-IN')}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-right">
                   {payment.status === 'PENDING' && (
                     <button
                       onClick={() => handleUpdateStatus(payment.id, 'PAID')}
                       disabled={isUpdating}
-                      className={`text-green-600 hover:text-green-900 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''} flex items-center gap-2`}
+                      className={`px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''} flex items-center gap-2`}
                     >
                       {isUpdating && (
                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -364,14 +381,14 @@ function PaymentsContent() {
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                       )}
-                      Mark Paid
+                      ✅ Mark Paid
                     </button>
                   )}
                   {payment.status === 'PAID' && (
                     <button
                       onClick={() => handleUpdateStatus(payment.id, 'PENDING')}
                       disabled={isUpdating}
-                      className={`text-orange-600 hover:text-orange-900 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''} flex items-center gap-2`}
+                      className={`px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl hover:from-orange-700 hover:to-amber-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''} flex items-center gap-2`}
                     >
                       {isUpdating && (
                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -379,7 +396,7 @@ function PaymentsContent() {
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                       )}
-                      Mark Pending
+                      ⏳ Mark Pending
                     </button>
                   )}
                 </td>

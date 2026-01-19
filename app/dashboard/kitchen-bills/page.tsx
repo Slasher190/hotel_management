@@ -117,100 +117,118 @@ export default function KitchenBillsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-900">Kitchen Bills</h2>
+    <div className="space-y-8 fade-in">
+      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+        <div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            🍳 Kitchen Bills
+          </h2>
+          <p className="text-slate-600 font-medium">View monthly kitchen bills and food invoices</p>
+        </div>
         <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">Month:</label>
+          <label className="text-sm font-semibold text-slate-700">📅 Month:</label>
           <input
             type="month"
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+            className="px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
           />
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Total Invoices</p>
-          <p className="text-2xl font-bold text-gray-900">{summary.totalInvoices}</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8 card-hover">
+          <p className="text-sm font-semibold text-slate-600 mb-2">🧾 Total Invoices</p>
+          <p className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">{summary.totalInvoices}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Total Food Charges</p>
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8 card-hover">
+          <p className="text-sm font-semibold text-slate-600 mb-2">🍽️ Total Food Charges</p>
+          <p className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
             ₹{summary.totalFoodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Total GST</p>
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8 card-hover">
+          <p className="text-sm font-semibold text-slate-600 mb-2">🧾 Total GST</p>
+          <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
             ₹{summary.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-          <p className="text-2xl font-bold text-indigo-600">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8 card-hover">
+          <p className="text-sm font-semibold text-slate-600 mb-2">💰 Total Amount</p>
+          <p className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             ₹{summary.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
       </div>
 
       {/* Invoices Table */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         {invoices.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No kitchen bills found for this month</p>
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">🍳</div>
+            <p className="text-lg font-semibold text-slate-500">No kitchen bills found for this month</p>
+            <p className="text-sm text-slate-400 mt-2">Kitchen bills will appear here once generated</p>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guest Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Room</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Food Charges</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">GST</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">🧾 Invoice #</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">👤 Guest Name</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">🏨 Room</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase">🍽️ Food Charges</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase">🧾 GST</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase">💰 Total</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">📅 Date</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase">⚡ Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-100">
               {invoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {invoice.invoiceNumber}
+                <tr key={invoice.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-slate-900">{invoice.invoiceNumber}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {invoice.guestName}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-slate-900">{invoice.guestName}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {invoice.booking.room.roomNumber} ({invoice.booking.room.roomType.name})
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-slate-700">
+                      <span className="font-bold text-indigo-600">{invoice.booking.room.roomNumber}</span>
+                      <span className="text-slate-500"> ({invoice.booking.room.roomType.name})</span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                    ₹{invoice.foodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-bold text-slate-900">
+                      ₹{invoice.foodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                    ₹{(invoice.gstAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-medium text-slate-600">
+                      ₹{(invoice.gstAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                    ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-bold text-slate-900">
+                      ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(invoice.createdAt).toLocaleDateString('en-IN', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-slate-600">
+                      {new Date(invoice.createdAt).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
                     <button
                       onClick={() => handleDownloadBill(invoice.booking.id)}
-                      className="text-indigo-600 hover:text-indigo-900 font-medium"
+                      className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
                     >
-                      Download
+                      📥 Download
                     </button>
                   </td>
                 </tr>

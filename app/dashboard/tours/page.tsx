@@ -173,7 +173,7 @@ function ToursContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 fade-in">
       <Modal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, bookingId: null, busNumber: '' })}
@@ -185,25 +185,31 @@ function ToursContent() {
         confirmButtonClass="bg-red-600 hover:bg-red-700"
       />
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-900">Tours & Travel - Bus Bookings</h2>
+      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+        <div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            🚌 Tours & Travel - Bus Bookings
+          </h2>
+          <p className="text-slate-600 font-medium">Manage bus bookings for tours and travel</p>
+        </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
         >
-          Add Bus Booking
+          <span className="text-xl">➕</span>
+          <span>Add Bus Booking</span>
         </button>
       </div>
 
-      <div className="flex gap-4 items-center flex-wrap">
+      <div className="flex gap-4 items-center flex-wrap bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
         {!showAll && (
           <>
-            <label className="text-sm font-medium text-gray-700">Select Date:</label>
+            <label className="text-sm font-semibold text-slate-700">📅 Select Date:</label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
+              className="px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
             />
           </>
         )}
@@ -214,76 +220,82 @@ function ToursContent() {
               setSelectedDate(new Date().toISOString().split('T')[0])
             }
           }}
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-6 py-3 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             showAll
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          {showAll ? 'Show by Date' : 'Show All Bookings'}
+          {showAll ? '📅 Show by Date' : '📋 Show All Bookings'}
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="text-sm text-gray-600">Booked Buses</div>
-          <div className="text-3xl font-bold text-green-600">{bookedCount}</div>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8 card-hover">
+          <div className="text-sm font-semibold text-slate-600 mb-2">✅ Booked Buses</div>
+          <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{bookedCount}</div>
         </div>
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="text-sm text-gray-600">Pending Buses</div>
-          <div className="text-3xl font-bold text-orange-600">{pendingCount}</div>
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8 card-hover">
+          <div className="text-sm font-semibold text-slate-600 mb-2">⏳ Pending Buses</div>
+          <div className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">{pendingCount}</div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        <table className="min-w-full divide-y divide-slate-200">
+          <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Bus Number
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                🚌 Bus Number
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                From Date
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                📅 From Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                To Date
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                📅 To Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                📊 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Notes
+              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                📝 Notes
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                Actions
+              <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase">
+                ⚡ Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-slate-100">
             {bookings.map((booking) => (
-              <tr key={booking.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {booking.busNumber}
+              <tr key={booking.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-bold text-slate-900">{booking.busNumber}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(booking.fromDate).toLocaleDateString()}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-slate-600">
+                    {new Date(booking.fromDate).toLocaleDateString('en-IN')}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(booking.toDate).toLocaleDateString()}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-slate-600">
+                    {new Date(booking.toDate).toLocaleDateString('en-IN')}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
                       booking.status === 'BOOKED'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                        : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
                     }`}
                   >
                     {booking.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500">{booking.notes || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-4">
+                  <div className="text-sm font-medium text-slate-600 max-w-xs truncate">{booking.notes || '-'}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() =>
@@ -292,19 +304,19 @@ function ToursContent() {
                           booking.status === 'BOOKED' ? 'PENDING' : 'BOOKED'
                         )
                       }
-                      className={`px-3 py-1 rounded-lg text-xs ${
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all ${
                         booking.status === 'BOOKED'
-                          ? 'bg-orange-600 text-white hover:bg-orange-700'
-                          : 'bg-green-600 text-white hover:bg-green-700'
+                          ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white hover:from-orange-700 hover:to-amber-700'
+                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700'
                       }`}
                     >
-                      Mark {booking.status === 'BOOKED' ? 'Pending' : 'Booked'}
+                      {booking.status === 'BOOKED' ? '⏳ Mark Pending' : '✅ Mark Booked'}
                     </button>
                     <button
                       onClick={() => handleDelete(booking.id, booking.busNumber)}
-                      className="px-3 py-1 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700"
+                      className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl text-xs font-semibold hover:from-red-600 hover:to-pink-600 shadow-md hover:shadow-lg transform hover:scale-105 transition-all"
                     >
-                      Delete
+                      🗑️ Delete
                     </button>
                   </div>
                 </td>
@@ -313,64 +325,71 @@ function ToursContent() {
           </tbody>
         </table>
         {bookings.length === 0 && (
-          <div className="text-center py-8 text-gray-500">No bus bookings found for this date</div>
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">🚌</div>
+            <div className="text-lg font-semibold text-slate-500">No bus bookings found</div>
+            <div className="text-sm text-slate-400 mt-2">Add your first bus booking to get started</div>
+          </div>
         )}
       </div>
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Bus Booking</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-8 max-w-md w-full border-2 border-slate-200">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6 flex items-center gap-2">
+              <span className="text-3xl">🚌</span>
+              <span>Add Bus Booking</span>
+            </h3>
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bus Number *
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  🚌 Bus Number <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.busNumber}
                   onChange={(e) => setFormData({ ...formData, busNumber: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-500"
+                  className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
                   placeholder="Enter bus number"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  From Date *
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  📅 From Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   required
                   value={formData.fromDate}
                   onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  To Date *
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  📅 To Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   required
                   value={formData.toDate}
                   onChange={(e) => setFormData({ ...formData, toDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-3">📊 Status <span className="text-red-500">*</span></label>
                 <select
                   value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value as 'BOOKED' | 'PENDING' })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
+                  className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
                 >
                   <option value="PENDING">Pending</option>
                   <option value="BOOKED">Booked</option>
@@ -378,21 +397,21 @@ function ToursContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-3">📝 Notes</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-500"
+                  className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all resize-none"
                   rows={3}
                 />
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Add Booking
+                  ➕ Add Booking
                 </button>
                 <button
                   type="button"
@@ -406,7 +425,7 @@ function ToursContent() {
                       notes: '',
                     })
                   }}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="flex-1 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 py-3 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
                 >
                   Cancel
                 </button>

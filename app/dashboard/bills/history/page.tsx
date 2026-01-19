@@ -120,25 +120,32 @@ function BillsHistoryContent() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading bill history...</div>
+    return (
+      <div className="text-center py-16">
+        <div className="text-6xl mb-4 animate-pulse">📜</div>
+        <div className="text-lg font-semibold text-slate-500">Loading bill history...</div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 fade-in">
+      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Bill History</h2>
-          <p className="text-gray-600 mt-1">
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            📜 Bill History
+          </h2>
+          <p className="text-slate-600 font-medium">
             View all generated bills - Manual bills, Booking bills (room), and Food bills (kitchen)
           </p>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">🔍 Search</label>
             <input
               type="text"
               value={searchQuery}
@@ -147,14 +154,14 @@ function BillsHistoryContent() {
                 setPage(1)
               }}
               placeholder="Search by guest name or invoice number..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
           >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
+            {showFilters ? '🙈 Hide Filters' : '🔧 Show Filters'}
           </button>
           {(searchQuery || dateFrom || dateTo || minAmount || maxAmount) && (
             <button
@@ -166,17 +173,17 @@ function BillsHistoryContent() {
                 setMaxAmount('')
                 setPage(1)
               }}
-              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
             >
-              Clear Filters
+              🗑️ Clear
             </button>
           )}
         </div>
 
         {showFilters && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t border-slate-200">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Date From</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -184,11 +191,11 @@ function BillsHistoryContent() {
                   setDateFrom(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Date To</label>
               <input
                 type="date"
                 value={dateTo}
@@ -196,11 +203,11 @@ function BillsHistoryContent() {
                   setDateTo(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Min Amount (₹)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">💰 Min Amount (₹)</label>
               <input
                 type="number"
                 value={minAmount}
@@ -209,11 +216,11 @@ function BillsHistoryContent() {
                   setPage(1)
                 }}
                 placeholder="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Max Amount (₹)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">💰 Max Amount (₹)</label>
               <input
                 type="number"
                 value={maxAmount}
@@ -222,18 +229,18 @@ function BillsHistoryContent() {
                   setPage(1)
                 }}
                 placeholder="999999"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">🔀 Sort By</label>
               <select
                 value={sortBy}
                 onChange={(e) => {
                   setSortBy(e.target.value as 'createdAt' | 'totalAmount' | 'guestName')
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               >
                 <option value="createdAt">Date</option>
                 <option value="totalAmount">Amount</option>
@@ -241,14 +248,14 @@ function BillsHistoryContent() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">📊 Order</label>
               <select
                 value={sortOrder}
                 onChange={(e) => {
                   setSortOrder(e.target.value as 'asc' | 'desc')
                   setPage(1)
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
               >
                 <option value="desc">Descending</option>
                 <option value="asc">Ascending</option>
@@ -259,144 +266,150 @@ function BillsHistoryContent() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-4 border-b border-gray-200">
+      <div className="flex gap-3 flex-wrap border-b-2 border-slate-200 pb-2">
         <button
           onClick={() => {
             setFilterType('all')
             setPage(1)
           }}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`px-6 py-3 font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             filterType === 'all'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          All Bills
+          📋 All Bills
         </button>
         <button
           onClick={() => {
             setFilterType('manual')
             setPage(1)
           }}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`px-6 py-3 font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             filterType === 'manual'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Manual Bills (Generate Bill)
+          ✍️ Manual Bills
         </button>
         <button
           onClick={() => {
             setFilterType('booking')
             setPage(1)
           }}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`px-6 py-3 font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             filterType === 'booking'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Booking Bills (Room)
+          🏨 Booking Bills (Room)
         </button>
         <button
           onClick={() => {
             setFilterType('food')
             setPage(1)
           }}
-          className={`px-4 py-2 font-medium transition-colors ${
+          className={`px-6 py-3 font-bold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
             filterType === 'food'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white'
+              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
           }`}
         >
-          Food Bills (Kitchen)
+          🍽️ Food Bills (Kitchen)
         </button>
       </div>
 
       {/* Invoices Table */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice No.
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  🧾 Invoice No.
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Bill Date
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  📅 Bill Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Guest Name
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  👤 Guest Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  🏷️ Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Room
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  🏨 Room
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Amount
+                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                  💰 Total Amount
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                <th className="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">
+                  ⚡ Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-100">
               {invoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-gray-50">
+                <tr key={invoice.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</div>
+                    <div className="text-sm font-bold text-slate-900">{invoice.invoiceNumber}</div>
                     {invoice.billNumber && (
-                      <div className="text-xs text-gray-500">Sr. No: {invoice.billNumber}</div>
+                      <div className="text-xs text-slate-500 font-medium">Sr. No: {invoice.billNumber}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {invoice.billDate
-                      ? new Date(invoice.billDate).toLocaleDateString('en-IN')
-                      : new Date(invoice.createdAt).toLocaleDateString('en-IN')}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-slate-600">
+                      {invoice.billDate
+                        ? new Date(invoice.billDate).toLocaleDateString('en-IN')
+                        : new Date(invoice.createdAt).toLocaleDateString('en-IN')}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {invoice.guestName}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-slate-900">{invoice.guestName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {(() => {
                       if (invoice.isManual) {
                         return (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                          <span className="px-3 py-1.5 text-xs font-bold rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md">
                             Manual
                           </span>
                         )
                       }
                       if (invoice.invoiceType === 'FOOD') {
                         return (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                          <span className="px-3 py-1.5 text-xs font-bold rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md">
                             {invoice.invoiceType}
                           </span>
                         )
                       }
                       return (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                        <span className="px-3 py-1.5 text-xs font-bold rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md">
                           {invoice.invoiceType}
                         </span>
                       )
                     })()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {invoice.booking
-                      ? `${invoice.booking.room.roomNumber} (${invoice.booking.room.roomType.name})`
-                      : invoice.roomType || 'N/A'}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-slate-600">
+                      {invoice.booking
+                        ? `${invoice.booking.room.roomNumber} (${invoice.booking.room.roomType.name})`
+                        : invoice.roomType || 'N/A'}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                    ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-bold text-slate-900">
+                      ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
                     <button
                       onClick={handleDownload}
-                      className="text-indigo-600 hover:text-indigo-900"
+                      className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
                     >
-                      Download
+                      📥 Download
                     </button>
                   </td>
                 </tr>
@@ -406,7 +419,11 @@ function BillsHistoryContent() {
         </div>
 
         {invoices.length === 0 && (
-          <div className="text-center py-12 text-gray-500">No invoices found</div>
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">📭</div>
+            <div className="text-lg font-semibold text-slate-500">No invoices found</div>
+            <div className="text-sm text-slate-400 mt-2">Try adjusting your filters</div>
+          </div>
         )}
       </div>
 
