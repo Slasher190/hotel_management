@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
       idType,
       idNumber,
       additionalGuests,
+      additionalGuestCharges,
       mattresses,
       roomPrice,
     } = await request.json()
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest) {
         idType: idType as 'AADHAAR' | 'DL' | 'VOTER_ID' | 'PASSPORT' | 'OTHER',
         idNumber: idNumber || null,
         additionalGuests: parseInt(additionalGuests) || 0,
+        additionalGuestCharges: parseFloat(additionalGuestCharges) || 0,
         mattresses: parseInt(mattresses) || 0,
         roomPrice: parseFloat(roomPrice),
         status: 'ACTIVE',
