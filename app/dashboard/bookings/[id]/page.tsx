@@ -139,13 +139,19 @@ export default function BookingDetailPage() {
     setSaving(true)
     try {
       const token = localStorage.getItem('token')
+      // Prepare data, handling empty checkoutDate
+      const dataToSend = {
+        ...editData,
+        checkoutDate: editData.checkoutDate || null,
+      }
+      
       const response = await fetch(`/api/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(editData),
+        body: JSON.stringify(dataToSend),
       })
 
       if (response.ok) {
@@ -158,7 +164,8 @@ export default function BookingDetailPage() {
         const errorData = await response.json().catch(() => ({}))
         toast.error(errorData.error || 'Failed to update booking')
       }
-    } catch {
+    } catch (error) {
+      console.error('Error updating booking:', error)
       toast.error('An error occurred while updating booking')
     } finally {
       setSaving(false)
@@ -367,7 +374,15 @@ export default function BookingDetailPage() {
               <input
                 type="datetime-local"
                 value={editData.checkInDate}
-                onChange={(e) => setEditData({ ...editData, checkInDate: e.target.value })}
+                max={editData.checkoutDate || undefined}
+                onChange={(e) => {
+                  const selectedDateTime = e.target.value
+                  if (!editData.checkoutDate || selectedDateTime <= editData.checkoutDate) {
+                    setEditData({ ...editData, checkInDate: selectedDateTime })
+                  } else {
+                    toast.error('Check-In date cannot be after Checkout date')
+                  }
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
               />
             </div>
@@ -377,7 +392,15 @@ export default function BookingDetailPage() {
                 <input
                   type="datetime-local"
                   value={editData.checkoutDate}
-                  onChange={(e) => setEditData({ ...editData, checkoutDate: e.target.value })}
+                  min={editData.checkInDate || undefined}
+                  onChange={(e) => {
+                    const selectedDateTime = e.target.value
+                    if (!editData.checkInDate || selectedDateTime >= editData.checkInDate) {
+                      setEditData({ ...editData, checkoutDate: selectedDateTime })
+                    } else {
+                      toast.error('Checkout date cannot be before Check-In date')
+                    }
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
                 />
               </div>

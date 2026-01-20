@@ -208,9 +208,15 @@ function PaymentsContent() {
                 id="dateFrom"
                 type="date"
                 value={dateFrom}
+                max={dateTo || new Date().toISOString().split('T')[0]}
                 onChange={(e) => {
-                  setDateFrom(e.target.value)
-                  setPage(1)
+                  const selectedDate = e.target.value
+                  if (!dateTo || selectedDate <= dateTo) {
+                    setDateFrom(selectedDate)
+                    setPage(1)
+                  } else {
+                    toast.error('Date From cannot be after Date To')
+                  }
                 }}
                 className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />
@@ -221,9 +227,16 @@ function PaymentsContent() {
                 id="dateTo"
                 type="date"
                 value={dateTo}
+                min={dateFrom || undefined}
+                max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => {
-                  setDateTo(e.target.value)
-                  setPage(1)
+                  const selectedDate = e.target.value
+                  if (!dateFrom || selectedDate >= dateFrom) {
+                    setDateTo(selectedDate)
+                    setPage(1)
+                  } else {
+                    toast.error('Date To cannot be before Date From')
+                  }
                 }}
                 className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />

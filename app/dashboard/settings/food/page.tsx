@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import Modal from '@/app/components/Modal'
 
 interface FoodItem {
   id: string
@@ -16,6 +17,11 @@ interface FoodItem {
 export default function FoodItemsPage() {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; foodId: string | null; foodName: string }>({
+    isOpen: false,
+    foodId: null,
+    foodName: '',
+  })
 
   useEffect(() => {
     fetchFoodItems()
@@ -75,8 +81,44 @@ export default function FoodItemsPage() {
     )
   }
 
+  const confirmDeleteFood = async () => {
+    if (!deleteModal.foodId) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/food/${deleteModal.foodId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        toast.success('Food item deleted successfully!')
+        fetchFoodItems()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to delete food item')
+      }
+    } catch {
+      toast.error('An error occurred while deleting food item')
+    } finally {
+      setDeleteModal({ isOpen: false, foodId: null, foodName: '' })
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <>
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, foodId: null, foodName: '' })}
+        onConfirm={confirmDeleteFood}
+        title="Delete Food Item"
+        message={`Are you sure you want to delete "${deleteModal.foodName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-[#8E0E1C] hover:opacity-90"
+      />
+      <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
           <h3 className="text-xl sm:text-2xl font-bold text-[#111827] mb-2">
@@ -149,12 +191,20 @@ export default function FoodItemsPage() {
                     </button>
                   </td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                    <Link
-                      href={`/dashboard/food/${item.id}/edit`}
-                      className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
-                    >
-                      ✏️ Edit
-                    </Link>
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/dashboard/food/${item.id}/edit`}
+                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
+                      >
+                        ✏️ Edit
+                      </Link>
+                      <button
+                        onClick={() => setDeleteModal({ isOpen: true, foodId: item.id, foodName: item.name })}
+                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -170,5 +220,6 @@ export default function FoodItemsPage() {
         )}
       </div>
     </div>
+    </>
   )
 }

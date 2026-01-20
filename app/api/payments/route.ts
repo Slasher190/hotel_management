@@ -37,10 +37,23 @@ export async function GET(request: NextRequest) {
     if (dateFrom || dateTo) {
       where.createdAt = {}
       if (dateFrom) {
-        where.createdAt.gte = new Date(dateFrom)
+        // dateFrom should be the start of the day (00:00:00)
+        const fromDate = new Date(dateFrom)
+        fromDate.setHours(0, 0, 0, 0)
+        where.createdAt.gte = fromDate
       }
       if (dateTo) {
-        where.createdAt.lte = new Date(dateTo)
+        // dateTo should be the end of the day (23:59:59)
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        where.createdAt.lte = toDate
+      }
+      // Validate date range: dateFrom should be <= dateTo
+      if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+        return NextResponse.json(
+          { error: 'Date From must be less than or equal to Date To' },
+          { status: 400 }
+        )
       }
     }
     if (minAmount || maxAmount) {

@@ -551,9 +551,9 @@ export default function BillGeneratorPage() {
 
             <div className="space-y-4 sm:space-y-5">
               <div className="bg-[#F8FAFC] rounded-lg p-4 sm:p-6 border border-[#CBD5E1]">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-semibold text-[#64748B]">🏨 Room Charges</span>
-                  <span className="text-sm font-bold text-[#111827]">
+                  <div className="flex justify-between items-center mb-3 gap-2">
+                  <span className="text-sm font-semibold text-[#64748B] flex-shrink-0">🏨 Room Charges</span>
+                  <span className="text-sm font-bold text-[#111827] break-words text-right min-w-0">
                     ₹{calculations.roomCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -626,9 +626,9 @@ export default function BillGeneratorPage() {
               )}
 
               <div className="bg-[#8E0E1C] rounded-lg p-4 sm:p-6 border border-[#8E0E1C]">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-lg sm:text-xl font-bold text-white">💰 Total Amount</span>
-                  <span className="text-2xl sm:text-3xl font-bold text-white">
+                <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                  <span className="text-lg sm:text-xl font-bold text-white flex-shrink-0">💰 Total Amount</span>
+                  <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white break-words text-right min-w-0">
                     ₹{calculations.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>

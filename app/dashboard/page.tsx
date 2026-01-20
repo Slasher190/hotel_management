@@ -111,8 +111,8 @@ export default function DashboardPage() {
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#8E0E1C] rounded-lg flex items-center justify-center text-2xl sm:text-3xl">
                   {card.icon}
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
+                <div className="text-right min-w-0 flex-1">
+                  <div className="text-xl sm:text-2xl lg:text-4xl font-bold text-[#111827] break-words">
                     {card.value}
                   </div>
                   <div className="text-xs sm:text-sm font-medium text-[#64748B] mt-2">{card.title}</div>

@@ -108,34 +108,6 @@ function BookingsContent() {
     )
   }
 
-  const handlePoliceVerification = async () => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch('/api/police-verification?format=pdf', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = globalThis.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `police-verification-${Date.now()}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        globalThis.URL.revokeObjectURL(url)
-        a.remove()
-        toast.success('Police verification report downloaded successfully!')
-      } else {
-        toast.error('Failed to generate police verification report')
-      }
-    } catch (error) {
-      console.error('Error generating police verification:', error)
-      toast.error('An error occurred while generating the report')
-    }
-  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -147,13 +119,13 @@ function BookingsContent() {
           <p className="text-sm sm:text-base text-[#64748B] font-medium">Manage all hotel bookings and guest check-ins</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
-          <button
-            onClick={handlePoliceVerification}
+          <Link
+            href="/dashboard/police-verification"
             className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
             <span>📄</span>
             <span>Police Verification</span>
-          </button>
+          </Link>
           <Link
             href="/dashboard/bookings/new"
             className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
@@ -211,9 +183,15 @@ function BookingsContent() {
                 id="dateFrom"
                 type="date"
                 value={dateFrom}
+                max={dateTo || undefined}
                 onChange={(e) => {
-                  setDateFrom(e.target.value)
-                  setPage(1)
+                  const selectedDate = e.target.value
+                  if (!dateTo || selectedDate <= dateTo) {
+                    setDateFrom(selectedDate)
+                    setPage(1)
+                  } else {
+                    toast.error('Check-In From cannot be after Check-In To')
+                  }
                 }}
                 className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />
@@ -224,9 +202,15 @@ function BookingsContent() {
                 id="dateTo"
                 type="date"
                 value={dateTo}
+                min={dateFrom || undefined}
                 onChange={(e) => {
-                  setDateTo(e.target.value)
-                  setPage(1)
+                  const selectedDate = e.target.value
+                  if (!dateFrom || selectedDate >= dateFrom) {
+                    setDateTo(selectedDate)
+                    setPage(1)
+                  } else {
+                    toast.error('Check-In To cannot be before Check-In From')
+                  }
                 }}
                 className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />

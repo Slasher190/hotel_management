@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import Modal from '@/app/components/Modal'
 
 interface Invoice {
   id: string
@@ -43,6 +44,11 @@ export default function KitchenBillsPage() {
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7)
   )
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; invoiceId: string | null; invoiceNumber: string }>({
+    isOpen: false,
+    invoiceId: null,
+    invoiceNumber: '',
+  })
 
   useEffect(() => {
     fetchKitchenBills()
@@ -112,6 +118,32 @@ export default function KitchenBillsPage() {
     }
   }
 
+  const confirmDeleteInvoice = async () => {
+    if (!deleteModal.invoiceId) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/invoices/${deleteModal.invoiceId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        toast.success('Kitchen bill deleted successfully!')
+        fetchKitchenBills()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to delete kitchen bill')
+      }
+    } catch {
+      toast.error('An error occurred while deleting kitchen bill')
+    } finally {
+      setDeleteModal({ isOpen: false, invoiceId: null, invoiceNumber: '' })
+    }
+  }
+
   if (loading) {
     return (
       <div className="text-center py-16">
@@ -122,7 +154,18 @@ export default function KitchenBillsPage() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <>
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, invoiceId: null, invoiceNumber: '' })}
+        onConfirm={confirmDeleteInvoice}
+        title="Delete Kitchen Bill"
+        message={`Are you sure you want to delete invoice "${deleteModal.invoiceNumber}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-[#8E0E1C] hover:opacity-90"
+      />
+      <div className="space-y-6 sm:space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
           <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
@@ -206,18 +249,18 @@ export default function KitchenBillsPage() {
                         <span className="text-[#64748B]"> ({invoice.booking.room.roomType.name})</span>
                       </div>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                      <div className="text-sm font-bold text-[#111827]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                      <div className="text-sm font-bold text-[#111827] break-words">
                         ₹{invoice.foodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right hidden md:table-cell">
-                      <div className="text-sm font-medium text-[#64748B]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right hidden md:table-cell">
+                      <div className="text-sm font-medium text-[#64748B] break-words">
                         ₹{(invoice.gstAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                      <div className="text-sm font-bold text-[#111827]">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
+                      <div className="text-sm font-bold text-[#111827] break-words">
                         ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
@@ -231,12 +274,20 @@ export default function KitchenBillsPage() {
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={() => handleDownloadBill(invoice.booking.id)}
-                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
-                      >
-                        📥 Download
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleDownloadBill(invoice.booking.id)}
+                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
+                        >
+                          📥 Download
+                        </button>
+                        <button
+                          onClick={() => setDeleteModal({ isOpen: true, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber })}
+                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -246,5 +297,6 @@ export default function KitchenBillsPage() {
         )}
       </div>
     </div>
+    </>
   )
 }

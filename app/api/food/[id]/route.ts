@@ -63,3 +63,38 @@ export async function PUT(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = getAuthUser(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id } = await params
+
+    // Check if food item is used in any orders
+    const ordersCount = await prisma.foodOrder.count({
+      where: { foodItemId: id },
+    })
+
+    if (ordersCount > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete food item that has been used in orders' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.foodItem.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ message: 'Food item deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting food item:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
