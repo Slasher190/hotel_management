@@ -105,33 +105,43 @@ function ReportsContent() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading reports...</div>
+    return (
+      <div className="text-center py-16">
+        <div className="text-6xl mb-4">📊</div>
+        <div className="text-lg font-semibold text-[#64748B]">Loading reports...</div>
+      </div>
+    )
   }
 
   if (!reportData) {
-    return <div className="text-center py-8">No data available</div>
+    return (
+      <div className="text-center py-16">
+        <div className="text-6xl mb-4">📊</div>
+        <div className="text-lg font-semibold text-[#64748B]">No data available</div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8 fade-in">
-      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             📊 Reports
           </h2>
-          <p className="text-slate-600 font-medium">View and export monthly booking reports</p>
+          <p className="text-sm sm:text-base text-[#64748B] font-medium">View and export monthly booking reports</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => handleExport('excel')}
-            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
             <span>📊</span>
             <span>Export Excel</span>
           </button>
           <button
             onClick={() => handleExport('csv')}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
             <span>📄</span>
             <span>Export CSV</span>
@@ -139,58 +149,59 @@ function ReportsContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 card-hover">
-          <div className="text-sm font-semibold text-slate-600 mb-2">📋 Total Bookings</div>
-          <div className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">{reportData.summary.totalBookings}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+          <div className="text-sm font-semibold text-[#64748B] mb-2">📋 Total Bookings</div>
+          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">{reportData.summary.totalBookings}</div>
         </div>
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 card-hover">
-          <div className="text-sm font-semibold text-slate-600 mb-2">💰 Total Revenue</div>
-          <div className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+          <div className="text-sm font-semibold text-[#64748B] mb-2">💰 Total Revenue</div>
+          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
             ₹{reportData.summary.totalRevenue.toLocaleString('en-IN')}
           </div>
         </div>
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 card-hover">
-          <div className="text-sm font-semibold text-slate-600 mb-2">🧾 GST Revenue</div>
-          <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+          <div className="text-sm font-semibold text-[#64748B] mb-2">🧾 GST Revenue</div>
+          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
             ₹{reportData.summary.gstRevenue.toLocaleString('en-IN')}
           </div>
         </div>
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6 card-hover">
-          <div className="text-sm font-semibold text-slate-600 mb-2">⏳ Pending Payments</div>
-          <div className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+          <div className="text-sm font-semibold text-[#64748B] mb-2">⏳ Pending Payments</div>
+          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
             ₹{reportData.summary.pendingAmount.toLocaleString('en-IN')}
           </div>
         </div>
       </div>
 
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8">
-        <div className="flex gap-6 mb-6 flex-wrap">
+      <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 flex-wrap">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">📅 Month</label>
+            <label htmlFor="month" className="block text-sm font-semibold text-[#111827] mb-3">📅 Month</label>
             <input
+              id="month"
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">🔧 Filters</label>
-            <div className="flex gap-4 items-center">
-              <label className="flex items-center p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-all">
+            <label className="block text-sm font-semibold text-[#111827] mb-3">🔧 Filters</label>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <label className="flex items-center p-3 bg-[#F8FAFC] rounded-lg cursor-pointer hover:bg-[#F1F5F9] transition-colors duration-150 border border-[#CBD5E1]">
                 <input
                   type="checkbox"
                   checked={gstFilter}
                   onChange={(e) => setGstFilter(e.target.checked)}
-                  className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                  className="w-5 h-5 text-[#8E0E1C] border-[#CBD5E1] rounded focus:ring-[#8E0E1C] cursor-pointer"
                 />
-                <span className="ml-3 text-sm font-semibold text-slate-900">🧾 GST Only</span>
+                <span className="ml-3 text-sm font-semibold text-[#111827]">🧾 GST Only</span>
               </label>
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="px-5 py-3 border-2 border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="px-4 py-3 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               >
                 <option value="">All Payments</option>
                 <option value="PAID">Paid Only</option>
@@ -201,54 +212,54 @@ function ReportsContent() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
+          <table className="min-w-full divide-y divide-[#CBD5E1]">
+            <thead className="bg-[#8E0E1C]">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
                   👤 Guest
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
                   🏨 Room
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase hidden sm:table-cell">
                   📅 Check-In
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
                   💰 Amount
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase">
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
                   💳 Payment
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-slate-100">
+            <tbody className="bg-white divide-y divide-[#CBD5E1]">
               {reportData.bookings.map((booking) => {
                 const invoice = booking.invoices[0]
                 const payment = booking.payments[0]
                 return (
-                  <tr key={booking.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-slate-900">{booking.guestName}</div>
+                  <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">{booking.guestName}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-700">{booking.room.roomNumber}</div>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-[#111827]">{booking.room.roomNumber}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-600">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                      <div className="text-sm font-medium text-[#64748B]">
                         {new Date(booking.checkInDate).toLocaleDateString('en-IN')}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-slate-900">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">
                         ₹{(invoice?.totalAmount || booking.roomPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
+                        className={`px-2 py-1 text-xs font-bold rounded-full ${
                           payment?.status === 'PAID'
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                            : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
+                            ? 'bg-[#64748B] text-white'
+                            : 'bg-[#8E0E1C] text-white'
                         }`}
                       >
                         {payment?.status || 'N/A'}
@@ -260,6 +271,12 @@ function ReportsContent() {
             </tbody>
           </table>
         </div>
+        {reportData.bookings.length === 0 && (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">📊</div>
+            <div className="text-lg font-semibold text-[#64748B]">No bookings found for this month</div>
+          </div>
+        )}
       </div>
     </div>
   )

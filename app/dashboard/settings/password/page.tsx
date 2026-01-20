@@ -101,33 +101,33 @@ export default function PasswordResetPage() {
   }
 
   return (
-    <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden card-hover">
-      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 px-8 py-5">
-        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-          <span className="text-3xl">🔒</span>
+    <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+      <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+        <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+          <span className="text-2xl sm:text-3xl">🔒</span>
           Password Reset
         </h3>
       </div>
-      <div className="p-8">
+      <div className="p-6 sm:p-8">
         {/* Mode Toggle */}
         <div className="mb-6">
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => setMode('old')}
-              className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+              className={`flex-1 px-4 py-3 sm:px-6 sm:py-3 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] ${
                 mode === 'old'
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                  : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+                  ? 'bg-[#8E0E1C] text-white'
+                  : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
               }`}
             >
               🔑 Reset with Old Password
             </button>
             <button
               onClick={() => setMode('secret')}
-              className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+              className={`flex-1 px-4 py-3 sm:px-6 sm:py-3 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] ${
                 mode === 'secret'
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                  : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+                  ? 'bg-[#8E0E1C] text-white'
+                  : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
               }`}
             >
               🔐 Reset with Secret (Forgotten Password)
@@ -138,8 +138,8 @@ export default function PasswordResetPage() {
         {mode === 'old' ? (
           <form onSubmit={handleResetWithOldPassword} className="space-y-6">
             <div>
-              <label htmlFor="oldPassword" className="block text-sm font-semibold text-slate-700 mb-3">
-                🔑 Old Password <span className="text-red-500">*</span>
+              <label htmlFor="oldPassword" className="block text-sm font-semibold text-[#111827] mb-3">
+                🔑 Old Password <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="oldPassword"
@@ -147,13 +147,13 @@ export default function PasswordResetPage() {
                 required
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="Enter your current password"
               />
             </div>
             <div>
-              <label htmlFor="newPasswordOld" className="block text-sm font-semibold text-slate-700 mb-3">
-                🔒 New Password <span className="text-red-500">*</span>
+              <label htmlFor="newPasswordOld" className="block text-sm font-semibold text-[#111827] mb-3">
+                🔒 New Password <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="newPasswordOld"
@@ -161,14 +161,14 @@ export default function PasswordResetPage() {
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="Enter new password (min 6 characters)"
                 minLength={6}
               />
             </div>
             <div>
-              <label htmlFor="confirmPasswordOld" className="block text-sm font-semibold text-slate-700 mb-3">
-                🔒 Confirm New Password <span className="text-red-500">*</span>
+              <label htmlFor="confirmPasswordOld" className="block text-sm font-semibold text-[#111827] mb-3">
+                🔒 Confirm New Password <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="confirmPasswordOld"
@@ -176,7 +176,7 @@ export default function PasswordResetPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="Confirm new password"
                 minLength={6}
               />
@@ -184,7 +184,7 @@ export default function PasswordResetPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 sm:px-8 sm:py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
             >
               {loading ? (
                 <>
@@ -205,8 +205,8 @@ export default function PasswordResetPage() {
         ) : (
           <form onSubmit={handleResetWithSecret} className="space-y-6">
             <div>
-              <label htmlFor="resetEmail" className="block text-sm font-semibold text-slate-700 mb-3">
-                📧 Email <span className="text-red-500">*</span>
+              <label htmlFor="resetEmail" className="block text-sm font-semibold text-[#111827] mb-3">
+                📧 Email <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="resetEmail"
@@ -214,13 +214,13 @@ export default function PasswordResetPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="Enter your email"
               />
             </div>
             <div>
-              <label htmlFor="secretPassword" className="block text-sm font-semibold text-slate-700 mb-3">
-                🔐 Secret Password <span className="text-red-500">*</span>
+              <label htmlFor="secretPassword" className="block text-sm font-semibold text-[#111827] mb-3">
+                🔐 Secret Password <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="secretPassword"
@@ -228,14 +228,14 @@ export default function PasswordResetPage() {
                 required
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="Enter secret password"
               />
-              <p className="text-xs text-slate-500 mt-2 font-medium">💡 Contact admin for the secret password</p>
+              <p className="text-xs text-[#64748B] mt-2 font-medium">💡 Contact admin for the secret password</p>
             </div>
             <div>
-              <label htmlFor="newPasswordSecret" className="block text-sm font-semibold text-slate-700 mb-3">
-                🔒 New Password <span className="text-red-500">*</span>
+              <label htmlFor="newPasswordSecret" className="block text-sm font-semibold text-[#111827] mb-3">
+                🔒 New Password <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="newPasswordSecret"
@@ -243,14 +243,14 @@ export default function PasswordResetPage() {
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="Enter new password (min 6 characters)"
                 minLength={6}
               />
             </div>
             <div>
-              <label htmlFor="confirmPasswordSecret" className="block text-sm font-semibold text-slate-700 mb-3">
-                🔒 Confirm New Password <span className="text-red-500">*</span>
+              <label htmlFor="confirmPasswordSecret" className="block text-sm font-semibold text-[#111827] mb-3">
+                🔒 Confirm New Password <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="confirmPasswordSecret"
@@ -258,7 +258,7 @@ export default function PasswordResetPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="Confirm new password"
                 minLength={6}
               />
@@ -266,7 +266,7 @@ export default function PasswordResetPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 sm:px-8 sm:py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
             >
               {loading ? (
                 <>

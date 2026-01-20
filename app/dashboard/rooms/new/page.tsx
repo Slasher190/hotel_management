@@ -76,40 +76,40 @@ export default function NewRoomPage() {
   }
 
   return (
-    <div className="space-y-8 fade-in">
-      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             ➕ Add New Room
           </h2>
-          <p className="text-slate-600 font-medium">Create a new room for your hotel</p>
+          <p className="text-sm sm:text-base text-[#64748B] font-medium">Create a new room for your hotel</p>
         </div>
         <button
           onClick={() => router.back()}
-          className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+          className="px-4 py-2 sm:px-6 sm:py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
         >
           ← Back
         </button>
       </div>
 
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden card-hover">
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-5">
-          <h3 className="text-xl font-bold text-white flex items-center gap-3">
-            <span className="text-3xl">🏨</span>
+      <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+        <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+          <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+            <span className="text-2xl sm:text-3xl">🏨</span>
             Room Information
           </h3>
         </div>
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border-2 border-red-200 text-red-700 px-6 py-4 rounded-xl font-semibold">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg font-semibold">
                 ⚠️ {error}
               </div>
             )}
 
             <div>
-              <label htmlFor="roomNumber" className="block text-sm font-semibold text-slate-700 mb-3">
-                🏨 Room Number <span className="text-red-500">*</span>
+              <label htmlFor="roomNumber" className="block text-sm font-semibold text-[#111827] mb-3">
+                🏨 Room Number <span className="text-[#8E0E1C]">*</span>
               </label>
               <input
                 id="roomNumber"
@@ -117,21 +117,21 @@ export default function NewRoomPage() {
                 required
                 value={formData.roomNumber}
                 onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 placeholder="e.g., 101, 201, 301"
               />
             </div>
 
             <div>
-              <label htmlFor="roomTypeId" className="block text-sm font-semibold text-slate-700 mb-3">
-                🏷️ Room Type <span className="text-red-500">*</span>
+              <label htmlFor="roomTypeId" className="block text-sm font-semibold text-[#111827] mb-3">
+                🏷️ Room Type <span className="text-[#8E0E1C]">*</span>
               </label>
               <select
                 id="roomTypeId"
                 required
                 value={formData.roomTypeId}
                 onChange={(e) => setFormData({ ...formData, roomTypeId: e.target.value })}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               >
                 <option value="">Select room type</option>
                 {roomTypes.map((rt) => (
@@ -141,13 +141,13 @@ export default function NewRoomPage() {
                 ))}
               </select>
               {roomTypes.length === 0 && (
-                <div className="mt-3 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+                <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm font-semibold text-yellow-800">
                     ⚠️ No room types available. Please add room types in{' '}
                     <button
                       type="button"
                       onClick={() => router.push('/dashboard/settings/room-types')}
-                      className="text-indigo-600 hover:text-indigo-800 underline font-bold"
+                      className="text-[#8E0E1C] hover:opacity-80 underline font-bold transition-opacity duration-150"
                     >
                       Settings
                     </button>{' '}
@@ -157,11 +157,11 @@ export default function NewRoomPage() {
               )}
             </div>
 
-            <div className="flex gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                className="flex-1 px-6 py-3 sm:px-8 sm:py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
               >
                 {loading ? (
                   <>
@@ -181,7 +181,7 @@ export default function NewRoomPage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 px-8 py-4 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-bold shadow-md hover:shadow-lg transform hover:scale-105"
+                className="flex-1 px-6 py-3 sm:px-8 sm:py-4 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-bold min-h-[44px]"
               >
                 Cancel
               </button>

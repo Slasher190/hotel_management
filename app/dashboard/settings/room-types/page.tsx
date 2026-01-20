@@ -117,25 +117,25 @@ export default function RoomTypesPage() {
         message={`Are you sure you want to delete "${deleteModal.roomTypeName}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
-        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        confirmButtonClass="bg-[#8E0E1C] hover:opacity-90"
       />
 
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden card-hover">
-        <div className="bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 px-8 py-5">
-          <h3 className="text-xl font-bold text-white flex items-center gap-3">
-            <span className="text-3xl">🏷️</span>
+      <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+        <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+          <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+            <span className="text-2xl sm:text-3xl">🏷️</span>
             Room Types
           </h3>
         </div>
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           <div className="space-y-6">
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={newRoomType}
                 onChange={(e) => setNewRoomType(e.target.value)}
                 placeholder="Enter room type (e.g., AC, Non-AC, Deluxe, Single Bed)"
-                className="flex-1 px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="flex-1 px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleAddRoomType()
@@ -144,7 +144,7 @@ export default function RoomTypesPage() {
               />
               <button
                 onClick={handleAddRoomType}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="px-6 py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[44px]"
               >
                 ➕ Add
               </button>
@@ -154,19 +154,19 @@ export default function RoomTypesPage() {
               {roomTypes.map((roomType) => (
                 <div
                   key={roomType.id}
-                  className="flex justify-between items-center p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border-2 border-slate-200 hover:shadow-md transition-all"
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]"
                 >
-                  <span className="text-slate-900 font-bold text-lg">{roomType.name}</span>
+                  <span className="text-[#111827] font-bold text-base sm:text-lg">{roomType.name}</span>
                   <button
                     onClick={() => handleDeleteRoomType(roomType.id, roomType.name)}
-                    className="px-5 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105"
+                    className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-sm min-h-[44px] w-full sm:w-auto"
                   >
                     🗑️ Delete
                   </button>
                 </div>
               ))}
               {roomTypes.length === 0 && (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-[#64748B]">
                   <div className="text-4xl mb-2">🏷️</div>
                   <div>No room types added yet</div>
                 </div>

@@ -85,7 +85,6 @@ function BookingsContent() {
             setTotalPages(data.pagination.totalPages)
           }
         } else {
-          // Backward compatibility
           setBookings(data)
         }
       }
@@ -103,8 +102,8 @@ function BookingsContent() {
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="text-6xl mb-4 animate-pulse">📋</div>
-        <div className="text-lg font-semibold text-slate-500">Loading bookings...</div>
+        <div className="text-6xl mb-4">📋</div>
+        <div className="text-lg font-semibold text-[#64748B]">Loading bookings...</div>
       </div>
     )
   }
@@ -139,25 +138,25 @@ function BookingsContent() {
   }
 
   return (
-    <div className="space-y-8 fade-in">
-      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             📋 Bookings
           </h2>
-          <p className="text-slate-600 font-medium">Manage all hotel bookings and guest check-ins</p>
+          <p className="text-sm sm:text-base text-[#64748B] font-medium">Manage all hotel bookings and guest check-ins</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handlePoliceVerification}
-            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
             <span>📄</span>
             <span>Police Verification</span>
           </button>
           <Link
             href="/dashboard/bookings/new"
-            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
             <span className="text-xl">➕</span>
             <span>New Check-In</span>
@@ -166,11 +165,12 @@ function BookingsContent() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">🔍 Search</label>
+      <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label htmlFor="search" className="block text-sm font-semibold text-[#111827] mb-2">🔍 Search</label>
             <input
+              id="search"
               type="text"
               value={searchQuery}
               onChange={(e) => {
@@ -178,12 +178,12 @@ function BookingsContent() {
                 setPage(1)
               }}
               placeholder="Search by guest name..."
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+            className="px-4 py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
           >
             {showFilters ? '🙈 Hide Filters' : '🔧 Show Filters'}
           </button>
@@ -196,7 +196,7 @@ function BookingsContent() {
                 setRoomNumber('')
                 setPage(1)
               }}
-              className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+              className="px-4 py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
             >
               🗑️ Clear
             </button>
@@ -204,34 +204,37 @@ function BookingsContent() {
         </div>
 
         {showFilters && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-slate-200">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t border-[#CBD5E1]">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Check-In From</label>
+              <label htmlFor="dateFrom" className="block text-sm font-semibold text-[#111827] mb-2">📅 Check-In From</label>
               <input
+                id="dateFrom"
                 type="date"
                 value={dateFrom}
                 onChange={(e) => {
                   setDateFrom(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">📅 Check-In To</label>
+              <label htmlFor="dateTo" className="block text-sm font-semibold text-[#111827] mb-2">📅 Check-In To</label>
               <input
+                id="dateTo"
                 type="date"
                 value={dateTo}
                 onChange={(e) => {
                   setDateTo(e.target.value)
                   setPage(1)
                 }}
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">🏨 Room Number</label>
+              <label htmlFor="roomNumber" className="block text-sm font-semibold text-[#111827] mb-2">🏨 Room Number</label>
               <input
+                id="roomNumber"
                 type="text"
                 value={roomNumber}
                 onChange={(e) => {
@@ -239,50 +242,50 @@ function BookingsContent() {
                   setPage(1)
                 }}
                 placeholder="Filter by room number..."
-                className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-3 flex-wrap items-center">
+      <div className="flex gap-2 sm:gap-3 flex-wrap items-center">
         <Link
           href="/dashboard/bookings"
-          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
             !statusFilter && !paymentPending
-              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+              ? 'bg-[#8E0E1C] text-white'
+              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
           }`}
         >
           All
         </Link>
         <Link
           href="/dashboard/bookings?status=ACTIVE"
-          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
             statusFilter === 'ACTIVE'
-              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
-              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+              ? 'bg-[#8E0E1C] text-white'
+              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
           }`}
         >
           ✅ Active
         </Link>
         <Link
           href="/dashboard/bookings?status=CHECKED_OUT"
-          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
             statusFilter === 'CHECKED_OUT' && !paymentPending
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
-              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+              ? 'bg-[#8E0E1C] text-white'
+              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
           }`}
         >
           🚪 Checked Out
         </Link>
         <Link
           href="/dashboard/bookings?paymentPending=true"
-          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
             paymentPending === 'true'
-              ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white'
-              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+              ? 'bg-[#8E0E1C] text-white'
+              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
           }`}
         >
           ⏳ Payment Pending
@@ -292,129 +295,137 @@ function BookingsContent() {
             setShowAll(!showAll)
             setPage(1)
           }}
-          className={`px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
             showAll
-              ? 'bg-gradient-to-r from-teal-600 to-green-600 text-white'
-              : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+              ? 'bg-[#8E0E1C] text-white'
+              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
           }`}
         >
           {showAll ? '📄 Show Paginated' : '📋 Show All'}
         </button>
       </div>
 
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                👤 Guest Name
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                🏨 Room
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                📅 Check-In
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                💰 Room Price
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                📊 Status
-              </th>
-              <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                ⚡ Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-slate-100">
-            {bookings.map((booking) => (
-              <tr key={booking.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-bold text-slate-900">{booking.guestName}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-slate-700">
-                    <span className="font-bold text-indigo-600">{booking.room.roomNumber}</span>
-                    <span className="text-slate-500"> ({booking.room.roomType.name})</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-slate-600">
-                    {new Date(booking.checkInDate).toLocaleString('en-IN', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-bold text-slate-900">
-                    ₹{booking.roomPrice.toLocaleString('en-IN')}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex flex-col gap-2">
-                    <span
-                      className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
-                        booking.status === 'ACTIVE'
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                          : 'bg-gradient-to-r from-slate-400 to-slate-500 text-white'
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
-                    {booking.status === 'CHECKED_OUT' && booking.payments && booking.payments.length > 0 && (
+      <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-[#CBD5E1]">
+            <thead className="bg-[#8E0E1C]">
+              <tr>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  👤 Guest Name
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  🏨 Room
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider hidden sm:table-cell">
+                  📅 Check-In
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  💰 Room Price
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  📊 Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                  ⚡ Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-[#CBD5E1]">
+              {bookings.map((booking) => (
+                <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-[#111827]">{booking.guestName}</div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-[#111827]">
+                      <span className="font-bold text-[#8E0E1C]">{booking.room.roomNumber}</span>
+                      <span className="text-[#64748B]"> ({booking.room.roomType.name})</span>
+                    </div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                    <div className="text-sm font-medium text-[#64748B]">
+                      {new Date(booking.checkInDate).toLocaleString('en-IN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-[#111827]">
+                      ₹{booking.roomPrice.toLocaleString('en-IN')}
+                    </div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-2">
                       <span
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
-                          booking.payments.some((p) => p.status === 'PENDING')
-                            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
-                            : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                        className={`px-2 py-1 text-xs font-bold rounded-full ${
+                          booking.status === 'ACTIVE'
+                            ? 'bg-[#8E0E1C] text-white'
+                            : 'bg-[#64748B] text-white'
                         }`}
                       >
-                        {booking.payments.some((p) => p.status === 'PENDING') ? 'Payment Pending' : 'Paid'}
+                        {booking.status}
                       </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {booking.status === 'ACTIVE' && (
-                      <>
-                        <Link
-                          href={`/dashboard/bookings/${booking.id}/add-food`}
-                          className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg hover:from-orange-600 hover:to-amber-600 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
-                          title="Add Food Items"
+                      {booking.status === 'CHECKED_OUT' && booking.payments && booking.payments.length > 0 && (
+                        <span
+                          className={`px-2 py-1 text-xs font-bold rounded-full ${
+                            booking.payments.some((p) => p.status === 'PENDING')
+                              ? 'bg-[#8E0E1C] text-white'
+                              : 'bg-[#64748B] text-white'
+                          }`}
                         >
-                          🍽️
-                        </Link>
-                        <Link
-                          href={`/dashboard/checkout/${booking.id}`}
-                          className="px-4 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
-                        >
-                          Checkout
-                        </Link>
-                      </>
-                    )}
-                    <Link
-                      href={`/dashboard/bookings/${booking.id}`}
-                      className="px-4 py-1.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-lg hover:from-slate-600 hover:to-slate-700 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
-                    >
-                      👁️ View
-                    </Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                          {booking.payments.some((p) => p.status === 'PENDING') ? 'Payment Pending' : 'Paid'}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-2 flex-wrap">
+                      {booking.status === 'ACTIVE' && (
+                        <>
+                          <Link
+                            href={`/dashboard/bookings/${booking.id}/add-food`}
+                            className="px-3 py-1.5 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                            title="Add Food Items"
+                          >
+                            🍽️
+                          </Link>
+                          <Link
+                            href={`/dashboard/checkout/${booking.id}`}
+                            className="px-3 py-1.5 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                          >
+                            Checkout
+                          </Link>
+                        </>
+                      )}
+                      <Link
+                        href={`/dashboard/bookings/${booking.id}`}
+                        className="px-3 py-1.5 bg-[#64748B] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                      >
+                        👁️ View
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {!showAll && totalPages > 1 && (
           <Pagination
             currentPage={page}
             totalPages={totalPages}
             onPageChange={setPage}
           />
+        )}
+        {bookings.length === 0 && (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">📋</div>
+            <div className="text-lg font-semibold text-[#64748B]">No bookings found</div>
+          </div>
         )}
       </div>
     </div>

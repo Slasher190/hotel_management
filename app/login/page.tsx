@@ -31,9 +31,8 @@ export default function LoginPage() {
         return
       }
 
-      // Store token in both localStorage (for client-side) and cookie (for server-side)
       localStorage.setItem('token', data.token)
-      document.cookie = `token=${data.token}; path=/; max-age=604800` // 7 days
+      document.cookie = `token=${data.token}; path=/; max-age=604800`
       router.push('/dashboard')
     } catch {
       setError('An error occurred. Please try again.')
@@ -42,34 +41,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
-
-      <div className="max-w-md w-full bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-10 relative z-10 border border-white/20">
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-            <span className="text-4xl">🏨</span>
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4 py-8">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-sm border border-[#CBD5E1] p-8 sm:p-10">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-[#8E0E1C] rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🏨</span>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-[#111827] mb-2">
             Hotel Management
           </h1>
-          <p className="text-slate-600 font-medium">Sign in to access your dashboard</p>
+          <p className="text-[#64748B] font-medium">Sign in to access your dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl font-medium animate-fade-in">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg font-medium">
               ⚠️ {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-semibold text-[#111827] mb-2">
               📧 Email Address
             </label>
             <input
@@ -78,13 +70,13 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] text-[#111827] placeholder:text-[#94A3B8] font-medium bg-white"
               placeholder="manager@hotel.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-[#111827] mb-2">
               🔒 Password
             </label>
             <input
@@ -93,7 +85,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 placeholder:text-slate-400 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] text-[#111827] placeholder:text-[#94A3B8] font-medium bg-white"
               placeholder="Enter your password"
             />
           </div>
@@ -101,7 +93,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+            className="w-full bg-[#8E0E1C] text-white py-3 rounded-lg font-semibold transition-opacity duration-150 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
           >
             {loading ? (
               <>
@@ -121,38 +113,12 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-8 text-center">
-          <Link href="/" className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center justify-center gap-2">
+          <Link href="/" className="text-[#8E0E1C] hover:opacity-80 text-sm font-medium flex items-center justify-center gap-2 transition-opacity duration-150">
             <span>←</span>
             <span>Back to Home</span>
           </Link>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   )
 }

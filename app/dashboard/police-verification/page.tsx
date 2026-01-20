@@ -89,7 +89,7 @@ export default function PoliceVerificationPage() {
         (index + 1).toString(),
         guest.guestName,
         guest.idType,
-        maskIdNumber(guest.idNumber, guest.idType), // Mask ID number
+        maskIdNumber(guest.idNumber, guest.idType),
       ])
 
       autoTable(doc, {
@@ -97,7 +97,7 @@ export default function PoliceVerificationPage() {
         head: [['S.No.', 'Name', 'ID Type', 'ID Number']],
         body: tableData,
         theme: 'striped',
-        headStyles: { fillColor: [99, 102, 241] },
+        headStyles: { fillColor: [142, 14, 28] },
       })
 
       const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
@@ -122,26 +122,26 @@ export default function PoliceVerificationPage() {
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="text-6xl mb-4 animate-pulse">📄</div>
-        <div className="text-lg font-semibold text-slate-500">Loading active bookings...</div>
+        <div className="text-6xl mb-4">📄</div>
+        <div className="text-lg font-semibold text-[#64748B]">Loading active bookings...</div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 fade-in">
-      <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             📄 Police Verification
           </h2>
-          <p className="text-slate-600 font-medium">Edit guest details before downloading the daily record</p>
+          <p className="text-sm sm:text-base text-[#64748B] font-medium">Edit guest details before downloading the daily record</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={handleDownload}
             disabled={saving || editableBookings.length === 0}
-            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
             {saving ? (
               <>
@@ -160,16 +160,16 @@ export default function PoliceVerificationPage() {
           </button>
           <button
             onClick={() => router.back()}
-            className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
           >
             ← Back
           </button>
         </div>
       </div>
 
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8">
-        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
-          <p className="text-sm font-semibold text-slate-700">
+      <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
+        <div className="mb-6 p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]">
+          <p className="text-sm font-semibold text-[#111827]">
             💡 <span className="font-bold">Tip:</span> Edit guest details before downloading. You can remove bookings that should not be included in the police verification record.
           </p>
         </div>
@@ -177,78 +177,78 @@ export default function PoliceVerificationPage() {
         {editableBookings.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">📄</div>
-            <div className="text-lg font-semibold text-slate-500 mb-2">No active bookings found</div>
-            <div className="text-sm text-slate-400">Create a booking first to generate police verification records</div>
+            <div className="text-lg font-semibold text-[#64748B] mb-2">No active bookings found</div>
+            <div className="text-sm text-[#94A3B8]">Create a booking first to generate police verification records</div>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
+            <table className="min-w-full divide-y divide-[#CBD5E1]">
+              <thead className="bg-[#8E0E1C]">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                     S.No.
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                     👤 Name
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                     🆔 ID Type
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                     🔢 ID Number
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider hidden sm:table-cell">
                     🏨 Room
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider hidden md:table-cell">
                     📅 Check-In
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
                     ⚡ Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-slate-100">
+              <tbody className="bg-white divide-y divide-[#CBD5E1]">
                 {editableBookings.map((booking, index) => (
-                  <tr key={booking.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-slate-900">{index + 1}</div>
+                  <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">{index + 1}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <input
                         type="text"
                         value={booking.guestName}
                         onChange={(e) => handleUpdateBooking(index, 'guestName', e.target.value)}
-                        className="px-4 py-2 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all w-full"
+                        className="px-3 py-2 sm:px-4 sm:py-2 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white w-full"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-700">{booking.idType}</div>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-[#111827]">{booking.idType}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div>
                         <input
                           type="text"
                           value={booking.idNumber || ''}
                           onChange={(e) => handleUpdateBooking(index, 'idNumber', e.target.value)}
-                          className="px-4 py-2 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all w-full"
+                          className="px-3 py-2 sm:px-4 sm:py-2 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white w-full"
                           placeholder="Enter ID number"
                         />
                         {booking.idNumber && (
-                          <div className="text-xs text-slate-500 mt-1 font-medium">
+                          <div className="text-xs text-[#64748B] mt-1 font-medium">
                             Will show as: <span className="font-bold">{maskIdNumber(booking.idNumber, booking.idType)}</span>
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-700">
-                        <span className="font-bold text-indigo-600">{booking.room.roomNumber}</span>
-                        <span className="text-slate-500"> ({booking.room.roomType.name})</span>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                      <div className="text-sm font-medium text-[#111827]">
+                        <span className="font-bold text-[#8E0E1C]">{booking.room.roomNumber}</span>
+                        <span className="text-[#64748B]"> ({booking.room.roomType.name})</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-600">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
+                      <div className="text-sm font-medium text-[#64748B]">
                         {new Date(booking.checkInDate).toLocaleDateString('en-IN', {
                           year: 'numeric',
                           month: 'short',
@@ -256,10 +256,10 @@ export default function PoliceVerificationPage() {
                         })}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleRemoveBooking(index)}
-                        className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
+                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
                       >
                         🗑️ Remove
                       </button>

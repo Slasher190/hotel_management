@@ -90,20 +90,20 @@ export default function HotelInfoPage() {
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="text-6xl mb-4 animate-pulse">⚙️</div>
-        <div className="text-lg font-semibold text-slate-500">Loading settings...</div>
+        <div className="text-6xl mb-4">⚙️</div>
+        <div className="text-lg font-semibold text-[#64748B]">Loading settings...</div>
       </div>
     )
   }
 
   if (!settings) {
     return (
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-8 text-center">
+      <div className="bg-white rounded-lg border border-[#CBD5E1] p-8 text-center">
         <div className="text-6xl mb-4">⚠️</div>
-        <div className="text-lg font-semibold text-slate-700 mb-4">Failed to load settings</div>
+        <div className="text-lg font-semibold text-[#111827] mb-4">Failed to load settings</div>
         <button
           onClick={fetchSettings}
-          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+          className="px-6 py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[44px]"
         >
           🔄 Retry
         </button>
@@ -112,59 +112,59 @@ export default function HotelInfoPage() {
   }
 
   return (
-    <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden card-hover">
-      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-5">
-        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-          <span className="text-3xl">🏨</span>
+    <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+      <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+        <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+          <span className="text-2xl sm:text-3xl">🏨</span>
           Hotel Information
         </h3>
       </div>
-      <div className="p-8">
+      <div className="p-6 sm:p-8">
         <div className="space-y-6">
           <div>
-            <label htmlFor="hotelName" className="block text-sm font-semibold text-slate-700 mb-3">
-              🏨 Hotel Name <span className="text-red-500">*</span>
+            <label htmlFor="hotelName" className="block text-sm font-semibold text-[#111827] mb-3">
+              🏨 Hotel Name <span className="text-[#8E0E1C]">*</span>
             </label>
             <input
               id="hotelName"
               type="text"
               value={settings.name}
               onChange={(e) => setSettings({ ...settings, name: e.target.value })}
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="hotelAddress" className="block text-sm font-semibold text-slate-700 mb-3">
-              📍 Address <span className="text-red-500">*</span>
+            <label htmlFor="hotelAddress" className="block text-sm font-semibold text-[#111827] mb-3">
+              📍 Address <span className="text-[#8E0E1C]">*</span>
             </label>
             <textarea
               id="hotelAddress"
               value={settings.address}
               onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all resize-none"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white resize-none"
               rows={3}
               required
             />
           </div>
 
           <div>
-            <label htmlFor="hotelPhone" className="block text-sm font-semibold text-slate-700 mb-3">
-              📱 Phone <span className="text-red-500">*</span>
+            <label htmlFor="hotelPhone" className="block text-sm font-semibold text-[#111827] mb-3">
+              📱 Phone <span className="text-[#8E0E1C]">*</span>
             </label>
             <input
               id="hotelPhone"
               type="text"
               value={settings.phone}
               onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="hotelEmail" className="block text-sm font-semibold text-slate-700 mb-3">
+            <label htmlFor="hotelEmail" className="block text-sm font-semibold text-[#111827] mb-3">
               📧 Email
             </label>
             <input
@@ -172,12 +172,12 @@ export default function HotelInfoPage() {
               type="email"
               value={settings.email || ''}
               onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
             />
           </div>
 
           <div>
-            <label htmlFor="hotelGstin" className="block text-sm font-semibold text-slate-700 mb-3">
+            <label htmlFor="hotelGstin" className="block text-sm font-semibold text-[#111827] mb-3">
               🧾 GSTIN
             </label>
             <input
@@ -185,14 +185,14 @@ export default function HotelInfoPage() {
               type="text"
               value={settings.gstin || ''}
               onChange={(e) => setSettings({ ...settings, gstin: e.target.value })}
-              className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
             />
           </div>
 
           <button
             onClick={handleSaveSettings}
             disabled={saving}
-            className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+            className="w-full sm:w-auto px-8 py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
           >
             {saving ? (
               <>

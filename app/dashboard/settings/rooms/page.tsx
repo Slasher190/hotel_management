@@ -81,8 +81,8 @@ export default function RoomsManagementPage() {
   if (loading) {
     return (
       <div className="text-center py-16">
-        <div className="text-6xl mb-4 animate-pulse">🏨</div>
-        <div className="text-lg font-semibold text-slate-500">Loading rooms...</div>
+        <div className="text-6xl mb-4">🏨</div>
+        <div className="text-lg font-semibold text-[#64748B]">Loading rooms...</div>
       </div>
     )
   }
@@ -97,81 +97,83 @@ export default function RoomsManagementPage() {
         message={`Are you sure you want to delete room "${deleteModal.roomNumber}"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
-        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        confirmButtonClass="bg-[#8E0E1C] hover:opacity-90"
       />
 
       <div className="space-y-6">
-        <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
           <div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <h3 className="text-xl sm:text-2xl font-bold text-[#111827] mb-2">
               🏨 Room Management
             </h3>
-            <p className="text-slate-600 font-medium">Manage all your hotel rooms and their availability</p>
+            <p className="text-sm sm:text-base text-[#64748B] font-medium">Manage all your hotel rooms and their availability</p>
           </div>
           <Link
             href="/dashboard/rooms/new"
-            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
             <span className="text-xl">➕</span>
             <span>Add Room</span>
           </Link>
         </div>
 
-        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                  🏨 Room Number
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                  🏷️ Type
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                  📊 Status
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                  ⚡ Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-100">
-              {rooms.map((room) => (
-                <tr key={room.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-slate-900">{room.roomNumber}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-slate-700">{room.roomType.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
-                        room.status === 'AVAILABLE'
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                          : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
-                      }`}
-                    >
-                      {room.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <button
-                      onClick={() => handleDelete(room.id, room.roomNumber)}
-                      className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
-                    >
-                      🗑️ Delete
-                    </button>
-                  </td>
+        <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[#CBD5E1]">
+              <thead className="bg-[#8E0E1C]">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    🏨 Room Number
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    🏷️ Type
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    📊 Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                    ⚡ Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-[#CBD5E1]">
+                {rooms.map((room) => (
+                  <tr key={room.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">{room.roomNumber}</div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-[#111827]">{room.roomType.name}</div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-1 text-xs font-bold rounded-full ${
+                          room.status === 'AVAILABLE'
+                            ? 'bg-[#64748B] text-white'
+                            : 'bg-[#8E0E1C] text-white'
+                        }`}
+                      >
+                        {room.status}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => handleDelete(room.id, room.roomNumber)}
+                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px]"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {rooms.length === 0 && (
             <div className="text-center py-16">
               <div className="text-6xl mb-4">🏨</div>
-              <div className="text-lg font-semibold text-slate-500">No rooms found</div>
-              <div className="text-sm text-slate-400 mt-2">Add your first room to get started</div>
+              <div className="text-lg font-semibold text-[#64748B]">No rooms found</div>
+              <div className="text-sm text-[#94A3B8] mt-2">Add your first room to get started</div>
             </div>
           )}
         </div>

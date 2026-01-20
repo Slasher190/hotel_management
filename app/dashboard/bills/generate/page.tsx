@@ -25,7 +25,7 @@ export default function BillGeneratorPage() {
     additionalGuestCharges: '0',
     additionalGuests: '0',
     gstEnabled: false,
-    showGst: false, // Default unchecked
+    showGst: false,
     gstPercent: '5',
     gstNumber: '',
     advanceAmount: '0',
@@ -34,7 +34,6 @@ export default function BillGeneratorPage() {
   })
   const [loading, setLoading] = useState(false)
 
-  // Calculate totals in real-time
   const calculations = useMemo(() => {
     const roomCharges = Number.parseFloat(formData.roomCharges) || 0
     const tariff = Number.parseFloat(formData.tariff) || 0
@@ -128,19 +127,19 @@ export default function BillGeneratorPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-8 fade-in">
+    <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-6 sm:pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             🧾 Generate Bill
           </h2>
-          <p className="text-slate-600 mt-1 font-medium">Create independent bills with no constraints - completely isolated from booking system</p>
+          <p className="text-sm sm:text-base text-[#64748B] mt-1 font-medium">Create independent bills with no constraints - completely isolated from booking system</p>
         </div>
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-6 py-3 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 rounded-xl hover:from-slate-200 hover:to-slate-300 transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-105"
+          className="px-4 py-2 sm:px-6 sm:py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
         >
           ← Back
         </button>
@@ -151,54 +150,54 @@ export default function BillGeneratorPage() {
         <div className="lg:col-span-2 space-y-6">
           <form onSubmit={handleGenerate} className="space-y-6">
             {/* Bill Information Section */}
-            <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden card-hover">
-              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-5">
-                <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                  <span className="text-3xl">📄</span>
+            <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+              <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                  <span className="text-2xl sm:text-3xl">📄</span>
                   Bill Information
                 </h3>
               </div>
-              <div className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 sm:p-8">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
-                      🆔 Booking ID <span className="text-slate-400 text-xs font-normal">(Optional)</span>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">
+                      🆔 Booking ID <span className="text-[#64748B] text-xs font-normal">(Optional)</span>
                     </label>
                     <input
                       type="text"
                       value={formData.bookingId}
                       onChange={(e) => setFormData({ ...formData, bookingId: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Leave empty for standalone bill"
                     />
-                    <p className="text-xs text-slate-500 mt-2 font-medium">
+                    <p className="text-xs text-[#64748B] mt-2 font-medium">
                       💡 All bills are saved in Bill History
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">
                       🧾 Bill Number
                     </label>
                     <input
                       type="text"
                       value={formData.billNumber}
                       onChange={(e) => setFormData({ ...formData, billNumber: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Visitor's Register Sr. No."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
-                      📅 Bill Date <span className="text-red-500">*</span>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">
+                      📅 Bill Date <span className="text-[#8E0E1C]">*</span>
                     </label>
                     <input
                       type="date"
                       required
                       value={formData.billDate}
                       onChange={(e) => setFormData({ ...formData, billDate: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                     />
                   </div>
                 </div>
@@ -206,115 +205,115 @@ export default function BillGeneratorPage() {
             </div>
 
             {/* Guest Information Section */}
-            <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden card-hover">
-              <div className="bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 px-8 py-5">
-                <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                  <span className="text-3xl">👤</span>
+            <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+              <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                  <span className="text-2xl sm:text-3xl">👤</span>
                   Guest Information
                 </h3>
               </div>
-              <div className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
-                      👤 Guest Name <span className="text-red-500">*</span>
+              <div className="p-6 sm:p-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">
+                      👤 Guest Name <span className="text-[#8E0E1C]">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={formData.guestName}
                       onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Enter guest name"
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">📍 Guest Address</label>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">📍 Guest Address</label>
                     <textarea
                       value={formData.guestAddress}
                       onChange={(e) => setFormData({ ...formData, guestAddress: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all resize-none"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white resize-none"
                       rows={3}
                       placeholder="Enter complete address"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">🗺️ State/Region</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🗺️ State/Region</label>
                     <input
                       type="text"
                       value={formData.guestState}
                       onChange={(e) => setFormData({ ...formData, guestState: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Enter state/region"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">🌍 Nationality</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🌍 Nationality</label>
                     <input
                       type="text"
                       value={formData.guestNationality}
                       onChange={(e) => setFormData({ ...formData, guestNationality: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="e.g., Indian"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">📱 Mobile Number</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">📱 Mobile Number</label>
                     <input
                       type="text"
                       value={formData.guestMobile}
                       onChange={(e) => setFormData({ ...formData, guestMobile: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Enter mobile number"
                     />
                   </div>
 
                   {formData.showGst && (
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-3">🧾 Guest GST Number</label>
+                      <label className="block text-sm font-semibold text-[#111827] mb-3">🧾 Guest GST Number</label>
                       <input
                         type="text"
                         value={formData.guestGstNumber}
                         onChange={(e) => setFormData({ ...formData, guestGstNumber: e.target.value })}
-                        className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                        className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="Enter GST number"
                       />
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">🔢 State Code</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🔢 State Code</label>
                     <input
                       type="text"
                       value={formData.guestStateCode}
                       onChange={(e) => setFormData({ ...formData, guestStateCode: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Enter state code"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">🏢 Company Name</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🏢 Company Name</label>
                     <input
                       type="text"
                       value={formData.companyName}
                       onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Enter company name"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">🆔 Company Code/ID</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🆔 Company Code/ID</label>
                     <input
                       type="text"
                       value={formData.companyCode}
                       onChange={(e) => setFormData({ ...formData, companyCode: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Enter company code"
                     />
                   </div>
@@ -323,21 +322,21 @@ export default function BillGeneratorPage() {
             </div>
 
             {/* Charges Section */}
-            <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden card-hover">
-              <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-8 py-5">
-                <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                  <span className="text-3xl">💰</span>
+            <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+              <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                  <span className="text-2xl sm:text-3xl">💰</span>
                   Charges & Payment
                 </h3>
               </div>
-              <div className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-6 sm:p-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
-                      🏨 Room Charges <span className="text-red-500">*</span>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">
+                      🏨 Room Charges <span className="text-[#8E0E1C]">*</span>
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-600 font-bold text-lg">₹</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
                       <input
                         type="number"
                         required
@@ -345,110 +344,110 @@ export default function BillGeneratorPage() {
                         step="0.01"
                         value={formData.roomCharges}
                         onChange={(e) => setFormData({ ...formData, roomCharges: e.target.value })}
-                        className="w-full pl-10 pr-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">💵 Tariff</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">💵 Tariff</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-600 font-bold text-lg">₹</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={formData.tariff}
                         onChange={(e) => setFormData({ ...formData, tariff: e.target.value })}
-                        className="w-full pl-10 pr-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">🍽️ Food Charges</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🍽️ Food Charges</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-600 font-bold text-lg">₹</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={formData.foodCharges}
                         onChange={(e) => setFormData({ ...formData, foodCharges: e.target.value })}
-                        className="w-full pl-10 pr-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">👥 Additional Guests</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">👥 Additional Guests</label>
                     <input
                       type="number"
                       min="0"
                       step="1"
                       value={formData.additionalGuests}
                       onChange={(e) => setFormData({ ...formData, additionalGuests: e.target.value })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="0"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">💰 Additional Guest Charges (per guest)</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">💰 Additional Guest Charges (per guest)</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-600 font-bold text-lg">₹</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={formData.additionalGuestCharges}
                         onChange={(e) => setFormData({ ...formData, additionalGuestCharges: e.target.value })}
-                        className="w-full pl-10 pr-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">💳 Advance Amount</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">💳 Advance Amount</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-600 font-bold text-lg">₹</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={formData.advanceAmount}
                         onChange={(e) => setFormData({ ...formData, advanceAmount: e.target.value })}
-                        className="w-full pl-10 pr-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">🔄 Round Off</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🔄 Round Off</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-600 font-bold text-lg">₹</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
                       <input
                         type="number"
                         step="0.01"
                         value={formData.roundOff}
                         onChange={(e) => setFormData({ ...formData, roundOff: e.target.value })}
-                        className="w-full pl-10 pr-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="0.00"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">💳 Payment Mode</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">💳 Payment Mode</label>
                     <select
                       value={formData.paymentMode}
                       onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value as 'CASH' | 'ONLINE' })}
-                      className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                     >
                       <option value="CASH">Cash</option>
                       <option value="ONLINE">Online</option>
@@ -457,38 +456,38 @@ export default function BillGeneratorPage() {
                 </div>
 
                 {/* GST Section */}
-                <div className="mt-8 pt-8 border-t-2 border-slate-200">
+                <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-[#CBD5E1]">
                   <div className="space-y-4">
-                    <div className="flex items-center p-4 bg-slate-50 rounded-xl">
+                    <div className="flex items-center p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]">
                       <input
                         type="checkbox"
                         id="showGst"
                         checked={formData.showGst}
                         onChange={(e) => setFormData({ ...formData, showGst: e.target.checked })}
-                        className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                        className="w-5 h-5 text-[#8E0E1C] border-[#CBD5E1] rounded focus:ring-[#8E0E1C] cursor-pointer"
                       />
-                      <label htmlFor="showGst" className="ml-3 text-sm font-semibold text-slate-900 cursor-pointer">
+                      <label htmlFor="showGst" className="ml-3 text-sm font-semibold text-[#111827] cursor-pointer">
                         🧾 Show GST on Bill (Default: Unchecked)
                       </label>
                     </div>
-                    <div className="flex items-center p-4 bg-slate-50 rounded-xl">
+                    <div className="flex items-center p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]">
                       <input
                         type="checkbox"
                         id="gstEnabled"
                         checked={formData.gstEnabled}
                         onChange={(e) => setFormData({ ...formData, gstEnabled: e.target.checked })}
-                        className="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                        className="w-5 h-5 text-[#8E0E1C] border-[#CBD5E1] rounded focus:ring-[#8E0E1C] cursor-pointer"
                       />
-                      <label htmlFor="gstEnabled" className="ml-3 text-sm font-semibold text-slate-900 cursor-pointer">
+                      <label htmlFor="gstEnabled" className="ml-3 text-sm font-semibold text-[#111827] cursor-pointer">
                         ➕ Include GST in Calculation
                       </label>
                     </div>
                   </div>
 
                   {formData.showGst && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-3">📊 GST Percentage (%)</label>
+                        <label className="block text-sm font-semibold text-[#111827] mb-3">📊 GST Percentage (%)</label>
                         <input
                           type="number"
                           min="0"
@@ -496,17 +495,17 @@ export default function BillGeneratorPage() {
                           step="0.01"
                           value={formData.gstPercent}
                           onChange={(e) => setFormData({ ...formData, gstPercent: e.target.value })}
-                          className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                          className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                           placeholder="5"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-3">🆔 GST Number</label>
+                        <label className="block text-sm font-semibold text-[#111827] mb-3">🆔 GST Number</label>
                         <input
                           type="text"
                           value={formData.gstNumber}
                           onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
-                          className="w-full px-5 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium bg-white shadow-sm hover:shadow-md transition-all"
+                          className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                           placeholder="Enter GST number"
                         />
                       </div>
@@ -521,7 +520,7 @@ export default function BillGeneratorPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl transform hover:scale-[1.02]"
+                className="flex-1 bg-[#8E0E1C] text-white py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg hover:opacity-90 transition-opacity duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-3">
@@ -533,7 +532,7 @@ export default function BillGeneratorPage() {
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-3">
-                    <span className="text-2xl">📄</span>
+                    <span className="text-xl sm:text-2xl">📄</span>
                     <span>Generate Bill</span>
                   </span>
                 )}
@@ -544,61 +543,61 @@ export default function BillGeneratorPage() {
 
         {/* Right Column - Bill Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-2xl shadow-xl border-2 border-indigo-200 p-8 sticky top-6 card-hover">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6 flex items-center gap-3">
-              <span className="text-3xl">📊</span>
+          <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8 sticky top-6">
+            <h3 className="text-xl sm:text-2xl font-bold text-[#111827] mb-6 flex items-center gap-3">
+              <span className="text-2xl sm:text-3xl">📊</span>
               Bill Summary
             </h3>
 
-            <div className="space-y-5">
-              <div className="bg-white/90 backdrop-blur-md rounded-xl p-6 shadow-lg border border-slate-200">
+            <div className="space-y-4 sm:space-y-5">
+              <div className="bg-[#F8FAFC] rounded-lg p-4 sm:p-6 border border-[#CBD5E1]">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-semibold text-slate-600">🏨 Room Charges</span>
-                  <span className="text-sm font-bold text-slate-900">
+                  <span className="text-sm font-semibold text-[#64748B]">🏨 Room Charges</span>
+                  <span className="text-sm font-bold text-[#111827]">
                     ₹{calculations.roomCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 {calculations.tariff > 0 && (
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-semibold text-slate-600">💵 Tariff</span>
-                    <span className="text-sm font-bold text-slate-900">
+                    <span className="text-sm font-semibold text-[#64748B]">💵 Tariff</span>
+                    <span className="text-sm font-bold text-[#111827]">
                       ₹{calculations.tariff.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 )}
                 {calculations.foodCharges > 0 && (
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-semibold text-slate-600">🍽️ Food Charges</span>
-                    <span className="text-sm font-bold text-slate-900">
+                    <span className="text-sm font-semibold text-[#64748B]">🍽️ Food Charges</span>
+                    <span className="text-sm font-bold text-[#111827]">
                       ₹{calculations.foodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 )}
                 {calculations.additionalGuestsTotal > 0 && (
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-semibold text-slate-600">
+                    <span className="text-sm font-semibold text-[#64748B]">
                       👥 Additional Guests ({calculations.additionalGuests} × ₹{calculations.additionalGuestCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                     </span>
-                    <span className="text-sm font-bold text-slate-900">
+                    <span className="text-sm font-bold text-[#111827]">
                       ₹{calculations.additionalGuestsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-3 border-t-2 border-slate-200">
-                  <span className="text-base font-bold text-slate-800">Subtotal</span>
-                  <span className="text-base font-bold text-slate-900">
+                <div className="flex justify-between items-center pt-3 border-t border-[#CBD5E1]">
+                  <span className="text-base font-bold text-[#111827]">Subtotal</span>
+                  <span className="text-base font-bold text-[#111827]">
                     ₹{calculations.baseAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
               {(formData.gstEnabled && formData.showGst) && (
-                <div className="bg-white/90 backdrop-blur-md rounded-xl p-6 shadow-lg border border-green-200">
+                <div className="bg-[#F8FAFC] rounded-lg p-4 sm:p-6 border border-[#CBD5E1]">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-slate-600">
+                    <span className="text-sm font-semibold text-[#64748B]">
                       🧾 GST ({formData.gstPercent}%)
                     </span>
-                    <span className="text-sm font-bold text-green-600">
+                    <span className="text-sm font-bold text-[#111827]">
                       ₹{calculations.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -606,19 +605,19 @@ export default function BillGeneratorPage() {
               )}
 
               {(calculations.advance > 0 || calculations.roundOff !== 0) && (
-                <div className="bg-white/90 backdrop-blur-md rounded-xl p-6 shadow-lg border border-slate-200">
+                <div className="bg-[#F8FAFC] rounded-lg p-4 sm:p-6 border border-[#CBD5E1]">
                   {calculations.advance > 0 && (
                     <div className="flex justify-between items-center mb-3">
-                      <span className="text-sm font-semibold text-slate-600">💳 Advance Paid</span>
-                      <span className="text-sm font-bold text-red-600">
+                      <span className="text-sm font-semibold text-[#64748B]">💳 Advance Paid</span>
+                      <span className="text-sm font-bold text-[#8E0E1C]">
                         - ₹{calculations.advance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   )}
                   {calculations.roundOff !== 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-semibold text-slate-600">🔄 Round Off</span>
-                      <span className={`text-sm font-bold ${calculations.roundOff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className="text-sm font-semibold text-[#64748B]">🔄 Round Off</span>
+                      <span className={`text-sm font-bold ${calculations.roundOff >= 0 ? 'text-[#111827]' : 'text-[#8E0E1C]'}`}>
                         {calculations.roundOff >= 0 ? '+' : ''}₹{Math.abs(calculations.roundOff).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -626,10 +625,10 @@ export default function BillGeneratorPage() {
                 </div>
               )}
 
-              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl p-6 shadow-2xl border-2 border-indigo-300">
+              <div className="bg-[#8E0E1C] rounded-lg p-4 sm:p-6 border border-[#8E0E1C]">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-xl font-bold text-white">💰 Total Amount</span>
-                  <span className="text-3xl font-bold text-white">
+                  <span className="text-lg sm:text-xl font-bold text-white">💰 Total Amount</span>
+                  <span className="text-2xl sm:text-3xl font-bold text-white">
                     ₹{calculations.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
