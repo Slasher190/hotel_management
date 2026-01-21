@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [showStats, setShowStats] = useState(false) // Hidden by default
 
   const fetchDashboardStats = useCallback(async () => {
     try {
@@ -89,21 +90,30 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Month Selector */}
-      <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-        <label className="block text-sm font-semibold text-[#111827] mb-3">
-          📅 Select Month
-        </label>
-        <input
-          type="month"
-          value={currentMonth}
-          onChange={(e) => setCurrentMonth(e.target.value)}
-          className="w-full sm:w-auto px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] text-[#111827] font-medium bg-white"
-        />
+      {/* Month Selector and Show Stats Button */}
+      <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex-1">
+          <label className="block text-sm font-semibold text-[#111827] mb-3">
+            📅 Select Month
+          </label>
+          <input
+            type="month"
+            value={currentMonth}
+            onChange={(e) => setCurrentMonth(e.target.value)}
+            className="w-full sm:w-auto px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] text-[#111827] font-medium bg-white"
+          />
+        </div>
+        <button
+          onClick={() => setShowStats(!showStats)}
+          className="px-4 py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[44px]"
+        >
+          {showStats ? '🙈 Hide Stats' : '👁️ Show Stats'}
+        </button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      {/* Stats Grid - Hidden by default */}
+      {showStats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {statCards.map((card, index) => {
           const content = (
             <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6 hover:border-[#8E0E1C] transition-colors duration-150">
@@ -129,7 +139,8 @@ export default function DashboardPage() {
             <div key={index}>{content}</div>
           )
         })}
-      </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">

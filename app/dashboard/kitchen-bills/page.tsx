@@ -5,23 +5,26 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
 
-interface Invoice {
-  id: string
-  invoiceNumber: string
+interface CombinedBill {
+  bookingId: string
   guestName: string
-  foodCharges: number
-  gstAmount: number
-  totalAmount: number
-  createdAt: string
-  booking: {
-    id: string
-    room: {
-      roomNumber: string
-      roomType: {
-        name: string
-      }
+  room: {
+    roomNumber: string
+    roomType: {
+      name: string
     }
   }
+  invoices: Array<{
+    id: string
+    invoiceNumber: string
+    totalAmount: number
+    foodCharges: number
+    gstAmount: number
+    createdAt: string
+  }>
+  totalAmount: number
+  totalFoodCharges: number
+  totalGst: number
 }
 
 interface Summary {
@@ -33,7 +36,7 @@ interface Summary {
 
 export default function KitchenBillsPage() {
   const router = useRouter()
-  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [invoices, setInvoices] = useState<CombinedBill[]>([])
   const [summary, setSummary] = useState<Summary>({
     totalInvoices: 0,
     totalAmount: 0,
@@ -66,6 +69,7 @@ export default function KitchenBillsPage() {
 
       if (response.ok) {
         const data = await response.json()
+        // Use combined bills if available, otherwise use individual invoices
         setInvoices(data.invoices || [])
         setSummary(data.summary || {
           totalInvoices: 0,
@@ -83,35 +87,32 @@ export default function KitchenBillsPage() {
     }
   }
 
-  const handleDownloadBill = async (bookingId: string) => {
+  const handleDownloadBill = async (bookingId: string, combinedBill: CombinedBill) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/bookings/${bookingId}/food-invoice`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          showGst: true,
-          gstPercent: 5,
-        }),
-      })
-
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = globalThis.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `kitchen-bill-${Date.now()}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        globalThis.URL.revokeObjectURL(url)
-        a.remove()
-        toast.success('Kitchen bill downloaded successfully!')
-      } else {
-        const data = await response.json()
-        toast.error(data.error || 'Failed to download bill')
+      // Download the most recent invoice for this booking, or generate a combined one
+      if (combinedBill.invoices.length > 0) {
+        // Download the latest invoice
+        const latestInvoice = combinedBill.invoices[0]
+        const response = await fetch(`/api/invoices/${latestInvoice.id}/download`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (response.ok) {
+          const blob = await response.blob()
+          const url = globalThis.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `kitchen-bill-${combinedBill.bookingId}.pdf`
+          document.body.appendChild(a)
+          a.click()
+          globalThis.URL.revokeObjectURL(url)
+          a.remove()
+          toast.success('Kitchen bill downloaded successfully!')
+        } else {
+          toast.error('Failed to download bill')
+        }
       }
     } catch {
       toast.error('An error occurred while downloading bill')
@@ -123,19 +124,38 @@ export default function KitchenBillsPage() {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/invoices/${deleteModal.invoiceId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        toast.success('Kitchen bill deleted successfully!')
-        fetchKitchenBills()
+      // Find the invoice in the combined bills to get all invoice IDs for this booking
+      const combinedBill = invoices.find((bill) => 
+        bill.invoices.some((inv) => inv.id === deleteModal.invoiceId)
+      )
+      
+      if (combinedBill && combinedBill.invoices.length > 1) {
+        // Delete only the specific invoice
+        const response = await fetch(`/api/invoices/${deleteModal.invoiceId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (response.ok) {
+          toast.success('Kitchen bill deleted successfully!')
+          fetchKitchenBills()
+        } else {
+          const data = await response.json()
+          toast.error(data.error || 'Failed to delete kitchen bill')
+        }
       } else {
-        const data = await response.json()
-        toast.error(data.error || 'Failed to delete kitchen bill')
+        // Delete all invoices for this booking
+        for (const invoice of combinedBill?.invoices || []) {
+          await fetch(`/api/invoices/${invoice.id}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        }
+        toast.success('All kitchen bills for this booking deleted successfully!')
+        fetchKitchenBills()
       }
     } catch {
       toast.error('An error occurred while deleting kitchen bill')
@@ -223,7 +243,7 @@ export default function KitchenBillsPage() {
             <table className="min-w-full divide-y divide-[#CBD5E1]">
               <thead className="bg-[#8E0E1C]">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">🧾 Invoice #</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">📋 Combined Bills</th>
                   <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">👤 Guest Name</th>
                   <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase hidden sm:table-cell">🏨 Room</th>
                   <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase">🍽️ Food Charges</th>
@@ -234,39 +254,44 @@ export default function KitchenBillsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-[#CBD5E1]">
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
+                {invoices.map((combinedBill) => (
+                  <tr key={combinedBill.bookingId} className="hover:bg-[#F8FAFC] transition-colors duration-150">
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-[#111827]">{invoice.invoiceNumber}</div>
+                      <div className="text-sm font-bold text-[#111827]">
+                        {combinedBill.invoices.length} bill(s)
+                      </div>
+                      <div className="text-xs text-[#64748B]">
+                        {combinedBill.invoices.map((inv) => inv.invoiceNumber).join(', ')}
+                      </div>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-[#111827]">{invoice.guestName}</div>
-                      <div className="text-xs text-[#64748B] sm:hidden">{invoice.booking.room.roomNumber}</div>
+                      <div className="text-sm font-bold text-[#111827]">{combinedBill.guestName}</div>
+                      <div className="text-xs text-[#64748B] sm:hidden">{combinedBill.room.roomNumber}</div>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
                       <div className="text-sm font-medium text-[#111827]">
-                        <span className="font-bold text-[#8E0E1C]">{invoice.booking.room.roomNumber}</span>
-                        <span className="text-[#64748B]"> ({invoice.booking.room.roomType.name})</span>
+                        <span className="font-bold text-[#8E0E1C]">{combinedBill.room.roomNumber}</span>
+                        <span className="text-[#64748B]"> ({combinedBill.room.roomType.name})</span>
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
                       <div className="text-sm font-bold text-[#111827] break-words">
-                        ₹{invoice.foodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹{combinedBill.totalFoodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 text-right hidden md:table-cell">
                       <div className="text-sm font-medium text-[#64748B] break-words">
-                        ₹{(invoice.gstAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹{combinedBill.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
                       <div className="text-sm font-bold text-[#111827] break-words">
-                        ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹{combinedBill.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden lg:table-cell">
                       <div className="text-sm font-medium text-[#64748B]">
-                        {new Date(invoice.createdAt).toLocaleDateString('en-IN', {
+                        {combinedBill.invoices.length > 0 && new Date(combinedBill.invoices[0].createdAt).toLocaleDateString('en-IN', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
@@ -276,17 +301,19 @@ export default function KitchenBillsPage() {
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => handleDownloadBill(invoice.booking.id)}
+                          onClick={() => handleDownloadBill(combinedBill.bookingId, combinedBill)}
                           className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
                         >
                           📥 Download
                         </button>
-                        <button
-                          onClick={() => setDeleteModal({ isOpen: true, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber })}
-                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
-                        >
-                          🗑️ Delete
-                        </button>
+                        {combinedBill.invoices.length > 0 && (
+                          <button
+                            onClick={() => setDeleteModal({ isOpen: true, invoiceId: combinedBill.invoices[0].id, invoiceNumber: combinedBill.invoices[0].invoiceNumber })}
+                            className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

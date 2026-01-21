@@ -26,15 +26,30 @@ export default function PoliceVerificationPage() {
   const [editableBookings, setEditableBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [showDateFilter, setShowDateFilter] = useState(false)
 
   useEffect(() => {
-    fetchActiveBookings()
-  }, [])
+    fetchActiveBookings(dateFrom || undefined, dateTo || undefined)
+  }, [dateFrom, dateTo])
 
-  const fetchActiveBookings = async () => {
+  const fetchActiveBookings = async (dateFrom?: string, dateTo?: string) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/bookings?status=ACTIVE', {
+      const params = new URLSearchParams({
+        status: 'ACTIVE',
+        showAll: 'true', // Get all active bookings, not just first page
+      })
+      
+      if (dateFrom) {
+        params.append('dateFrom', dateFrom)
+      }
+      if (dateTo) {
+        params.append('dateTo', dateTo)
+      }
+
+      const response = await fetch(`/api/bookings?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -70,6 +85,23 @@ export default function PoliceVerificationPage() {
   const handleRemoveBooking = (index: number) => {
     const updated = editableBookings.filter((_, i) => i !== index)
     setEditableBookings(updated)
+  }
+
+  const handleAddRecord = () => {
+    const newRecord: Booking = {
+      id: `temp-${Date.now()}`,
+      guestName: '',
+      idType: 'AADHAAR',
+      idNumber: '',
+      checkInDate: new Date().toISOString(),
+      room: {
+        roomNumber: '',
+        roomType: {
+          name: '',
+        },
+      },
+    }
+    setEditableBookings([...editableBookings, newRecord])
   }
 
   const handleDownload = async () => {
@@ -139,6 +171,19 @@ export default function PoliceVerificationPage() {
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
+            onClick={handleAddRecord}
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
+          >
+            <span>➕</span>
+            <span>Add Record</span>
+          </button>
+          <button
+            onClick={() => setShowDateFilter(!showDateFilter)}
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
+          >
+            📅 Filter by Date
+          </button>
+          <button
             onClick={handleDownload}
             disabled={saving || editableBookings.length === 0}
             className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
@@ -167,10 +212,50 @@ export default function PoliceVerificationPage() {
         </div>
       </div>
 
+      {showDateFilter && (
+        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="dateFrom" className="block text-sm font-semibold text-[#111827] mb-2">📅 From Date</label>
+              <input
+                id="dateFrom"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+              />
+            </div>
+            <div>
+              <label htmlFor="dateTo" className="block text-sm font-semibold text-[#111827] mb-2">📅 To Date</label>
+              <input
+                id="dateTo"
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => {
+                setDateFrom('')
+                setDateTo('')
+                setShowDateFilter(false)
+              }}
+              className="px-4 py-2 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
         <div className="mb-6 p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]">
           <p className="text-sm font-semibold text-[#111827]">
-            💡 <span className="font-bold">Tip:</span> Edit guest details before downloading. You can remove bookings that should not be included in the police verification record.
+            💡 <span className="font-bold">Tip:</span> Edit guest details before downloading. You can remove bookings that should not be included in the police verification record. Use "Add Record" to manually add entries.
           </p>
         </div>
 
@@ -223,7 +308,21 @@ export default function PoliceVerificationPage() {
                       />
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-[#111827]">{booking.idType}</div>
+                      <select
+                        value={booking.idType}
+                        onChange={(e) => {
+                          const updated = [...editableBookings]
+                          updated[index] = { ...updated[index], idType: e.target.value }
+                          setEditableBookings(updated)
+                        }}
+                        className="px-3 py-2 sm:px-4 sm:py-2 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      >
+                        <option value="AADHAAR">Aadhaar</option>
+                        <option value="DL">Driving License</option>
+                        <option value="VOTER_ID">Voter ID</option>
+                        <option value="PASSPORT">Passport</option>
+                        <option value="OTHER">Other</option>
+                      </select>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <div>

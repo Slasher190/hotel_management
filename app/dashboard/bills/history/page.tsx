@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Pagination from '@/app/components/Pagination'
+import Modal from '@/app/components/Modal'
 
 interface Invoice {
   id: string
@@ -47,10 +48,22 @@ function BillsHistoryContent() {
   const [sortBy, setSortBy] = useState<'createdAt' | 'totalAmount' | 'guestName'>('createdAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [showFilters, setShowFilters] = useState(false)
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; invoiceId: string | null; invoiceNumber: string }>({
+    isOpen: false,
+    invoiceId: null,
+    invoiceNumber: '',
+  })
+
+  const [searchLoading, setSearchLoading] = useState(false)
 
   const fetchInvoices = useCallback(async () => {
     try {
-      setLoading(true)
+      // Only show full screen loader on initial load, not on search/filter
+      if (page === 1 && !searchQuery && !dateFrom && !dateTo && !minAmount && !maxAmount) {
+        setLoading(true)
+      } else {
+        setSearchLoading(true)
+      }
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         page: page.toString(),
@@ -102,6 +115,7 @@ function BillsHistoryContent() {
       toast.error('An error occurred')
     } finally {
       setLoading(false)
+      setSearchLoading(false)
     }
   }, [page, filterType, searchQuery, dateFrom, dateTo, minAmount, maxAmount, sortBy, sortOrder])
 
@@ -109,11 +123,140 @@ function BillsHistoryContent() {
     fetchInvoices()
   }, [fetchInvoices])
 
-  const handleDownload = async () => {
+  const handleDownload = async (invoiceId: string) => {
     try {
-      toast('PDF download feature coming soon', { icon: 'ℹ️' })
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/invoices/${invoiceId}/download`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = globalThis.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `invoice-${invoiceId}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        globalThis.URL.revokeObjectURL(url)
+        a.remove()
+        toast.success('Invoice downloaded successfully!')
+      } else {
+        toast.error('Failed to download invoice')
+      }
     } catch {
-      toast.error('Failed to download invoice')
+      toast.error('An error occurred while downloading invoice')
+    }
+  }
+
+  const handlePrintFiltered = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const params = new URLSearchParams()
+      if (filterType === 'manual') {
+        params.append('isManual', 'true')
+      } else if (filterType === 'booking') {
+        params.append('isManual', 'false')
+        params.append('type', 'ROOM')
+      } else if (filterType === 'food') {
+        params.append('type', 'FOOD')
+      }
+      if (searchQuery) params.append('search', searchQuery)
+      if (dateFrom) params.append('dateFrom', dateFrom)
+      if (dateTo) params.append('dateTo', dateTo)
+      if (minAmount) params.append('minAmount', minAmount)
+      if (maxAmount) params.append('maxAmount', maxAmount)
+      params.append('format', 'pdf')
+      params.append('showAll', 'true')
+
+      // Fetch all invoices matching filters
+      const allParams = new URLSearchParams(params.toString())
+      allParams.append('showAll', 'true')
+      const invoicesResponse = await fetch(`/api/invoices?${allParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (!invoicesResponse.ok) {
+        toast.error('Failed to fetch invoices')
+        return
+      }
+      const invoicesData = await invoicesResponse.json()
+      const allInvoices = invoicesData.invoices || []
+
+      // Generate PDF report
+      const response = await fetch(`/api/invoices/export?${params.toString()}&format=pdf`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = globalThis.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `bills-${Date.now()}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        globalThis.URL.revokeObjectURL(url)
+        a.remove()
+        toast.success('PDF generated successfully!')
+      } else {
+        toast.error('Failed to generate PDF')
+      }
+    } catch {
+      toast.error('An error occurred while generating PDF')
+    }
+  }
+
+  const confirmDeleteInvoice = async () => {
+    if (!deleteModal.invoiceId) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const invoice = invoices.find((inv) => inv.id === deleteModal.invoiceId)
+      
+      // If it's a booking bill, delete associated food bills
+      if (invoice && invoice.invoiceType === 'ROOM' && !invoice.isManual && invoice.booking) {
+        // Delete all food bills for this booking
+        const foodInvoicesResponse = await fetch(`/api/invoices?type=FOOD&bookingId=${invoice.booking.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (foodInvoicesResponse.ok) {
+          const foodData = await foodInvoicesResponse.json()
+          const foodInvoices = foodData.invoices || []
+          for (const foodInvoice of foodInvoices) {
+            await fetch(`/api/invoices/${foodInvoice.id}`, {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            })
+          }
+        }
+      }
+
+      const response = await fetch(`/api/invoices/${deleteModal.invoiceId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        toast.success('Bill deleted successfully!')
+        fetchInvoices()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to delete bill')
+      }
+    } catch {
+      toast.error('An error occurred while deleting bill')
+    } finally {
+      setDeleteModal({ isOpen: false, invoiceId: null, invoiceNumber: '' })
     }
   }
 
@@ -127,8 +270,19 @@ function BillsHistoryContent() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="flex justify-between items-center bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+    <>
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, invoiceId: null, invoiceNumber: '' })}
+        onConfirm={confirmDeleteInvoice}
+        title="Delete Bill"
+        message={`Are you sure you want to delete invoice "${deleteModal.invoiceNumber}"? If this is a booking bill, all associated food bills will also be deleted. This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-[#8E0E1C] hover:opacity-90"
+      />
+      <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div>
           <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             📜 Bill History
@@ -137,6 +291,12 @@ function BillsHistoryContent() {
             View all generated bills - Manual bills, Booking bills (room), and Food bills (kitchen)
           </p>
         </div>
+        <button
+          onClick={handlePrintFiltered}
+          className="px-4 py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
+        >
+          🖨️ Print Filtered PDF
+        </button>
       </div>
 
       {/* Search and Filters */}
@@ -144,17 +304,27 @@ function BillsHistoryContent() {
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div className="flex-1 w-full">
             <label htmlFor="search" className="block text-sm font-semibold text-[#111827] mb-2">🔍 Search</label>
-            <input
-              id="search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setPage(1)
-              }}
-              placeholder="Search by guest name or invoice number..."
-              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-            />
+            <div className="relative">
+              <input
+                id="search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="Search by guest name or invoice number..."
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+              />
+              {searchLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <svg className="animate-spin h-5 w-5 text-[#8E0E1C]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
+            </div>
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -410,12 +580,20 @@ function BillsHistoryContent() {
                     </div>
                   </td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
-                    <button
-                      onClick={handleDownload}
-                      className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
-                    >
-                      📥 Download
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => handleDownload(invoice.id)}
+                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                      >
+                        📥 Download
+                      </button>
+                      <button
+                        onClick={() => setDeleteModal({ isOpen: true, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber })}
+                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -441,6 +619,7 @@ function BillsHistoryContent() {
         />
       )}
     </div>
+    </>
   )
 }
 

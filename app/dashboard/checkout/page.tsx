@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Pagination from '@/app/components/Pagination'
 
 interface Booking {
   id: string
@@ -22,15 +23,17 @@ interface Booking {
 export default function CheckoutListPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
     fetchActiveBookings()
-  }, [])
+  }, [page])
 
   const fetchActiveBookings = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/bookings?status=ACTIVE', {
+      const response = await fetch(`/api/bookings?status=ACTIVE&page=${page}&limit=10`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -40,6 +43,9 @@ export default function CheckoutListPage() {
         const data = await response.json()
         const bookingsData = Array.isArray(data) ? data : (data.bookings || [])
         setBookings(bookingsData)
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages)
+        }
       }
     } catch (error) {
       console.error('Error fetching bookings:', error)
@@ -150,6 +156,15 @@ export default function CheckoutListPage() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="border-t border-[#CBD5E1]">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

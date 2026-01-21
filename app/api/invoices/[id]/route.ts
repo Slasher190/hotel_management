@@ -23,13 +23,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     }
 
-    // Only allow deletion of manual invoices or food invoices
-    // Room invoices should not be deleted as they are tied to bookings
-    if (invoice.invoiceType === 'ROOM' && !invoice.isManual) {
-      return NextResponse.json(
-        { error: 'Cannot delete room invoice that is associated with a booking' },
-        { status: 400 }
-      )
+    // If it's a booking bill (ROOM type, not manual), delete associated food bills
+    if (invoice.invoiceType === 'ROOM' && !invoice.isManual && invoice.bookingId) {
+      // Delete all food bills for this booking
+      await prisma.invoice.deleteMany({
+        where: {
+          bookingId: invoice.bookingId,
+          invoiceType: 'FOOD',
+        },
+      })
     }
 
     await prisma.invoice.delete({

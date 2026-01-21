@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const end = endOfMonth(month)
 
     // Get all food invoices for the month
-    const invoices = await prisma.invoice.findMany({
+    const allInvoices = await prisma.invoice.findMany({
       where: {
         invoiceType: 'FOOD',
         createdAt: {
@@ -40,15 +40,57 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Group invoices by booking to show combined bills
+    const combinedBillsMap = new Map<string, {
+      bookingId: string
+      guestName: string
+      room: {
+        roomNumber: string
+        roomType: {
+          name: string
+        }
+      }
+      invoices: typeof allInvoices
+      totalAmount: number
+      totalFoodCharges: number
+      totalGst: number
+    }>()
+
+    allInvoices.forEach((invoice) => {
+      if (invoice.bookingId && invoice.booking) {
+        const key = invoice.bookingId
+        if (!combinedBillsMap.has(key)) {
+          combinedBillsMap.set(key, {
+            bookingId: key,
+            guestName: invoice.guestName,
+            room: invoice.booking.room,
+            invoices: [],
+            totalAmount: 0,
+            totalFoodCharges: 0,
+            totalGst: 0,
+          })
+        }
+        const combined = combinedBillsMap.get(key)!
+        combined.invoices.push(invoice)
+        combined.totalAmount += invoice.totalAmount
+        combined.totalFoodCharges += invoice.foodCharges
+        combined.totalGst += invoice.gstAmount || 0
+      }
+    })
+
+    // Convert to array for response
+    const combinedBills = Array.from(combinedBillsMap.values())
+
     // Calculate totals
-    const totalAmount = invoices.reduce((sum, inv) => sum + inv.totalAmount, 0)
-    const totalGst = invoices.reduce((sum, inv) => sum + (inv.gstAmount || 0), 0)
-    const totalFoodCharges = invoices.reduce((sum, inv) => sum + inv.foodCharges, 0)
+    const totalAmount = allInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0)
+    const totalGst = allInvoices.reduce((sum, inv) => sum + (inv.gstAmount || 0), 0)
+    const totalFoodCharges = allInvoices.reduce((sum, inv) => sum + inv.foodCharges, 0)
 
     return NextResponse.json({
-      invoices,
+      invoices: combinedBills, // Return combined bills instead of individual invoices
+      allInvoices, // Keep individual invoices for backward compatibility
       summary: {
-        totalInvoices: invoices.length,
+        totalInvoices: combinedBills.length, // Count of combined bills (bookings)
         totalAmount,
         totalGst,
         totalFoodCharges,

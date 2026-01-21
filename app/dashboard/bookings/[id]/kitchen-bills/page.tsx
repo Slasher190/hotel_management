@@ -23,7 +23,7 @@ export default function KitchenBillsPage() {
   const [bills, setBills] = useState<KitchenBill[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [showGst, setShowGst] = useState(true)
+  const [showGst, setShowGst] = useState(false) // Default unchecked
   const [gstPercent, setGstPercent] = useState(5)
   const [gstNumber, setGstNumber] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)

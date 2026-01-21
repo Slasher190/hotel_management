@@ -48,6 +48,15 @@ export default function CheckoutPage() {
   const [kitchenBillPaid, setKitchenBillPaid] = useState(false)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const [showCombinedFoodBill, setShowCombinedFoodBill] = useState(false)
+  const [complimentary, setComplimentary] = useState(0)
+  const [previousFoodBills, setPreviousFoodBills] = useState<Array<{
+    id: string
+    invoiceNumber: string
+    totalAmount: number
+    foodCharges: number
+    createdAt: string
+  }>>([])
 
   const fetchBooking = useCallback(async () => {
     if (!bookingId) {
@@ -78,6 +87,18 @@ export default function CheckoutPage() {
             const data = await response.json()
             setBooking(data)
             setBaseAmount(data.roomPrice)
+            
+            // Fetch previous food bills for this booking
+            const billsResponse = await fetch(`/api/invoices?type=FOOD&bookingId=${bookingId}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            })
+            if (billsResponse.ok) {
+              const billsData = await billsResponse.json()
+              setPreviousFoodBills(billsData.invoices || [])
+            }
+            
             setLoading(false)
             return
           } else if (response.status === 404) {
@@ -133,11 +154,29 @@ export default function CheckoutPage() {
     const additionalGuestsTotal = booking && booking.additionalGuests && booking.additionalGuests > 0
       ? additionalGuestCharges * booking.additionalGuests
       : 0
-    const baseTotal = baseAmount + tariff + additionalGuestsTotal
+    
+    // Calculate combined food bill total
+    let combinedFoodTotal = 0
+    if (showCombinedFoodBill) {
+      // Sum all previous food bills
+      const previousBillsTotal = previousFoodBills.reduce((sum, bill) => sum + bill.totalAmount, 0)
+      
+      // Calculate current food orders total (no GST for food)
+      let currentFoodTotal = 0
+      if (booking?.foodOrders) {
+        booking.foodOrders.forEach((order) => {
+          currentFoodTotal += order.foodItem.price * order.quantity
+        })
+      }
+      
+      combinedFoodTotal = previousBillsTotal + currentFoodTotal - complimentary
+    }
+    
+    const baseTotal = baseAmount + tariff + additionalGuestsTotal + (showCombinedFoodBill ? combinedFoodTotal : 0)
     const gstAmount = (gstEnabled && showGst) ? (baseTotal * gstPercent) / 100 : 0
     const total = baseTotal + gstAmount
 
-    return { baseAmount, tariff, additionalGuestsTotal, gstAmount, gstPercent, total }
+    return { baseAmount, tariff, additionalGuestsTotal, combinedFoodTotal, complimentary, gstAmount, gstPercent, total }
   }
 
   const handleCheckout = async () => {
@@ -165,6 +204,8 @@ export default function CheckoutPage() {
           paymentMode,
           paymentStatus,
           kitchenBillPaid,
+          showCombinedFoodBill,
+          complimentary: showCombinedFoodBill ? complimentary : 0,
         }),
       })
 
@@ -312,12 +353,11 @@ export default function CheckoutPage() {
             <input
               id="tariff"
               type="number"
-              min="0"
               step="0.01"
               value={tariff}
               onChange={(e) => setTariff(Number.parseFloat(e.target.value) || 0)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              placeholder="Enter tariff amount"
+              placeholder="Enter tariff amount (can be negative)"
             />
           </div>
 
@@ -434,34 +474,83 @@ export default function CheckoutPage() {
       </div>
 
       {/* Kitchen Bill Section */}
-      {booking.foodOrders && booking.foodOrders.length > 0 && (
+      {(booking.foodOrders && booking.foodOrders.length > 0) || previousFoodBills.length > 0 ? (
         <div className="bg-white rounded-xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Kitchen Bill</h3>
           <div className="space-y-4">
-            <div className="bg-orange-50 rounded-lg p-4">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium text-gray-700">Food Orders:</span>
-                <span className="text-sm font-semibold text-gray-900">
-                  {booking.foodOrders.length} item(s)
-                </span>
-              </div>
-              <div className="space-y-2 text-sm">
-                {booking.foodOrders.map((order) => {
-                  const itemTotal = order.foodItem.price * order.quantity
-                  const gst = (itemTotal * order.foodItem.gstPercent) / 100
-                  return (
-                    <div key={order.id} className="flex justify-between text-gray-600">
-                      <span>
-                        {order.foodItem.name} × {order.quantity}
-                      </span>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="showCombinedFoodBill"
+                checked={showCombinedFoodBill}
+                onChange={(e) => setShowCombinedFoodBill(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+              <label htmlFor="showCombinedFoodBill" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Include Combined Food Bill in Checkout
+              </label>
+            </div>
+            
+            {previousFoodBills.length > 0 && (
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="text-sm font-semibold text-gray-700 mb-2">Previous Food Bills:</div>
+                <div className="space-y-1 text-sm">
+                  {previousFoodBills.map((bill) => (
+                    <div key={bill.id} className="flex justify-between text-gray-600">
+                      <span>{bill.invoiceNumber}</span>
                       <span className="font-medium text-gray-900">
-                        ₹{(itemTotal + gst).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹{bill.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+            
+            {booking.foodOrders && booking.foodOrders.length > 0 && (
+              <div className="bg-orange-50 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-medium text-gray-700">Current Food Orders:</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {booking.foodOrders.length} item(s)
+                  </span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  {booking.foodOrders.map((order) => {
+                    const itemTotal = order.foodItem.price * order.quantity
+                    return (
+                      <div key={order.id} className="flex justify-between text-gray-600">
+                        <span>
+                          {order.foodItem.name} × {order.quantity}
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          ₹{itemTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {showCombinedFoodBill && (
+              <div>
+                <label htmlFor="complimentary" className="block text-sm font-medium text-gray-700 mb-2">
+                  Complimentary/Discount (₹)
+                </label>
+                <input
+                  id="complimentary"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={complimentary}
+                  onChange={(e) => setComplimentary(Number.parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+                  placeholder="Enter discount amount"
+                />
+              </div>
+            )}
+            
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -474,12 +563,9 @@ export default function CheckoutPage() {
                 Kitchen bill is paid (Optional - not required for checkout)
               </label>
             </div>
-            <div className="text-xs text-gray-500">
-              Note: Kitchen bills can be generated and paid separately. This checkbox is for tracking purposes only.
-            </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Total */}
       <div className="bg-indigo-50 rounded-xl shadow-md p-6">
@@ -500,6 +586,18 @@ export default function CheckoutPage() {
                 Additional Guests ({booking?.additionalGuests || 0} × ₹{additionalGuestCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}):
               </span>
               <span className="font-medium">₹{totals.additionalGuestsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {showCombinedFoodBill && totals.combinedFoodTotal > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-700">Combined Food Bill:</span>
+              <span className="font-medium">₹{totals.combinedFoodTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {showCombinedFoodBill && totals.complimentary > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-700">Complimentary/Discount:</span>
+              <span className="font-medium text-red-600">- ₹{totals.complimentary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
           {(gstEnabled && showGst) && (

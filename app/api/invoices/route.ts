@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const maxAmount = searchParams.get('maxAmount')
     const sortBy = searchParams.get('sortBy') || 'createdAt' // Sort field
     const sortOrder = searchParams.get('sortOrder') || 'desc' // Sort order
+    const bookingId = searchParams.get('bookingId') // Filter by booking ID
 
     const skip = (page - 1) * limit
 
@@ -32,6 +33,9 @@ export async function GET(request: NextRequest) {
     }
     if (isManual !== null) {
       where.isManual = isManual === 'true'
+    }
+    if (bookingId) {
+      where.bookingId = bookingId
     }
     if (search) {
       where.OR = [

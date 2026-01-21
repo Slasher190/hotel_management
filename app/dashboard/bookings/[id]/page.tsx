@@ -269,6 +269,53 @@ export default function BookingDetailPage() {
               )}
             </>
           )}
+          {invoice && (
+            <button
+              onClick={async () => {
+                try {
+                  const token = localStorage.getItem('token')
+                  const response = await fetch(`/api/bookings/${booking.id}/checkout`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      baseAmount: booking.roomPrice,
+                      tariff: booking.tariff || 0,
+                      additionalGuestCharges: booking.additionalGuestCharges || 0,
+                      gstEnabled: invoice.gstEnabled || false,
+                      showGst: invoice.gstEnabled || false,
+                      gstPercent: 5,
+                      gstNumber: null,
+                      paymentMode: 'CASH',
+                      paymentStatus: 'PAID',
+                      kitchenBillPaid: false,
+                    }),
+                  })
+                  if (response.ok) {
+                    const blob = await response.blob()
+                    const url = globalThis.URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = `invoice-${invoice.invoiceNumber}.pdf`
+                    document.body.appendChild(a)
+                    a.click()
+                    globalThis.URL.revokeObjectURL(url)
+                    a.remove()
+                    toast.success('Invoice downloaded successfully!')
+                  } else {
+                    toast.error('Failed to download invoice')
+                  }
+                } catch {
+                  toast.error('An error occurred while downloading invoice')
+                }
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              📥 Download Invoice
+            </button>
+          )}
           <Link
             href="/dashboard/bookings"
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"

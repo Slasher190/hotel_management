@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Total revenue (from checked-out bookings)
+    // Total revenue (from checked-out bookings, excluding manual bills)
     const checkedOutBookings = await prisma.booking.findMany({
       where: {
         status: 'CHECKED_OUT',
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
         invoices: {
           where: {
             invoiceType: 'ROOM',
+            isManual: false, // Exclude manual bills from revenue
           },
         },
       },

@@ -41,18 +41,17 @@ export async function POST(
       return NextResponse.json({ error: 'No food orders found for this booking' }, { status: 400 })
     }
 
-    // Calculate food charges (subtotal + item-wise GST)
+    // Calculate food charges (no GST for food bills)
     let subtotal = 0
-    let itemWiseGst = 0
     booking.foodOrders.forEach((order) => {
       const itemTotal = order.foodItem.price * order.quantity
       subtotal += itemTotal
-      itemWiseGst += (itemTotal * order.foodItem.gstPercent) / 100
+      // No GST calculation for food bills
     })
 
-    const foodCharges = subtotal + itemWiseGst
+    const foodCharges = subtotal
 
-    // Calculate additional GST on total (if enabled)
+    // Calculate additional GST on total (if enabled and showGst is true)
     const additionalGst = (showGst && gstPercent > 0) ? (foodCharges * gstPercent) / 100 : 0
     const totalAmount = foodCharges + additionalGst
 
@@ -116,6 +115,15 @@ export async function POST(
       totalAmount,
       paymentMode: 'CASH',
       showGst,
+    })
+
+    // Delete food orders after invoice is generated (so they don't appear in next bill)
+    // But keep them for combined bill at checkout - we'll handle that separately
+    // For now, we'll delete them to prevent duplicate billing
+    await prisma.foodOrder.deleteMany({
+      where: {
+        bookingId: id,
+      },
     })
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

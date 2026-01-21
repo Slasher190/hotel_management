@@ -24,7 +24,9 @@ export async function POST(
       paymentMode, 
       paymentStatus,
       showGst = false,
-      kitchenBillPaid = false 
+      kitchenBillPaid = false,
+      showCombinedFoodBill = false,
+      complimentary = 0
     } = await request.json()
 
     const booking = await prisma.booking.findUnique({
@@ -33,6 +35,11 @@ export async function POST(
         room: {
           include: {
             roomType: true,
+          },
+        },
+        foodOrders: {
+          include: {
+            foodItem: true,
           },
         },
       },
@@ -54,7 +61,28 @@ export async function POST(
       ? additionalGuestChargesValue * booking.additionalGuests 
       : 0
     
-    const baseTotal = roomCharges + tariffAmount + additionalGuestsTotal
+    // Calculate combined food bill if enabled
+    let combinedFoodCharges = 0
+    if (showCombinedFoodBill) {
+      // Get previous food bills
+      const previousFoodBills = await prisma.invoice.findMany({
+        where: {
+          bookingId: id,
+          invoiceType: 'FOOD',
+        },
+      })
+      const previousBillsTotal = previousFoodBills.reduce((sum, bill) => sum + bill.totalAmount, 0)
+      
+      // Calculate current food orders total (no GST)
+      let currentFoodTotal = 0
+      booking.foodOrders.forEach((order) => {
+        currentFoodTotal += order.foodItem.price * order.quantity
+      })
+      
+      combinedFoodCharges = previousBillsTotal + currentFoodTotal - (Number.parseFloat(complimentary) || 0)
+    }
+    
+    const baseTotal = roomCharges + tariffAmount + additionalGuestsTotal + combinedFoodCharges
     const gstAmount = (gstEnabled && showGst) ? (baseTotal * (gstPercent || 5)) / 100 : 0
     const totalAmount = baseTotal + gstAmount
 
@@ -82,7 +110,7 @@ export async function POST(
         roomCharges,
         tariff: tariffAmount,
         additionalGuestCharges: additionalGuestChargesValue,
-        foodCharges: 0, // Food charges handled separately
+        foodCharges: showCombinedFoodBill ? combinedFoodCharges : 0,
         gstEnabled: gstEnabled && showGst,
         gstNumber: (gstEnabled && showGst) ? gstNumber : null,
         gstAmount,
@@ -146,7 +174,7 @@ export async function POST(
       days,
       roomCharges,
       tariff: tariffAmount,
-      foodCharges: 0,
+      foodCharges: showCombinedFoodBill ? combinedFoodCharges : 0,
       additionalGuestCharges: additionalGuestChargesValue,
       additionalGuests: booking.additionalGuests,
       gstEnabled: gstEnabled && showGst,

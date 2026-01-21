@@ -34,9 +34,16 @@ export default function FoodBillPage() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [showGst, setShowGst] = useState(true)
+  const [showGst, setShowGst] = useState(false) // Default unchecked
   const [gstPercent, setGstPercent] = useState(5)
   const [gstNumber, setGstNumber] = useState('')
+  const [previousBills, setPreviousBills] = useState<Array<{
+    id: string
+    invoiceNumber: string
+    totalAmount: number
+    createdAt: string
+    billDate: string | null
+  }>>([])
 
   const fetchBooking = useCallback(async () => {
     if (!bookingId) {
@@ -60,6 +67,17 @@ export default function FoodBillPage() {
       if (response.ok) {
         const data = await response.json()
         setBooking(data)
+        
+        // Fetch previous food bills for this booking
+        const billsResponse = await fetch(`/api/invoices?type=FOOD&bookingId=${bookingId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (billsResponse.ok) {
+          const billsData = await billsResponse.json()
+          setPreviousBills(billsData.invoices || [])
+        }
       } else if (response.status === 404) {
         setBooking(null)
       }
@@ -82,15 +100,16 @@ export default function FoodBillPage() {
     if (!booking) return { subtotal: 0, totalGst: 0, total: 0 }
 
     let subtotal = 0
+    // Remove GST calculation - food bills don't have GST
     let totalGst = 0
 
     booking.foodOrders.forEach((order) => {
       const itemTotal = order.foodItem.price * order.quantity
       subtotal += itemTotal
-      totalGst += (itemTotal * order.foodItem.gstPercent) / 100
+      // No GST calculation
     })
 
-    const total = subtotal + totalGst
+    const total = subtotal // No GST added
 
     return { subtotal, totalGst, total }
   }
@@ -125,6 +144,22 @@ export default function FoodBillPage() {
         globalThis.URL.revokeObjectURL(url)
         a.remove()
         toast.success('Food invoice generated successfully!')
+        
+        // Remove food items that were included in the invoice
+        // Fetch updated booking to get current food orders
+        await fetchBooking()
+        
+        // Refresh previous bills list
+        const token = localStorage.getItem('token')
+        const billsResponse = await fetch(`/api/invoices?type=FOOD&bookingId=${bookingId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (billsResponse.ok) {
+          const billsData = await billsResponse.json()
+          setPreviousBills(billsData.invoices || [])
+        }
       } else {
         const errorData = await response.json().catch(() => ({}))
         toast.error(errorData.error || 'Failed to generate invoice')
@@ -241,23 +276,19 @@ export default function FoodBillPage() {
                 <th className="text-left py-3 px-4 font-semibold text-gray-900">Item</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-900">Price</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-900">Quantity</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">GST %</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">GST Amount</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-900">Total</th>
               </tr>
             </thead>
             <tbody>
               {booking.foodOrders.map((order) => {
                 const itemTotal = order.foodItem.price * order.quantity
-                const gst = (itemTotal * order.foodItem.gstPercent) / 100
-                const total = itemTotal + gst
+                // No GST calculation
+                const total = itemTotal
                 return (
                   <tr key={order.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4 text-gray-900 font-medium">{order.foodItem.name}</td>
                     <td className="text-right py-3 px-4 text-gray-900 font-medium">₹{order.foodItem.price.toLocaleString('en-IN')}</td>
                     <td className="text-right py-3 px-4 text-gray-900 font-medium">{order.quantity}</td>
-                    <td className="text-right py-3 px-4 text-gray-900 font-medium">{order.foodItem.gstPercent}%</td>
-                    <td className="text-right py-3 px-4 text-gray-900 font-medium">₹{gst.toLocaleString('en-IN')}</td>
                     <td className="text-right py-3 px-4 text-gray-900 font-semibold">₹{total.toLocaleString('en-IN')}</td>
                   </tr>
                 )
@@ -315,28 +346,47 @@ export default function FoodBillPage() {
       {/* Totals */}
       <div className="bg-indigo-50 rounded-xl shadow-md p-6">
         <div className="space-y-2 text-lg">
-          <div className="flex justify-between">
-            <span className="text-gray-700">Subtotal:</span>
-            <span className="font-medium">₹{totals.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-700">Total GST (Item-wise):</span>
-            <span className="font-medium">₹{totals.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          {showGst && gstPercent > 0 && (
-            <div className="flex justify-between">
-              <span className="text-gray-700">Additional GST ({gstPercent}%):</span>
-              <span className="font-medium">₹{((totals.total * gstPercent) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
           <div className="flex justify-between pt-2 border-t border-indigo-200">
             <span className="text-xl font-semibold text-gray-900">Total Amount:</span>
             <span className="text-xl font-semibold text-indigo-600">
-              ₹{(totals.total + (showGst && gstPercent > 0 ? (totals.total * gstPercent) / 100 : 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹{totals.total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>
       </div>
+
+      {/* Previous Bills */}
+      {previousBills.length > 0 && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Previously Generated Bills</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Invoice Number</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-900">Amount</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previousBills.map((bill) => (
+                  <tr key={bill.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-4 text-gray-900 font-medium">{bill.invoiceNumber}</td>
+                    <td className="text-right py-3 px-4 text-gray-900 font-semibold">
+                      ₹{bill.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-gray-900 font-medium">
+                      {bill.billDate
+                        ? new Date(bill.billDate).toLocaleDateString('en-IN')
+                        : new Date(bill.createdAt).toLocaleDateString('en-IN')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
