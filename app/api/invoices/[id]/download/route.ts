@@ -25,6 +25,12 @@ export async function GET(
                 roomType: true,
               },
             },
+            // Include food orders for FOOD invoices to show itemized details
+            foodOrders: {
+              include: {
+                foodItem: true,
+              },
+            },
           },
         },
       },
@@ -45,6 +51,28 @@ export async function GET(
       const checkIn = new Date(invoice.booking.checkInDate)
       const checkout = invoice.booking.checkoutDate ? new Date(invoice.booking.checkoutDate) : new Date()
       days = Math.ceil((checkout.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
+    }
+
+    // Prepare food items for FOOD invoices (kitchen bills)
+    let foodItems: Array<{
+      name: string
+      quantity: number
+      price: number
+      gstPercent?: number
+      total?: number
+    }> | undefined = undefined
+
+    if (invoice.invoiceType === 'FOOD' && invoice.booking?.foodOrders) {
+      foodItems = invoice.booking.foodOrders.map((order) => {
+        const itemTotal = order.foodItem.price * order.quantity
+        return {
+          name: order.foodItem.name,
+          quantity: order.quantity,
+          price: order.foodItem.price,
+          gstPercent: order.foodItem.gstPercent,
+          total: itemTotal,
+        }
+      })
     }
 
     const doc = generateBillPDF(settings, {
@@ -78,6 +106,7 @@ export async function GET(
       totalAmount: invoice.totalAmount,
       paymentMode: 'CASH',
       showGst: invoice.gstEnabled || false,
+      foodItems, // Include food items for itemized kitchen bills
     })
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

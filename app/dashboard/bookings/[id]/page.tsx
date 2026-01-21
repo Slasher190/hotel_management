@@ -34,6 +34,7 @@ interface Booking {
     }
   }>
   invoices: Array<{
+    id: string
     invoiceNumber: string
     totalAmount: number
     gstEnabled: boolean
@@ -274,24 +275,18 @@ export default function BookingDetailPage() {
               onClick={async () => {
                 try {
                   const token = localStorage.getItem('token')
-                  const response = await fetch(`/api/bookings/${booking.id}/checkout`, {
-                    method: 'POST',
+                  // Use the invoice ID from the booking data
+                  const invoiceId = invoice.id
+                  if (!invoiceId) {
+                    toast.error('Invoice ID not found')
+                    return
+                  }
+                  
+                  // Download the invoice using the correct endpoint (does NOT checkout the guest)
+                  const response = await fetch(`/api/invoices/${invoiceId}/download`, {
                     headers: {
-                      'Content-Type': 'application/json',
                       Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({
-                      baseAmount: booking.roomPrice,
-                      tariff: booking.tariff || 0,
-                      additionalGuestCharges: booking.additionalGuestCharges || 0,
-                      gstEnabled: invoice.gstEnabled || false,
-                      showGst: invoice.gstEnabled || false,
-                      gstPercent: 5,
-                      gstNumber: null,
-                      paymentMode: 'CASH',
-                      paymentStatus: 'PAID',
-                      kitchenBillPaid: false,
-                    }),
                   })
                   if (response.ok) {
                     const blob = await response.blob()

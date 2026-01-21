@@ -102,6 +102,18 @@ export async function POST(
       return NextResponse.json({ error: 'Hotel settings not found' }, { status: 404 })
     }
 
+    // Prepare food items for PDF
+    const foodItems = booking.foodOrders.map((order) => {
+      const itemTotal = order.foodItem.price * order.quantity
+      return {
+        name: order.foodItem.name,
+        quantity: order.quantity,
+        price: order.foodItem.price,
+        gstPercent: order.foodItem.gstPercent,
+        total: itemTotal,
+      }
+    })
+
     // Generate PDF
     const doc = generateBillPDF(settings, {
       invoiceNumber,
@@ -133,6 +145,7 @@ export async function POST(
       totalAmount,
       paymentMode: 'CASH',
       showGst,
+      foodItems, // Pass food items for itemized display
     })
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

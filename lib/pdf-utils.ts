@@ -9,6 +9,14 @@ interface HotelSettings {
   gstin?: string | null
 }
 
+interface FoodItem {
+  name: string
+  quantity: number
+  price: number
+  gstPercent?: number
+  total?: number
+}
+
 interface BillData {
   invoiceNumber: string
   billNumber?: string | null
@@ -40,6 +48,7 @@ interface BillData {
   totalAmount: number
   paymentMode: string
   showGst?: boolean // Option to show/hide GST section
+  foodItems?: FoodItem[] // Optional array of food items for itemized bills
 }
 
 // Helper function to format currency with rupee symbol
@@ -244,6 +253,57 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   }
 
   yPos = Math.max(leftColY, rightColY) + 10
+
+  // Food Items Table (if provided - for kitchen bills)
+  if (billData.foodItems && billData.foodItems.length > 0) {
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Food Items', 14, yPos)
+    yPos += 6
+
+    const foodItemsData: (string | number)[][] = []
+    billData.foodItems.forEach((item) => {
+      const itemTotal = item.total || (item.price * item.quantity)
+      const gstAmount = item.gstPercent ? (itemTotal * item.gstPercent) / 100 : 0
+      const totalWithGst = itemTotal + gstAmount
+      
+      foodItemsData.push([
+        item.name,
+        item.quantity.toString(),
+        addRupeeToAmount(item.price),
+        item.gstPercent ? `${item.gstPercent}%` : '-',
+        addRupeeToAmount(totalWithGst),
+      ])
+    })
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Item Name', 'Qty', 'Price', 'GST %', 'Total']],
+      body: foodItemsData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [142, 14, 28], // Red color for kitchen bills
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        overflow: 'linebreak',
+        cellWidth: 'wrap',
+      },
+      columnStyles: {
+        0: { cellWidth: 80, valign: 'middle' },
+        1: { halign: 'center', cellWidth: 20 },
+        2: { halign: 'right', cellWidth: 30 },
+        3: { halign: 'center', cellWidth: 25 },
+        4: { halign: 'right', cellWidth: 35 },
+      },
+      margin: { left: 14, right: 14 },
+    })
+
+    yPos = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10
+  }
 
   // Charges Summary Table
   const chargesData: [string, string][] = []
