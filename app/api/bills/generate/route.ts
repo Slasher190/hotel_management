@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/middleware-auth'
+import { requireManager } from '@/lib/role-auth'
 import { generateBillPDF } from '@/lib/pdf-utils'
 
 // Generate backdated bill
 export async function POST(request: NextRequest) {
   try {
-    const user = getAuthUser(request)
+    const user = requireManager(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
     }
 
     const {

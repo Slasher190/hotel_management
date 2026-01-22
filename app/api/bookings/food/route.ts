@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/middleware-auth'
+import { requireStaffOrManager } from '@/lib/role-auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const user = getAuthUser(request)
+    const user = requireStaffOrManager(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

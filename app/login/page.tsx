@@ -32,6 +32,8 @@ export default function LoginPage() {
       }
 
       localStorage.setItem('token', data.token)
+      localStorage.setItem('userRole', data.user?.role || 'MANAGER')
+      localStorage.setItem('userName', data.user?.name || '')
       document.cookie = `token=${data.token}; path=/; max-age=604800`
       router.push('/dashboard')
     } catch {

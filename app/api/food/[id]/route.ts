@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/middleware-auth'
+import { requireManager } from '@/lib/role-auth'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getAuthUser(request)
+    const user = requireManager(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
     }
 
     const { id } = await params
@@ -32,9 +32,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getAuthUser(request)
+    const user = requireManager(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
     }
 
     const { id } = await params
@@ -69,9 +69,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getAuthUser(request)
+    const user = requireManager(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
     }
 
     const { id } = await params

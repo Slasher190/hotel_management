@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Pagination from '@/app/components/Pagination'
+import { useUserRole } from '@/lib/useUserRole'
 
 interface Booking {
   id: string
@@ -29,6 +30,7 @@ function BookingsContent() {
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
   const paymentPending = searchParams.get('paymentPending')
+  const { canWrite } = useUserRole()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -126,13 +128,15 @@ function BookingsContent() {
             <span>📄</span>
             <span>Police Verification</span>
           </Link>
-          <Link
-            href="/dashboard/bookings/new"
-            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
-          >
-            <span className="text-xl">➕</span>
-            <span>New Check-In</span>
-          </Link>
+          {canWrite && (
+            <Link
+              href="/dashboard/bookings/new"
+              className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
+            >
+              <span className="text-xl">➕</span>
+              <span>New Check-In</span>
+            </Link>
+          )}
         </div>
       </div>
 

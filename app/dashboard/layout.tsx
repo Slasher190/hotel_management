@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useUserRole } from '@/lib/useUserRole'
 
 export default function DashboardLayout({
   children,
@@ -12,6 +13,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { role, userName, isManager, canWrite, loading } = useUserRole()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -22,21 +24,26 @@ export default function DashboardLayout({
 
   const handleLogout = () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('userRole')
+    localStorage.removeItem('userName')
     router.push('/login')
   }
 
-  const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { href: '/dashboard/bookings', label: 'Bookings', icon: '📋' },
-    { href: '/dashboard/checkout', label: 'Checkout', icon: '✅' },
-    { href: '/dashboard/payments', label: 'Payments', icon: '💳' },
-    { href: '/dashboard/tours', label: 'Tours & Travel', icon: '🚌' },
-    { href: '/dashboard/reports', label: 'Reports', icon: '📈' },
-    { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾' },
-    { href: '/dashboard/bills/history', label: 'Bill History', icon: '📜' },
-    { href: '/dashboard/kitchen-bills', label: 'Kitchen Bills', icon: '🍳' },
-    { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
+  const allNavItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: '📊', managerOnly: false },
+    { href: '/dashboard/bookings', label: 'Bookings', icon: '📋', managerOnly: false },
+    { href: '/dashboard/checkout', label: 'Checkout', icon: '✅', managerOnly: false },
+    { href: '/dashboard/payments', label: 'Payments', icon: '💳', managerOnly: false },
+    { href: '/dashboard/tours', label: 'Tours & Travel', icon: '🚌', managerOnly: false },
+    { href: '/dashboard/reports', label: 'Reports', icon: '📈', managerOnly: false },
+    { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾', managerOnly: true },
+    { href: '/dashboard/bills/history', label: 'Bill History', icon: '📜', managerOnly: false },
+    { href: '/dashboard/kitchen-bills', label: 'Kitchen Bills', icon: '🍳', managerOnly: false },
+    { href: '/dashboard/settings', label: 'Settings', icon: '⚙️', managerOnly: true },
   ]
+
+  // Filter nav items based on role
+  const navItems = allNavItems.filter((item) => !item.managerOnly || isManager)
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -63,7 +70,9 @@ export default function DashboardLayout({
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Hotel Management</h2>
-              <p className="text-xs text-white/80 mt-0.5">Manager Dashboard</p>
+              <p className="text-xs text-white/80 mt-0.5">
+                {loading ? 'Loading...' : role === 'MANAGER' ? 'Manager Dashboard' : 'Staff Dashboard'}
+              </p>
             </div>
           </div>
         </div>
@@ -121,8 +130,14 @@ export default function DashboardLayout({
               <p className="text-sm text-[#64748B] mt-1 hidden sm:block">Welcome back! Here's what's happening today.</p>
             </div>
             <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-semibold text-[#111827]">{userName || 'User'}</p>
+                <p className="text-xs text-[#64748B]">
+                  {role === 'MANAGER' ? '👔 Manager' : '👤 Staff'}
+                </p>
+              </div>
               <div className="w-10 h-10 bg-[#8E0E1C] rounded-full flex items-center justify-center text-white font-bold">
-                M
+                {userName ? userName.charAt(0).toUpperCase() : 'U'}
               </div>
             </div>
           </div>
