@@ -54,25 +54,56 @@ export async function GET(
     }
 
     // Prepare food items for FOOD invoices (kitchen bills)
+    // Get food orders from the invoice (they're linked via invoiceId)
     let foodItems: Array<{
       name: string
       quantity: number
       price: number
       gstPercent?: number
       total?: number
+      orderTime?: Date | string
     }> | undefined = undefined
 
-    if (invoice.invoiceType === 'FOOD' && invoice.booking?.foodOrders) {
-      foodItems = invoice.booking.foodOrders.map((order) => {
-        const itemTotal = order.foodItem.price * order.quantity
-        return {
-          name: order.foodItem.name,
-          quantity: order.quantity,
-          price: order.foodItem.price,
-          gstPercent: order.foodItem.gstPercent,
-          total: itemTotal,
-        }
+    if (invoice.invoiceType === 'FOOD') {
+      // Get food orders linked to this invoice
+      const invoiceFoodOrders = await prisma.foodOrder.findMany({
+        where: {
+          invoiceId: invoice.id,
+        },
+        include: {
+          foodItem: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
       })
+
+      if (invoiceFoodOrders.length > 0) {
+        foodItems = invoiceFoodOrders.map((order) => {
+          const itemTotal = order.foodItem.price * order.quantity
+          return {
+            name: order.foodItem.name,
+            quantity: order.quantity,
+            price: order.foodItem.price,
+            gstPercent: order.foodItem.gstPercent,
+            total: itemTotal,
+            orderTime: order.createdAt, // Include order time
+          }
+        })
+      } else if (invoice.booking?.foodOrders) {
+        // Fallback to booking food orders if invoice link not found
+        foodItems = invoice.booking.foodOrders.map((order) => {
+          const itemTotal = order.foodItem.price * order.quantity
+          return {
+            name: order.foodItem.name,
+            quantity: order.quantity,
+            price: order.foodItem.price,
+            gstPercent: order.foodItem.gstPercent,
+            total: itemTotal,
+            orderTime: order.createdAt,
+          }
+        })
+      }
     }
 
     const doc = generateBillPDF(settings, {
@@ -80,14 +111,14 @@ export async function GET(
       billNumber: invoice.billNumber || null,
       billDate: invoice.billDate ? new Date(invoice.billDate) : invoice.createdAt,
       guestName: invoice.guestName,
-      guestAddress: null,
-      guestState: null,
-      guestNationality: null,
-      guestGstNumber: invoice.gstEnabled ? null : null, // Will be handled by showGst
-      guestStateCode: null,
-      guestMobile: null,
-      companyName: null,
-      companyCode: null,
+      guestAddress: invoice.guestAddress || null,
+      guestState: invoice.guestState || null,
+      guestNationality: invoice.guestNationality || null,
+      guestGstNumber: invoice.gstEnabled ? (invoice.guestGstNumber || null) : null,
+      guestStateCode: invoice.guestStateCode || null,
+      guestMobile: invoice.guestMobile || null,
+      companyName: invoice.companyName || null,
+      companyCode: invoice.companyCode || null,
       roomNumber: invoice.booking?.room.roomNumber,
       roomType: invoice.booking?.room.roomType.name || invoice.roomType || undefined,
       checkInDate: invoice.booking?.checkInDate,
@@ -99,12 +130,12 @@ export async function GET(
       additionalGuestCharges: invoice.additionalGuestCharges,
       additionalGuests: invoice.booking?.additionalGuests || 0,
       gstEnabled: invoice.gstEnabled || false,
-      gstPercent: 5,
+      gstPercent: 5, // Default GST percent - could be stored in invoice if needed
       gstAmount: invoice.gstAmount || 0,
-      advanceAmount: 0,
-      roundOff: 0,
+      advanceAmount: invoice.advanceAmount || 0,
+      roundOff: invoice.roundOff || 0,
       totalAmount: invoice.totalAmount,
-      paymentMode: 'CASH',
+      paymentMode: 'CASH', // Payment mode not stored in invoice - could be added if needed
       showGst: invoice.gstEnabled || false,
       foodItems, // Include food items for itemized kitchen bills
     })

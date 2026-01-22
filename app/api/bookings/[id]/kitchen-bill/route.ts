@@ -15,7 +15,14 @@ export async function POST(
     }
 
     const { id } = await params
-    const { showGst = true, gstPercent = 5, gstNumber, includeOrders } = await request.json()
+    let includeOrders: string[] | undefined
+    try {
+      const body = await request.json()
+      includeOrders = body.includeOrders
+    } catch {
+      // Request body might be empty, that's okay - use all unpaid orders
+      includeOrders = undefined
+    }
 
     const booking = await prisma.booking.findUnique({
       where: { id },
@@ -29,22 +36,15 @@ export async function POST(
           include: {
             foodItem: true,
           },
-          // If includeOrders is provided, only include those specific orders
-          // Otherwise, include all unpaid orders (orders not yet invoiced)
-          ...(includeOrders ? {
-            where: {
-              id: {
-                in: includeOrders as string[],
-              },
-            },
-          } : {}),
-        },
-        invoices: {
+          // Only include unpaid orders (where invoiceId is null)
           where: {
-            invoiceType: 'FOOD',
-          },
-          select: {
-            id: true,
+            invoiceId: null,
+            // If includeOrders is provided, only include those specific orders
+            ...(includeOrders && includeOrders.length > 0 ? {
+              id: {
+                in: includeOrders,
+              },
+            } : {}),
           },
         },
       },
@@ -55,28 +55,23 @@ export async function POST(
     }
 
     if (booking.foodOrders.length === 0) {
-      return NextResponse.json({ error: 'No food orders found for this booking' }, { status: 400 })
+      return NextResponse.json({ error: 'No unpaid food orders found for this booking' }, { status: 400 })
     }
 
-    // Calculate food charges (subtotal + item-wise GST)
-    let subtotal = 0
-    let itemWiseGst = 0
+    // Calculate food charges (no GST for kitchen bills)
+    let foodCharges = 0
     booking.foodOrders.forEach((order) => {
       const itemTotal = order.foodItem.price * order.quantity
-      subtotal += itemTotal
-      itemWiseGst += (itemTotal * order.foodItem.gstPercent) / 100
+      foodCharges += itemTotal
     })
 
-    const foodCharges = subtotal + itemWiseGst
-
-    // Calculate additional GST on total (if enabled)
-    const additionalGst = (showGst && gstPercent > 0) ? (foodCharges * gstPercent) / 100 : 0
-    const totalAmount = foodCharges + additionalGst
+    // No GST for kitchen bills
+    const totalAmount = foodCharges
 
     // Generate invoice number
-    const invoiceNumber = `KITCHEN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    const invoiceNumber = `KITCHEN-${Date.now()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`
 
-    // Create invoice
+    // Create invoice (no GST for kitchen bills)
     const invoice = await prisma.invoice.create({
       data: {
         bookingId: id,
@@ -89,10 +84,22 @@ export async function POST(
         foodCharges,
         tariff: 0,
         additionalGuestCharges: 0,
-        gstEnabled: showGst && gstPercent > 0,
-        gstNumber: (showGst && gstPercent > 0) ? gstNumber : null,
-        gstAmount: additionalGst,
+        gstEnabled: false, // No GST for kitchen bills
+        gstNumber: null,
+        gstAmount: 0,
         totalAmount,
+      },
+    })
+
+    // Mark food orders as invoiced
+    await prisma.foodOrder.updateMany({
+      where: {
+        id: {
+          in: booking.foodOrders.map((order) => order.id),
+        },
+      },
+      data: {
+        invoiceId: invoice.id,
       },
     })
 
@@ -102,14 +109,17 @@ export async function POST(
       return NextResponse.json({ error: 'Hotel settings not found' }, { status: 404 })
     }
 
-    // Prepare food items for PDF
-    const foodItems = booking.foodOrders.map((order) => {
+    // Prepare food items for PDF with order time (sorted by order time)
+    const sortedOrders = [...booking.foodOrders].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    )
+    const foodItems = sortedOrders.map((order) => {
       const itemTotal = order.foodItem.price * order.quantity
       return {
         name: order.foodItem.name,
         quantity: order.quantity,
         price: order.foodItem.price,
-        gstPercent: order.foodItem.gstPercent,
+        orderTime: order.createdAt, // Include order time
         total: itemTotal,
       }
     })
@@ -137,15 +147,15 @@ export async function POST(
       foodCharges,
       additionalGuestCharges: 0,
       additionalGuests: 0,
-      gstEnabled: showGst && gstPercent > 0,
-      gstPercent,
-      gstAmount: additionalGst,
+      gstEnabled: false, // No GST for kitchen bills
+      gstPercent: 0,
+      gstAmount: 0,
       advanceAmount: 0,
       roundOff: 0,
       totalAmount,
       paymentMode: 'CASH',
-      showGst,
-      foodItems, // Pass food items for itemized display
+      showGst: false, // No GST for kitchen bills
+      foodItems, // Pass food items with order times for itemized display
     })
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
@@ -158,7 +168,16 @@ export async function POST(
     })
   } catch (error) {
     console.error('Error generating kitchen bill:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    console.error('Error details:', { errorMessage, errorStack })
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -179,6 +198,16 @@ export async function GET(
       where: {
         bookingId: id,
         invoiceType: 'FOOD',
+      },
+      include: {
+        foodOrders: {
+          include: {
+            foodItem: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',

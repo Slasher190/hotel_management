@@ -23,9 +23,6 @@ export default function KitchenBillsPage() {
   const [bills, setBills] = useState<KitchenBill[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [showGst, setShowGst] = useState(false) // Default unchecked
-  const [gstPercent, setGstPercent] = useState(5)
-  const [gstNumber, setGstNumber] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedBill, setSelectedBill] = useState<KitchenBill | null>(null)
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'ONLINE'>('CASH')
@@ -79,11 +76,7 @@ export default function KitchenBillsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          showGst,
-          gstPercent,
-          gstNumber: gstNumber || null,
-        }),
+        body: JSON.stringify({}), // No GST options for kitchen bills
       })
 
       if (response.ok) {
@@ -177,58 +170,16 @@ export default function KitchenBillsPage() {
       {/* Generate Bill Section */}
       <div className="bg-white rounded-xl shadow-md p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate New Kitchen Bill</h3>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="showGst"
-                checked={showGst}
-                onChange={(e) => setShowGst(e.target.checked)}
-                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-              />
-              <label htmlFor="showGst" className="ml-2 text-sm font-medium text-gray-900 cursor-pointer">
-                Show GST on Bill
-              </label>
-            </div>
-          </div>
-
-          {showGst && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">GST Percentage (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={gstPercent}
-                  onChange={(e) => setGstPercent(Number.parseFloat(e.target.value) || 5)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
-                  placeholder="5"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">GST Number</label>
-                <input
-                  type="text"
-                  value={gstNumber}
-                  onChange={(e) => setGstNumber(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter GST number"
-                />
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={handleGenerateBill}
-            disabled={generating}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {generating ? 'Generating...' : 'Generate Kitchen Bill'}
-          </button>
-        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Kitchen bills are generated without GST. Only unpaid food items will be included.
+        </p>
+        <button
+          onClick={handleGenerateBill}
+          disabled={generating}
+          className="w-full bg-[#8E0E1C] text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {generating ? 'Generating...' : 'Generate Kitchen Bill'}
+        </button>
       </div>
 
       {/* Bills History */}
@@ -257,11 +208,11 @@ export default function KitchenBillsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Food Charges
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order Time
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    GST
+                    Food Charges
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total Amount
@@ -279,16 +230,23 @@ export default function KitchenBillsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {bill.billDate
-                        ? new Date(bill.billDate).toLocaleDateString('en-IN')
-                        : new Date(bill.createdAt).toLocaleDateString('en-IN')}
+                        ? new Date(bill.billDate).toLocaleString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : new Date(bill.createdAt).toLocaleString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                       ₹{bill.foodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                      {bill.gstEnabled
-                        ? `₹${bill.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-right">
                       ₹{bill.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

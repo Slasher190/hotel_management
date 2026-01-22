@@ -98,7 +98,7 @@ export async function POST(
     // Generate invoice number
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    // Create invoice
+    // Create invoice - save all available data
     const invoice = await prisma.invoice.create({
       data: {
         bookingId: id,
@@ -106,6 +106,14 @@ export async function POST(
         invoiceType: 'ROOM',
         isManual: false, // This is from a booking checkout
         guestName: booking.guestName,
+        guestAddress: null, // Can be added if available in booking
+        guestState: null, // Can be added if available in booking
+        guestNationality: null, // Can be added if available in booking
+        guestGstNumber: (gstEnabled && showGst) ? null : null, // Can be added if available
+        guestStateCode: null, // Can be added if available
+        guestMobile: null, // Can be added if available
+        companyName: null, // Can be added if available
+        companyCode: null, // Can be added if available
         roomType: booking.room.roomType.name,
         roomCharges,
         tariff: tariffAmount,
@@ -114,6 +122,8 @@ export async function POST(
         gstEnabled: gstEnabled && showGst,
         gstNumber: (gstEnabled && showGst) ? gstNumber : null,
         gstAmount,
+        advanceAmount: 0, // Can be added if available in request
+        roundOff: 0, // Can be added if available in request
         totalAmount,
       },
     })
@@ -154,19 +164,20 @@ export async function POST(
       (Date.now() - new Date(booking.checkInDate).getTime()) / (1000 * 60 * 60 * 24)
     )
 
-    // Generate PDF using utility function
+    // Generate PDF using utility function - use invoice data for all fields
     const doc = generateBillPDF(settings, {
       invoiceNumber,
+      billNumber: null, // Can be added if needed
       billDate: new Date(),
-      guestName: booking.guestName,
-      guestAddress: null,
-      guestState: null,
-      guestNationality: null,
-      guestGstNumber: null,
-      guestStateCode: null,
-      guestMobile: null,
-      companyName: null,
-      companyCode: null,
+      guestName: invoice.guestName,
+      guestAddress: invoice.guestAddress || null,
+      guestState: invoice.guestState || null,
+      guestNationality: invoice.guestNationality || null,
+      guestGstNumber: showGst && invoice.gstEnabled ? (invoice.guestGstNumber || null) : null,
+      guestStateCode: invoice.guestStateCode || null,
+      guestMobile: invoice.guestMobile || null,
+      companyName: invoice.companyName || null,
+      companyCode: invoice.companyCode || null,
       roomNumber: booking.room.roomNumber,
       roomType: booking.room.roomType.name,
       checkInDate: booking.checkInDate,
@@ -180,8 +191,8 @@ export async function POST(
       gstEnabled: gstEnabled && showGst,
       gstPercent: gstPercent || 5,
       gstAmount,
-      advanceAmount: 0,
-      roundOff: 0,
+      advanceAmount: invoice.advanceAmount || 0,
+      roundOff: invoice.roundOff || 0,
       totalAmount,
       paymentMode,
       showGst,

@@ -141,6 +141,8 @@ model FoodOrder {
   foodItemId String
   foodItem   FoodItem  @relation(fields: [foodItemId], references: [id])
   quantity   Int
+  invoiceId  String?   // Track which invoice this order belongs to (null = not invoiced)
+  invoice    Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   createdAt  DateTime  @default(now())
 
   @@map("food_orders")
@@ -177,6 +179,7 @@ model Invoice {
   pdfPath               String?
   billDate              DateTime?   // For backdated bills
   createdAt             DateTime    @default(now())
+  foodOrders            FoodOrder[] // Food orders included in this invoice
 
   @@map("invoices")
 }

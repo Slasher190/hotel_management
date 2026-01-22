@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Bill</title>
+  <style>
+    /* Print-first CSS for A4 size (210mm × 297mm) */
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 210mm;
+      min-height: 297mm;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 10pt;
+      color: #000;
+      background: #fff;
+      padding: 8mm;
+      line-height: 1.2;
+    }
+
+    /* HEADER SECTION */
+    .header {
+      text-align: center;
+      margin-bottom: 6mm;
+      border-bottom: 1px solid #000;
+      padding-bottom: 3mm;
+    }
+
+    .hotel-name {
+      font-size: 16pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 2mm;
+      letter-spacing: 0.5pt;
+    }
+
+    .hotel-address {
+      font-size: 9pt;
+      margin-bottom: 1mm;
+    }
+
+    .hotel-contact {
+      font-size: 8pt;
+      margin: 0.5mm 0;
+    }
+
+    .hotel-gstin {
+      font-size: 8pt;
+      margin-top: 1mm;
+    }
+
+    .logo-placeholder {
+      position: absolute;
+      top: 8mm;
+      left: 8mm;
+      width: 20mm;
+      height: 20mm;
+      border: 1px solid #000;
+      text-align: center;
+      line-height: 20mm;
+      font-size: 7pt;
+    }
+
+    /* META INFO ROW */
+    .meta-info {
+      display: table;
+      width: 100%;
+      margin-bottom: 4mm;
+      font-size: 9pt;
+    }
+
+    .meta-info-row {
+      display: table-row;
+    }
+
+    .meta-info-cell {
+      display: table-cell;
+      padding: 2mm 0;
+    }
+
+    .meta-info-cell.left {
+      text-align: left;
+      width: 33.33%;
+    }
+
+    .meta-info-cell.center {
+      text-align: center;
+      width: 33.33%;
+    }
+
+    .meta-info-cell.right {
+      text-align: right;
+      width: 33.33%;
+    }
+
+    /* ROOM DETAILS TABLE */
+    .room-details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4mm;
+      font-size: 9pt;
+    }
+
+    .room-details-table th,
+    .room-details-table td {
+      border: 1px solid #000;
+      padding: 2mm;
+      text-align: left;
+    }
+
+    .room-details-table th {
+      font-weight: bold;
+      background: #fff;
+    }
+
+    .room-details-table td {
+      text-align: center;
+    }
+
+    /* GUEST DETAILS SECTION */
+    .guest-details {
+      display: table;
+      width: 100%;
+      margin-bottom: 4mm;
+      font-size: 9pt;
+    }
+
+    .guest-details-row {
+      display: table-row;
+    }
+
+    .guest-details-cell {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+      padding: 2mm;
+      border: 1px solid #000;
+    }
+
+    .guest-details-cell.left {
+      border-right: 0.5px solid #000;
+    }
+
+    .guest-details-cell.right {
+      border-left: 0.5px solid #000;
+    }
+
+    .guest-details-cell .label {
+      font-weight: bold;
+      display: inline-block;
+      min-width: 35mm;
+    }
+
+    .guest-details-cell .value {
+      display: inline-block;
+    }
+
+    .guest-details-cell .detail-row {
+      margin-bottom: 1.5mm;
+    }
+
+    /* COMPANY DETAILS TABLE */
+    .company-details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4mm;
+      font-size: 9pt;
+    }
+
+    .company-details-table th,
+    .company-details-table td {
+      border: 1px solid #000;
+      padding: 2mm;
+      text-align: left;
+    }
+
+    .company-details-table th {
+      font-weight: bold;
+      background: #fff;
+    }
+
+    /* BILLING ITEMS TABLE */
+    .billing-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4mm;
+      font-size: 9pt;
+    }
+
+    .billing-items-table th,
+    .billing-items-table td {
+      border: 1px solid #000;
+      padding: 2mm;
+      text-align: center;
+    }
+
+    .billing-items-table th {
+      font-weight: bold;
+      background: #fff;
+    }
+
+    .billing-items-table th:first-child,
+    .billing-items-table td:first-child {
+      text-align: left;
+    }
+
+    .billing-items-table th:last-child,
+    .billing-items-table td:last-child {
+      text-align: right;
+    }
+
+    /* CHARGES SUMMARY */
+    .charges-summary {
+      width: 100%;
+      margin-bottom: 4mm;
+      font-size: 9pt;
+    }
+
+    .charges-summary-row {
+      display: table;
+      width: 100%;
+      margin-bottom: 1mm;
+    }
+
+    .charges-summary-label {
+      display: table-cell;
+      text-align: right;
+      padding-right: 3mm;
+      width: 70%;
+    }
+
+    .charges-summary-value {
+      display: table-cell;
+      text-align: right;
+      width: 30%;
+      font-weight: normal;
+    }
+
+    .charges-summary-row.total {
+      margin-top: 2mm;
+      padding-top: 2mm;
+      border-top: 1px solid #000;
+    }
+
+    .charges-summary-row.total .charges-summary-label,
+    .charges-summary-row.total .charges-summary-value {
+      font-weight: bold;
+      font-size: 11pt;
+    }
+
+    /* FOOTER */
+    .footer {
+      margin-top: 6mm;
+      font-size: 7pt;
+      line-height: 1.4;
+    }
+
+    .footer-declaration {
+      text-align: center;
+      margin-bottom: 4mm;
+      font-style: italic;
+    }
+
+    .footer-signatures {
+      display: table;
+      width: 100%;
+      margin-top: 8mm;
+    }
+
+    .footer-signature {
+      display: table-cell;
+      width: 50%;
+      text-align: center;
+      padding-top: 15mm;
+      border-top: 1px solid #000;
+    }
+
+    .footer-signature.left {
+      text-align: left;
+      padding-left: 5mm;
+    }
+
+    .footer-signature.right {
+      text-align: right;
+      padding-right: 5mm;
+    }
+
+    /* Print media queries */
+    @media print {
+      body {
+        margin: 0;
+        padding: 8mm;
+      }
+
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER SECTION -->
+  <div class="header">
+    <div class="logo-placeholder">LOGO</div>
+    <div class="hotel-name">{{HOTEL_NAME}}</div>
+    <div class="hotel-address">{{HOTEL_ADDRESS}}</div>
+    <div class="hotel-contact">Phone: {{HOTEL_PHONE}}</div>
+    <div class="hotel-contact">Email: {{HOTEL_EMAIL}}</div>
+    <div class="hotel-gstin">GSTIN: {{HOTEL_GSTIN}}</div>
+  </div>
+
+  <!-- META INFO ROW -->
+  <div class="meta-info">
+    <div class="meta-info-row">
+      <div class="meta-info-cell left">Visitor's Register Sr. No.: {{BILL_NUMBER}}</div>
+      <div class="meta-info-cell center">Bill No.: {{INVOICE_NUMBER}}</div>
+      <div class="meta-info-cell right">Bill Date: {{BILL_DATE}}</div>
+    </div>
+  </div>
+
+  <!-- ROOM DETAILS TABLE -->
+  <table class="room-details-table">
+    <thead>
+      <tr>
+        <th>Room No</th>
+        <th>PARTICULARS</th>
+        <th>RENT PER DAY</th>
+        <th>NO. OF DAYS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ROOM_NUMBER}}</td>
+        <td>{{ROOM_TYPE}}</td>
+        <td>{{RENT_PER_DAY}}</td>
+        <td>{{NUMBER_OF_DAYS}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- GUEST DETAILS SECTION -->
+  <div class="guest-details">
+    <div class="guest-details-row">
+      <div class="guest-details-cell left">
+        <div class="detail-row">
+          <span class="label">Guest Name:</span>
+          <span class="value">{{GUEST_NAME}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Address:</span>
+          <span class="value">{{GUEST_ADDRESS}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">State:</span>
+          <span class="value">{{GUEST_STATE}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Nationality:</span>
+          <span class="value">{{GUEST_NATIONALITY}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">GST No.:</span>
+          <span class="value">{{GUEST_GST_NUMBER}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Mobile No.:</span>
+          <span class="value">{{GUEST_MOBILE}}</span>
+        </div>
+      </div>
+      <div class="guest-details-cell right">
+        <div class="detail-row">
+          <span class="label">Check In Date & Time:</span>
+          <span class="value">{{CHECK_IN_DATE_TIME}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Check Out Date & Time:</span>
+          <span class="value">{{CHECK_OUT_DATE_TIME}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Adults:</span>
+          <span class="value">{{ADULTS}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Children:</span>
+          <span class="value">{{CHILDREN}}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Total Guests:</span>
+          <span class="value">{{TOTAL_GUESTS}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPANY DETAILS TABLE -->
+  <table class="company-details-table">
+    <thead>
+      <tr>
+        <th>Company Name</th>
+        <th>Department</th>
+        <th>Designation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{COMPANY_NAME}}</td>
+        <td>{{COMPANY_DEPARTMENT}}</td>
+        <td>{{COMPANY_DESIGNATION}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- BILLING ITEMS TABLE -->
+  <table class="billing-items-table">
+    <thead>
+      <tr>
+        <th>Dt.</th>
+        <th>Qty</th>
+        <th>Product</th>
+        <th>Rate</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{BILLING_ITEMS_ROWS}}
+    </tbody>
+  </table>
+
+  <!-- CHARGES SUMMARY -->
+  <div class="charges-summary">
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Room Charges Before Tax</div>
+      <div class="charges-summary-value">{{ROOM_CHARGES_BEFORE_TAX}}</div>
+    </div>
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Add: GST on Room Charges</div>
+      <div class="charges-summary-value">{{GST_ON_ROOM_CHARGES}}</div>
+    </div>
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Food Charges</div>
+      <div class="charges-summary-value">{{FOOD_CHARGES}}</div>
+    </div>
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Add: GST on Food Charges</div>
+      <div class="charges-summary-value">{{GST_ON_FOOD_CHARGES}}</div>
+    </div>
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Bill Cleared Through</div>
+      <div class="charges-summary-value">{{PAYMENT_MODE}}</div>
+    </div>
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Total Bill Amount</div>
+      <div class="charges-summary-value">{{TOTAL_BILL_AMOUNT}}</div>
+    </div>
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Less: Advance</div>
+      <div class="charges-summary-value">{{ADVANCE_AMOUNT}}</div>
+    </div>
+    <div class="charges-summary-row">
+      <div class="charges-summary-label">Round Off</div>
+      <div class="charges-summary-value">{{ROUND_OFF}}</div>
+    </div>
+    <div class="charges-summary-row total">
+      <div class="charges-summary-label">Net Payable Amount</div>
+      <div class="charges-summary-value">{{NET_PAYABLE_AMOUNT}}</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-declaration">
+      I agree that I am responsible for the full payment of this bill in the event if not paid by the company, organisation or person indicated.
+    </div>
+    <div class="footer-signatures">
+      <div class="footer-signature left">Cashier's Signature</div>
+      <div class="footer-signature right">Guest's Signature</div>
+    </div>
+  </div>
+</body>
+</html>

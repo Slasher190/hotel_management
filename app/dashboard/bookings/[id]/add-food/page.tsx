@@ -26,6 +26,8 @@ interface Booking {
   foodOrders: Array<{
     id: string
     quantity: number
+    invoiceId: string | null
+    createdAt: string
     foodItem: FoodItem
   }>
 }
@@ -41,6 +43,7 @@ export default function AddFoodPage() {
   const [selectedFoodItem, setSelectedFoodItem] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [adding, setAdding] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (bookingId) {
@@ -170,15 +173,63 @@ export default function AddFoodPage() {
     )
   }
 
+  // Filter unpaid orders (not yet invoiced)
+  const unpaidOrders = booking.foodOrders?.filter((order) => !order.invoiceId) || []
+
   const calculateTotal = () => {
-    if (!booking.foodOrders || booking.foodOrders.length === 0) return 0
+    if (unpaidOrders.length === 0) return 0
     let total = 0
-    booking.foodOrders.forEach((order) => {
+    unpaidOrders.forEach((order) => {
+      // Kitchen bills don't have GST
       const itemTotal = order.foodItem.price * order.quantity
-      const gst = (itemTotal * order.foodItem.gstPercent) / 100
-      total += itemTotal + gst
+      total += itemTotal
     })
     return total
+  }
+
+  const handleDownloadBill = async () => {
+    if (unpaidOrders.length === 0) {
+      toast.error('No unpaid food items to generate bill')
+      return
+    }
+
+    setDownloading(true)
+    try {
+      const token = localStorage.getItem('token')
+      const orderIds = unpaidOrders.map((order) => order.id)
+      const response = await fetch(`/api/bookings/${bookingId}/kitchen-bill`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          includeOrders: orderIds,
+        }),
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = globalThis.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `kitchen-bill-${Date.now()}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        globalThis.URL.revokeObjectURL(url)
+        a.remove()
+
+        toast.success('Kitchen bill downloaded successfully!')
+        fetchBooking() // Refresh to update invoice status
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        toast.error(errorData.error || 'Failed to generate kitchen bill')
+      }
+    } catch {
+      toast.error('An error occurred')
+    } finally {
+      setDownloading(false)
+    }
   }
 
   return (
@@ -243,32 +294,50 @@ export default function AddFoodPage() {
         </form>
       </div>
 
-      {/* Current Food Orders */}
+      {/* Current Food Orders (Unpaid Only) */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Food Orders</h3>
-        {booking.foodOrders && booking.foodOrders.length > 0 ? (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Unpaid Food Orders</h3>
+          {unpaidOrders.length > 0 && (
+            <button
+              onClick={handleDownloadBill}
+              disabled={downloading}
+              className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50"
+            >
+              {downloading ? 'Generating...' : '📥 Download Bill'}
+            </button>
+          )}
+        </div>
+        {unpaidOrders.length > 0 ? (
           <>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Time</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">GST %</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {booking.foodOrders.map((order) => {
+                  {unpaidOrders.map((order) => {
                     const itemTotal = order.foodItem.price * order.quantity
-                    const gst = (itemTotal * order.foodItem.gstPercent) / 100
-                    const total = itemTotal + gst
                     return (
                       <tr key={order.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {order.foodItem.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(order.createdAt).toLocaleString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                           ₹{order.foodItem.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -276,11 +345,8 @@ export default function AddFoodPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                           {order.quantity}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                          {order.foodItem.gstPercent}%
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                          ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ₹{itemTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
                           <button
@@ -303,7 +369,7 @@ export default function AddFoodPage() {
             </div>
           </>
         ) : (
-          <p className="text-gray-500 text-center py-8">No food items added yet</p>
+          <p className="text-gray-500 text-center py-8">No unpaid food items. Add items to generate a bill.</p>
         )}
       </div>
     </div>

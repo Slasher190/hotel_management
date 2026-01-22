@@ -15,7 +15,6 @@ interface FoodItem {
   price: number
   gstPercent?: number
   total?: number
-  orderTime?: Date | string // Order time for kitchen bills
 }
 
 interface BillData {
@@ -48,26 +47,39 @@ interface BillData {
   roundOff: number
   totalAmount: number
   paymentMode: string
-  showGst?: boolean // Option to show/hide GST section
-  foodItems?: FoodItem[] // Optional array of food items for itemized bills
+  showGst?: boolean
+  foodItems?: FoodItem[]
 }
 
-// Helper function to format currency with rupee symbol
-// Since jsPDF default fonts don't support ₹, we use "Rs." which is universally understood
-function formatCurrencyWithRupee(amount: number): string {
-  const formatted = amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  // Use "Rs." instead of ₹ symbol for reliable rendering in PDF
-  return `Rs. ${formatted}`
+// Helper function to format currency
+function formatCurrency(amount: number): string {
+  return `Rs. ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-// Helper function to add rupee symbol to text in table cells
-function addRupeeToAmount(amount: number): string {
-  return formatCurrencyWithRupee(amount)
+// Helper function to format date
+function formatDate(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+// Helper function to format date and time
+function formatDateTime(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  return d.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 /**
  * Generate traditional Indian hotel bill PDF with pixel-accurate layout
- * Matches traditional hotel bill design with A4 size (210mm × 297mm)
  */
 export function generateBillPDF(settings: HotelSettings, billData: BillData): jsPDF {
   const doc = new jsPDF({
@@ -137,11 +149,7 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
     doc.text(`Visitor's Register Sr. No.: ${billData.billNumber}`, metaLeft, yPos)
   }
   doc.text(`Bill No.: ${billData.invoiceNumber}`, metaCenter, yPos, { align: 'center' })
-  doc.text(`Bill Date: ${new Date(billData.billDate).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })}`, metaRight, yPos, { align: 'right' })
+  doc.text(`Bill Date: ${formatDate(billData.billDate)}`, metaRight, yPos, { align: 'right' })
   yPos += 6
 
   // ============================================
@@ -152,7 +160,7 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   autoTable(doc, {
     startY: yPos,
     head: [['Room No', 'PARTICULARS', 'RENT PER DAY', 'NO. OF DAYS']],
-    body: [[billData.roomNumber || '', billData.roomType || '', formatCurrencyWithRupee(rentPerDay), (billData.days || 0).toString()]],
+    body: [[billData.roomNumber || '', billData.roomType || '', formatCurrency(rentPerDay), (billData.days || 0).toString()]],
     theme: 'plain',
     headStyles: {
       fillColor: [255, 255, 255],
@@ -180,7 +188,7 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   // ============================================
   // 4. GUEST DETAILS SECTION (Two-column grid)
   // ============================================
-  const guestColWidth = (contentWidth - 2) / 2
+  const guestColWidth = (contentWidth - 2) / 2 // Minus border width
   const guestLeftX = margin
   const guestRightX = margin + guestColWidth + 2
 
@@ -221,23 +229,11 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   // Right column
   guestY = yPos + 4
   if (billData.checkInDate) {
-    doc.text(`Check In Date & Time: ${new Date(billData.checkInDate).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`, guestRightX + 2, guestY)
+    doc.text(`Check In Date & Time: ${formatDateTime(billData.checkInDate)}`, guestRightX + 2, guestY)
     guestY += 4
   }
   if (billData.checkoutDate) {
-    doc.text(`Check Out Date & Time: ${new Date(billData.checkoutDate).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`, guestRightX + 2, guestY)
+    doc.text(`Check Out Date & Time: ${formatDateTime(billData.checkoutDate)}`, guestRightX + 2, guestY)
     guestY += 4
   }
   const adults = (billData.additionalGuests || 0) + 1
@@ -281,26 +277,12 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   if (billData.foodItems && billData.foodItems.length > 0) {
     billData.foodItems.forEach((item) => {
       const itemTotal = item.total || item.price * item.quantity
-      // Use order time if available (for kitchen bills), otherwise use bill date
-      const orderDate = item.orderTime
-        ? new Date(item.orderTime).toLocaleString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : new Date(billData.billDate).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })
       billingItemsData.push([
-        orderDate,
+        formatDate(new Date()),
         item.quantity.toString(),
         item.name,
-        formatCurrencyWithRupee(item.price),
-        formatCurrencyWithRupee(itemTotal),
+        formatCurrency(item.price),
+        formatCurrency(itemTotal),
       ])
     })
   } else {
@@ -347,42 +329,35 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   doc.setFontSize(9)
   doc.setFont('times', 'normal')
 
-  // Calculate base charges (room + tariff + additional guests)
-  const baseRoomCharges = billData.roomCharges
-  const tariffCharges = billData.tariff || 0
-  const additionalGuestChargesTotal = (billData.additionalGuestCharges || 0) * (billData.additionalGuests || 0)
-  const roomChargesBeforeTax = baseRoomCharges + tariffCharges + additionalGuestChargesTotal
-  
-  // Calculate GST on room charges
+  // Calculate charges
+  const roomChargesBeforeTax = billData.roomCharges
   const roomGst = showGst && billData.gstEnabled ? (roomChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
-  
-  // Food charges
   const foodChargesBeforeTax = billData.foodCharges
   const foodGst = showGst && billData.gstEnabled ? (foodChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
 
   // Room Charges Before Tax
   doc.text('Room Charges Before Tax', summaryLabelX, summaryY, { align: 'right' })
-  doc.text(formatCurrencyWithRupee(roomChargesBeforeTax), summaryRightX, summaryY, { align: 'right' })
+  doc.text(formatCurrency(roomChargesBeforeTax), summaryRightX, summaryY, { align: 'right' })
   summaryY += 4
 
   // Add: GST on Room Charges
   if (showGst && roomGst > 0) {
     doc.text('Add: GST on Room Charges', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(roomGst), summaryRightX, summaryY, { align: 'right' })
+    doc.text(formatCurrency(roomGst), summaryRightX, summaryY, { align: 'right' })
     summaryY += 4
   }
 
   // Food Charges
   if (billData.foodCharges > 0) {
     doc.text('Food Charges', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(foodChargesBeforeTax), summaryRightX, summaryY, { align: 'right' })
+    doc.text(formatCurrency(foodChargesBeforeTax), summaryRightX, summaryY, { align: 'right' })
     summaryY += 4
   }
 
   // Add: GST on Food Charges
   if (showGst && foodGst > 0) {
     doc.text('Add: GST on Food Charges', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(foodGst), summaryRightX, summaryY, { align: 'right' })
+    doc.text(formatCurrency(foodGst), summaryRightX, summaryY, { align: 'right' })
     summaryY += 4
   }
 
@@ -391,24 +366,22 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   doc.text(billData.paymentMode, summaryRightX, summaryY, { align: 'right' })
   summaryY += 4
 
-  // Total Bill Amount (before deductions)
-  const totalBeforeDeductions = roomChargesBeforeTax + roomGst + foodChargesBeforeTax + foodGst
+  // Total Bill Amount
   doc.text('Total Bill Amount', summaryLabelX, summaryY, { align: 'right' })
-  doc.text(formatCurrencyWithRupee(totalBeforeDeductions), summaryRightX, summaryY, { align: 'right' })
+  doc.text(formatCurrency(billData.totalAmount), summaryRightX, summaryY, { align: 'right' })
   summaryY += 4
 
   // Less: Advance
   if (billData.advanceAmount > 0) {
     doc.text('Less: Advance', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(billData.advanceAmount), summaryRightX, summaryY, { align: 'right' })
+    doc.text(formatCurrency(billData.advanceAmount), summaryRightX, summaryY, { align: 'right' })
     summaryY += 4
   }
 
   // Round Off
   if (billData.roundOff !== 0) {
-    const roundOffSign = billData.roundOff >= 0 ? '+' : '-'
     doc.text('Round Off', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(`${roundOffSign} ${formatCurrencyWithRupee(Math.abs(billData.roundOff))}`, summaryRightX, summaryY, { align: 'right' })
+    doc.text(formatCurrency(Math.abs(billData.roundOff)), summaryRightX, summaryY, { align: 'right' })
     summaryY += 4
   }
 
@@ -420,14 +393,14 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   doc.setFontSize(11)
   doc.setFont('times', 'bold')
   doc.text('Net Payable Amount', summaryLabelX, summaryY + 2, { align: 'right' })
-  doc.text(formatCurrencyWithRupee(billData.totalAmount), summaryRightX, summaryY + 2, { align: 'right' })
+  doc.text(formatCurrency(billData.totalAmount), summaryRightX, summaryY + 2, { align: 'right' })
 
   summaryY += 8
 
   // ============================================
   // 8. FOOTER
   // ============================================
-  const footerY = 297 - margin - 25
+  const footerY = 297 - margin - 25 // Bottom of page minus margin and footer height
 
   // Declaration text
   doc.setFontSize(7)
@@ -449,23 +422,4 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   doc.text('Guest\'s Signature', pageWidth - margin - 40, signatureY + 4, { align: 'center' })
 
   return doc
-}
-
-// Helper function to mask ID number
-export function maskIdNumber(idNumber: string | null | undefined, idType?: string): string {
-  if (!idNumber) return 'N/A'
-  
-  // For Aadhaar: Show first 4 and last 4, mask middle
-  if (idType === 'AADHAAR' || idNumber.length === 12) {
-    if (idNumber.length >= 8) {
-      return `${idNumber.substring(0, 4)} XXXX XXXX ${idNumber.substring(idNumber.length - 4)}`
-    }
-  }
-  
-  // For other IDs: Show first 2 and last 2, mask middle
-  if (idNumber.length >= 4) {
-    return `${idNumber.substring(0, 2)}${'X'.repeat(idNumber.length - 4)}${idNumber.substring(idNumber.length - 2)}`
-  }
-  
-  return 'XXXX'
 }
