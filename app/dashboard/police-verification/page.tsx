@@ -13,12 +13,17 @@ interface Booking {
   idType: string
   idNumber: string | null
   checkInDate: string
+  purpose?: string
+  adults: number
+  children: number
+  additionalGuests: number
   room: {
     roomNumber: string
     roomType: {
       name: string
     }
   }
+  mobileNumber?: string
 }
 
 export default function PoliceVerificationPage() {
@@ -26,28 +31,24 @@ export default function PoliceVerificationPage() {
   const [editableBookings, setEditableBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [showDateFilter, setShowDateFilter] = useState(false)
+
+  // Single Date Filter - Defaults to Today
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
-    fetchActiveBookings(dateFrom || undefined, dateTo || undefined)
-  }, [dateFrom, dateTo])
+    fetchActiveBookings(selectedDate)
+  }, [selectedDate])
 
-  const fetchActiveBookings = async (dateFrom?: string, dateTo?: string) => {
+  const fetchActiveBookings = async (date: string) => {
     try {
+      setLoading(true)
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         status: 'ACTIVE',
-        showAll: 'true', // Get all active bookings, not just first page
+        showAll: 'true',
+        dateFrom: date,
+        dateTo: date, // Single date range
       })
-      
-      if (dateFrom) {
-        params.append('dateFrom', dateFrom)
-      }
-      if (dateTo) {
-        params.append('dateTo', dateTo)
-      }
 
       const response = await fetch(`/api/bookings?${params.toString()}`, {
         headers: {
@@ -62,6 +63,11 @@ export default function PoliceVerificationPage() {
           bookingsData.map((b: Booking) => ({
             ...b,
             idNumber: b.idNumber || '',
+            adults: b.adults || 1,
+            children: b.children || 0,
+            additionalGuests: b.additionalGuests || 0,
+            purpose: b.purpose || '',
+            mobileNumber: b.mobileNumber || '',
           }))
         )
       }
@@ -72,12 +78,10 @@ export default function PoliceVerificationPage() {
     }
   }
 
-  const handleUpdateBooking = (index: number, field: keyof Booking, value: string) => {
+  const handleUpdateBooking = (index: number, field: keyof Booking, value: string | number) => {
     const updated = [...editableBookings]
-    if (field === 'idNumber') {
-      updated[index] = { ...updated[index], idNumber: value }
-    } else if (field === 'guestName') {
-      updated[index] = { ...updated[index], guestName: value }
+    if (field === 'idNumber' || field === 'guestName' || field === 'purpose' || field === 'mobileNumber') {
+      updated[index] = { ...updated[index], [field]: value }
     }
     setEditableBookings(updated)
   }
@@ -93,6 +97,10 @@ export default function PoliceVerificationPage() {
       guestName: '',
       idType: 'AADHAAR',
       idNumber: '',
+      purpose: '',
+      adults: 1,
+      children: 0,
+      additionalGuests: 0,
       checkInDate: new Date().toISOString(),
       room: {
         roomNumber: '',
@@ -100,6 +108,7 @@ export default function PoliceVerificationPage() {
           name: '',
         },
       },
+      mobileNumber: '',
     }
     setEditableBookings([...editableBookings, newRecord])
   }
@@ -113,23 +122,30 @@ export default function PoliceVerificationPage() {
       doc.text('Police Verification Record', 105, 20, { align: 'center' })
 
       doc.setFontSize(10)
-      doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN')}`, 105, 30, {
+      doc.text(`Date: ${selectedDate}`, 105, 30, {
         align: 'center',
       })
 
-      const tableData = editableBookings.map((guest, index) => [
-        (index + 1).toString(),
-        guest.guestName,
-        guest.idType,
-        maskIdNumber(guest.idNumber, guest.idType),
-      ])
+      const tableData = editableBookings.map((guest, index) => {
+        const totalPeople = (guest.adults || 0) + (guest.children || 0) + (guest.additionalGuests || 0)
+        return [
+          (index + 1).toString(),
+          guest.guestName,
+          guest.room.roomNumber || 'N/A',
+          totalPeople.toString(),
+          guest.purpose || '-',
+          guest.mobileNumber || '-',
+          maskIdNumber(guest.idNumber, guest.idType),
+        ]
+      })
 
       autoTable(doc, {
         startY: 40,
-        head: [['S.No.', 'Name', 'ID Type', 'ID Number']],
+        head: [['S.No.', 'Name', 'Room No', 'No. of People', 'Purpose', 'Mobile', 'Last 4 Digits ID']],
         body: tableData,
         theme: 'striped',
         headStyles: { fillColor: [142, 14, 28] },
+        styles: { fontSize: 8 },
       })
 
       const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
@@ -137,7 +153,7 @@ export default function PoliceVerificationPage() {
       const url = globalThis.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `police-verification-${new Date().toISOString().split('T')[0]}.pdf`
+      a.download = `police-verification-${selectedDate}.pdf`
       document.body.appendChild(a)
       a.click()
       globalThis.URL.revokeObjectURL(url)
@@ -151,15 +167,6 @@ export default function PoliceVerificationPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="text-center py-16">
-        <div className="text-6xl mb-4">📄</div>
-        <div className="text-lg font-semibold text-[#64748B]">Loading active bookings...</div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
@@ -167,42 +174,35 @@ export default function PoliceVerificationPage() {
           <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             📄 Police Verification
           </h2>
-          <p className="text-sm sm:text-base text-[#64748B] font-medium">Edit guest details before downloading the daily record</p>
+          <p className="text-sm sm:text-base text-[#64748B] font-medium">Daily record of guests for police submission</p>
         </div>
-        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto items-center">
+
+          <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg px-3 py-2">
+            <span className="text-sm font-semibold text-[#111827]">📅 Date:</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent border-none focus:ring-0 text-sm font-medium"
+            />
+          </div>
+
           <button
             onClick={handleAddRecord}
-            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
-            <span>➕</span>
-            <span>Add Record</span>
+            <span>➕ Add Row</span>
           </button>
-          <button
-            onClick={() => setShowDateFilter(!showDateFilter)}
-            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
-          >
-            📅 Filter by Date
-          </button>
+
           <button
             onClick={handleDownload}
             disabled={saving || editableBookings.length === 0}
             className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
           >
-            {saving ? (
-              <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <span>📥</span>
-                <span>Download PDF</span>
-              </>
-            )}
+            {saving ? 'Generating...' : '📥 Download PDF'}
           </button>
+
           <button
             onClick={() => router.back()}
             className="px-4 py-2 sm:px-6 sm:py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
@@ -212,159 +212,92 @@ export default function PoliceVerificationPage() {
         </div>
       </div>
 
-      {showDateFilter && (
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="dateFrom" className="block text-sm font-semibold text-[#111827] mb-2">📅 From Date</label>
-              <input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="dateTo" className="block text-sm font-semibold text-[#111827] mb-2">📅 To Date</label>
-              <input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                min={dateFrom || undefined}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => {
-                setDateFrom('')
-                setDateTo('')
-                setShowDateFilter(false)
-              }}
-              className="px-4 py-2 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold"
-            >
-              Clear Filters
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
-        <div className="mb-6 p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]">
-          <p className="text-sm font-semibold text-[#111827]">
-            💡 <span className="font-bold">Tip:</span> Edit guest details before downloading. You can remove bookings that should not be included in the police verification record. Use "Add Record" to manually add entries.
-          </p>
-        </div>
-
-        {editableBookings.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">Loading...</div>
+        ) : editableBookings.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">📄</div>
-            <div className="text-lg font-semibold text-[#64748B] mb-2">No active bookings found</div>
-            <div className="text-sm text-[#94A3B8]">Create a booking first to generate police verification records</div>
+            <div className="text-lg font-semibold text-[#64748B] mb-2">No active bookings found for {selectedDate}</div>
+            <div className="text-sm text-[#94A3B8]">Change date or add a record manually</div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-[#CBD5E1]">
               <thead className="bg-[#8E0E1C]">
                 <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    S.No.
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    👤 Name
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    🆔 ID Type
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                    🔢 ID Number
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider hidden sm:table-cell">
-                    🏨 Room
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider hidden md:table-cell">
-                    📅 Check-In
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                    ⚡ Actions
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">S.No.</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Room No</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">No. of People</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Purpose</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Mobile</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Last 4 Digits ID</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-[#CBD5E1]">
-                {editableBookings.map((booking, index) => (
-                  <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-[#111827]">{index + 1}</div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <input
-                        type="text"
-                        value={booking.guestName}
-                        onChange={(e) => handleUpdateBooking(index, 'guestName', e.target.value)}
-                        className="px-3 py-2 sm:px-4 sm:py-2 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white w-full"
-                      />
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <select
-                        value={booking.idType}
-                        onChange={(e) => {
-                          const updated = [...editableBookings]
-                          updated[index] = { ...updated[index], idType: e.target.value }
-                          setEditableBookings(updated)
-                        }}
-                        className="px-3 py-2 sm:px-4 sm:py-2 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                      >
-                        <option value="AADHAAR">Aadhaar</option>
-                        <option value="DL">Driving License</option>
-                        <option value="VOTER_ID">Voter ID</option>
-                        <option value="PASSPORT">Passport</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div>
+                {editableBookings.map((booking, index) => {
+                  const totalPeople = (booking.adults || 1) + (booking.children || 0) + (booking.additionalGuests || 0)
+                  return (
+                    <tr key={booking.id} className="hover:bg-[#F8FAFC]">
+                      <td className="px-4 py-3 font-bold">{index + 1}</td>
+                      <td className="px-4 py-3">
                         <input
                           type="text"
-                          value={booking.idNumber || ''}
-                          onChange={(e) => handleUpdateBooking(index, 'idNumber', e.target.value)}
-                          className="px-3 py-2 sm:px-4 sm:py-2 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white w-full"
-                          placeholder="Enter ID number"
+                          value={booking.guestName}
+                          onChange={(e) => handleUpdateBooking(index, 'guestName', e.target.value)}
+                          className="px-2 py-1 border rounded w-full"
                         />
-                        {booking.idNumber && (
-                          <div className="text-xs text-[#64748B] mt-1 font-medium">
-                            Will show as: <span className="font-bold">{maskIdNumber(booking.idNumber, booking.idType)}</span>
+                      </td>
+                      <td className="px-4 py-3 font-bold text-[#8E0E1C]">{booking.room.roomNumber || '-'}</td>
+                      <td className="px-4 py-3">
+                        {totalPeople}
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={booking.purpose || ''}
+                          onChange={(e) => handleUpdateBooking(index, 'purpose', e.target.value)}
+                          className="px-2 py-1 border rounded w-full"
+                          placeholder="Purpose"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={booking.mobileNumber || ''}
+                          onChange={(e) => handleUpdateBooking(index, 'mobileNumber', e.target.value)}
+                          className="px-2 py-1 border rounded w-full"
+                          placeholder="Mobile"
+                        />
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <div className="text-sm">
+                          <input
+                            type="text"
+                            value={booking.idNumber || ''}
+                            onChange={(e) => handleUpdateBooking(index, 'idNumber', e.target.value)}
+                            className="px-2 py-1 border rounded w-full mb-1"
+                            placeholder="Full ID Number"
+                          />
+                          <div className="text-xs text-gray-500">
+                            {maskIdNumber(booking.idNumber, booking.idType)}
                           </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
-                      <div className="text-sm font-medium text-[#111827]">
-                        <span className="font-bold text-[#8E0E1C]">{booking.room.roomNumber}</span>
-                        <span className="text-[#64748B]"> ({booking.room.roomType.name})</span>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
-                      <div className="text-sm font-medium text-[#64748B]">
-                        {new Date(booking.checkInDate).toLocaleDateString('en-IN', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => handleRemoveBooking(index)}
-                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
-                      >
-                        🗑️ Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => handleRemoveBooking(index)}
+                          className="text-red-600 hover:text-red-800 font-medium text-sm"
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

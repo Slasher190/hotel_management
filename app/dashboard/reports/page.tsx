@@ -41,6 +41,17 @@ function ReportsContent() {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [gstFilter, setGstFilter] = useState(false)
   const [paymentFilter, setPaymentFilter] = useState('')
+  const [userRole, setUserRole] = useState('')
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        setUserRole(payload.role || '')
+      } catch (e) { }
+    }
+  }, [])
 
   const fetchReports = useCallback(async () => {
     try {
@@ -149,30 +160,32 @@ function ReportsContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-          <div className="text-sm font-semibold text-[#64748B] mb-2">📋 Total Bookings</div>
-          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">{reportData.summary.totalBookings}</div>
-        </div>
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-          <div className="text-sm font-semibold text-[#64748B] mb-2">💰 Total Revenue</div>
-          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
-            ₹{reportData.summary.totalRevenue.toLocaleString('en-IN')}
+      {userRole !== 'STAFF' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+            <div className="text-sm font-semibold text-[#64748B] mb-2">📋 Total Bookings</div>
+            <div className="text-2xl sm:text-4xl font-bold text-[#111827]">{reportData.summary.totalBookings}</div>
+          </div>
+          <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+            <div className="text-sm font-semibold text-[#64748B] mb-2">💰 Total Revenue</div>
+            <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
+              ₹{reportData.summary.totalRevenue.toLocaleString('en-IN')}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+            <div className="text-sm font-semibold text-[#64748B] mb-2">🧾 GST Revenue</div>
+            <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
+              ₹{reportData.summary.gstRevenue.toLocaleString('en-IN')}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+            <div className="text-sm font-semibold text-[#64748B] mb-2">⏳ Pending Payments</div>
+            <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
+              ₹{reportData.summary.pendingAmount.toLocaleString('en-IN')}
+            </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-          <div className="text-sm font-semibold text-[#64748B] mb-2">🧾 GST Revenue</div>
-          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
-            ₹{reportData.summary.gstRevenue.toLocaleString('en-IN')}
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-          <div className="text-sm font-semibold text-[#64748B] mb-2">⏳ Pending Payments</div>
-          <div className="text-2xl sm:text-4xl font-bold text-[#111827]">
-            ₹{reportData.summary.pendingAmount.toLocaleString('en-IN')}
-          </div>
-        </div>
-      </div>
+      )}
 
       <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 flex-wrap">
@@ -215,55 +228,40 @@ function ReportsContent() {
           <table className="min-w-full divide-y divide-[#CBD5E1]">
             <thead className="bg-[#8E0E1C]">
               <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
-                  👤 Guest
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
-                  🏨 Room
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase hidden sm:table-cell">
-                  📅 Check-In
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
-                  💰 Amount
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">
-                  💳 Payment
-                </th>
+                <th className="px-4 text-left text-xs font-bold text-white uppercase">Date</th>
+                <th className="px-4 text-left text-xs font-bold text-white uppercase">Bill No</th>
+                <th className="px-4 text-left text-xs font-bold text-white uppercase">Name</th>
+                <th className="px-4 text-left text-xs font-bold text-white uppercase">Company</th>
+                <th className="px-4 text-left text-xs font-bold text-white uppercase">GST</th>
+                <th className="px-4 text-left text-xs font-bold text-white uppercase">Payment</th>
+                <th className="px-4 text-left text-xs font-bold text-white uppercase">Total</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-[#CBD5E1]">
-              {reportData.bookings.map((booking) => {
-                const invoice = booking.invoices[0]
-                const payment = booking.payments[0]
+              {reportData.bookings.map((booking: any) => {
+                const invoice = booking.invoices?.[0]
+                const date = booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : '-'
+                const billNo = booking.billNumber || invoice?.invoiceNumber || '-'
+                const company = booking.companyName || invoice?.companyName || '-'
+                const gst = invoice?.gstAmount ? `₹${invoice.gstAmount.toLocaleString('en-IN')}` : '-'
+                const total = invoice?.totalAmount || booking.roomPrice || 0
+
                 return (
                   <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-[#111827]">{booking.guestName}</div>
+                    <td className="px-4 py-3 text-sm text-[#111827] font-medium">{date}</td>
+                    <td className="px-4 py-3 text-sm text-[#111827]">{billNo}</td>
+                    <td className="px-4 py-3 text-sm text-[#111827] font-bold">{booking.guestName}</td>
+                    <td className="px-4 py-3 text-sm text-[#64748B]">{company}</td>
+                    <td className="px-4 py-3 text-sm text-[#111827]">{gst}</td>
+                    <td className="px-4 py-3 text-sm text-[#111827]">
+                      {booking.payments?.length > 0
+                        ? <span className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.payments[0].status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          {booking.payments[0].status}
+                        </span>
+                        : <span className="text-gray-400">-</span>}
                     </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-[#111827]">{booking.room.roomNumber}</div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
-                      <div className="text-sm font-medium text-[#64748B]">
-                        {new Date(booking.checkInDate).toLocaleDateString('en-IN')}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-[#111827]">
-                        ₹{(invoice?.totalAmount || booking.roomPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-bold rounded-full ${
-                          payment?.status === 'PAID'
-                            ? 'bg-[#64748B] text-white'
-                            : 'bg-[#8E0E1C] text-white'
-                        }`}
-                      >
-                        {payment?.status || 'N/A'}
-                      </span>
+                    <td className="px-4 py-3 text-sm font-bold text-[#8E0E1C]">
+                      ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
                 )

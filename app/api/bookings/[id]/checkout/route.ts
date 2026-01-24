@@ -14,14 +14,14 @@ export async function POST(
     }
 
     const { id } = await params
-    const { 
-      baseAmount, 
-      tariff, 
+    const {
+      baseAmount,
+      tariff,
       additionalGuestCharges,
-      gstEnabled, 
-      gstPercent, 
-      gstNumber, 
-      paymentMode, 
+      gstEnabled,
+      gstPercent,
+      gstNumber,
+      paymentMode,
       paymentStatus,
       showGst = false,
       kitchenBillPaid = false,
@@ -57,10 +57,10 @@ export async function POST(
     const roomCharges = Number.parseFloat(baseAmount) || booking.roomPrice
     const tariffAmount = Number.parseFloat(tariff) || 0
     const additionalGuestChargesValue = Number.parseFloat(additionalGuestCharges) || booking.additionalGuestCharges || 0
-    const additionalGuestsTotal = booking.additionalGuests > 0 
-      ? additionalGuestChargesValue * booking.additionalGuests 
+    const additionalGuestsTotal = booking.additionalGuests > 0
+      ? additionalGuestChargesValue * booking.additionalGuests
       : 0
-    
+
     // Calculate combined food bill if enabled
     let combinedFoodCharges = 0
     if (showCombinedFoodBill) {
@@ -72,16 +72,16 @@ export async function POST(
         },
       })
       const previousBillsTotal = previousFoodBills.reduce((sum, bill) => sum + bill.totalAmount, 0)
-      
+
       // Calculate current food orders total (no GST)
       let currentFoodTotal = 0
       booking.foodOrders.forEach((order) => {
         currentFoodTotal += order.foodItem.price * order.quantity
       })
-      
+
       combinedFoodCharges = previousBillsTotal + currentFoodTotal - (Number.parseFloat(complimentary) || 0)
     }
-    
+
     const baseTotal = roomCharges + tariffAmount + additionalGuestsTotal + combinedFoodCharges
     const gstAmount = (gstEnabled && showGst) ? (baseTotal * (gstPercent || 5)) / 100 : 0
     const totalAmount = baseTotal + gstAmount
@@ -89,7 +89,7 @@ export async function POST(
     // Update booking with tariff and additional guest charges
     await prisma.booking.update({
       where: { id },
-      data: { 
+      data: {
         tariff: tariffAmount,
         additionalGuestCharges: additionalGuestChargesValue,
       },
@@ -105,19 +105,37 @@ export async function POST(
         invoiceNumber,
         invoiceType: 'ROOM',
         isManual: false, // This is from a booking checkout
+        billNumber: booking.billNumber || null,
+        billDate: booking.billDate || null,
+        visitorRegistrationNumber: booking.visitorRegistrationNumber?.toString() || null,
+
         guestName: booking.guestName,
-        guestAddress: null, // Can be added if available in booking
-        guestState: null, // Can be added if available in booking
-        guestNationality: null, // Can be added if available in booking
-        guestGstNumber: (gstEnabled && showGst) ? null : null, // Can be added if available
+        guestAddress: booking.guestAddress || null,
+        guestMobile: booking.guestMobile || null,
+        guestGstNumber: (gstEnabled && showGst) ? (booking.guestGstNumber || null) : null,
+        guestState: null, // Can be added if available
+        guestNationality: null, // Can be added if available
         guestStateCode: null, // Can be added if available
-        guestMobile: null, // Can be added if available
-        companyName: null, // Can be added if available
+
+        companyName: booking.companyName || null,
+        department: booking.department || null,
+        designation: booking.designation || null,
         companyCode: null, // Can be added if available
+
         roomType: booking.room.roomType.name,
+        roomNumber: booking.room.roomNumber,
+        checkInDate: booking.checkInDate,
+        checkOutDate: new Date(),
+
+        adults: booking.adults || 1,
+        children: booking.children || 0,
+        totalGuests: (booking.adults || 1) + (booking.children || 0) + (booking.additionalGuests || 0),
+
         roomCharges,
         tariff: tariffAmount,
         additionalGuestCharges: additionalGuestChargesValue,
+        discount: booking.discount || 0,
+
         foodCharges: showCombinedFoodBill ? combinedFoodCharges : 0,
         gstEnabled: gstEnabled && showGst,
         gstNumber: (gstEnabled && showGst) ? gstNumber : null,

@@ -10,6 +10,7 @@ interface Room {
   roomType: {
     id: string
     name: string
+    price: number
   }
   status: 'AVAILABLE' | 'OCCUPIED'
 }
@@ -17,6 +18,8 @@ interface Room {
 interface RoomType {
   id: string
   name: string
+  price: number
+  category?: 'ROOM' | 'HALL'
 }
 
 export default function NewBookingPage() {
@@ -26,14 +29,39 @@ export default function NewBookingPage() {
   const [formData, setFormData] = useState({
     roomId: '',
     roomTypeId: '',
+    // Bill Details
+    billNumber: '',
+    billDate: new Date().toISOString().split('T')[0],
+
+    // Guest Profile
     guestName: '',
+    guestAddress: '',
+    guestMobile: '',
+    guestGstNumber: '',
+
+    // Corporate Fields
+    companyName: '',
+    department: '',
+    designation: '',
+
+    // Booking Details
+    purpose: '',
     idType: 'AADHAAR' as 'AADHAAR' | 'DL' | 'VOTER_ID' | 'PASSPORT' | 'OTHER',
     idNumber: '',
+
+    // Occupancy
+    adults: '1',
+    children: '0',
     additionalGuests: '0',
+
+    // Calculations
+    roomPrice: '', // Rent per day
+    numberOfDays: '1',
+    discount: '0',
     additionalGuestCharges: '0',
     mattresses: '0',
-    roomPrice: '',
   })
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -83,11 +111,16 @@ export default function NewBookingPage() {
   useEffect(() => {
     if (formData.roomTypeId) {
       fetchAvailableRooms()
+      // Feature: Default Room Rent
+      const selectedType = roomTypes.find(rt => rt.id === formData.roomTypeId)
+      if (selectedType) {
+        setFormData(prev => ({ ...prev, roomPrice: selectedType.price?.toString() || '' }))
+      }
     } else {
       setRooms([])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.roomTypeId])
+  }, [formData.roomTypeId, roomTypes])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -103,14 +136,15 @@ export default function NewBookingPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          roomId: formData.roomId,
-          guestName: formData.guestName,
-          idType: formData.idType,
-          idNumber: formData.idNumber || null,
+          ...formData,
           additionalGuests: parseInt(formData.additionalGuests) || 0,
           additionalGuestCharges: parseFloat(formData.additionalGuestCharges) || 0,
           mattresses: parseInt(formData.mattresses) || 0,
           roomPrice: parseFloat(formData.roomPrice),
+          adults: parseInt(formData.adults) || 1,
+          children: parseInt(formData.children) || 0,
+          discount: parseFloat(formData.discount) || 0,
+          advanceAmount: parseFloat((formData as any).advanceAmount) || 0,
         }),
       })
 
@@ -131,17 +165,31 @@ export default function NewBookingPage() {
     }
   }
 
-  // Calculate total additional guest charges
-  const totalAdditionalCharges = (parseInt(formData.additionalGuests) || 0) * (parseFloat(formData.additionalGuestCharges) || 0)
+  // Calculations
+  const rentPerDay = parseFloat(formData.roomPrice) || 0
+  const days = parseInt(formData.numberOfDays) || 0
+  const discount = parseFloat(formData.discount) || 0
+  const addGuestCharges = (parseInt(formData.additionalGuests) || 0) * (parseFloat(formData.additionalGuestCharges) || 0)
+
+  const totalRent = (rentPerDay * days)
+  const taxableAmount = totalRent + addGuestCharges - discount
+  // GST Logic (Simple 12% for now, or based on price?) 
+  // Requirement: "GST calculation". Usually < 1000 is 0%, 1000-7500 is 12%, > 7500 is 18%.
+  let gstRate = 0
+  if (rentPerDay >= 7500) gstRate = 0.18
+  else if (rentPerDay >= 1000) gstRate = 0.12
+
+  const gstAmount = taxableAmount * gstRate
+  const totalAmount = taxableAmount + gstAmount
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+    <div className="space-y-6 sm:space-y-8 pb-12">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6 shadow-sm">
         <div>
           <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
-            ➕ New Check-In
+            ➕ New Booking
           </h2>
-          <p className="text-sm sm:text-base text-[#64748B] font-medium">Create a new booking for a guest</p>
+          <p className="text-sm sm:text-base text-[#64748B] font-medium">Create a new booking entry</p>
         </div>
         <button
           onClick={() => router.back()}
@@ -151,91 +199,131 @@ export default function NewBookingPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
-        <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
-          <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
-            <span className="text-2xl sm:text-3xl">🏨</span>
-            Booking Information
-          </h3>
-        </div>
-        <div className="p-6 sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg font-semibold">
-                ⚠️ {error}
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg font-semibold">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* 1. Header Info & Bill Details */}
+        <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden shadow-sm">
+          <div className="bg-[#1e293b] px-6 sm:px-8 py-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              📄 Bill Details
+            </h3>
+          </div>
+          <div className="p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-[#64748B] mb-2">Visitor Registration No</label>
+              <div className="w-full px-4 py-3 border border-[#E2E8F0] rounded-lg bg-[#F8FAFC] text-[#94A3B8] font-mono">
+                Auto-serialized
               </div>
-            )}
-
-            <div>
-              <label htmlFor="roomTypeId" className="block text-sm font-semibold text-[#111827] mb-3">
-                🏷️ Room Type <span className="text-[#8E0E1C]">*</span>
-              </label>
-              <select
-                id="roomTypeId"
-                required
-                value={formData.roomTypeId}
-                onChange={(e) => {
-                  setFormData({ ...formData, roomTypeId: e.target.value, roomId: '' })
-                }}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827]"
-              >
-                <option value="">Select room type</option>
-                {roomTypes.map((rt) => (
-                  <option key={rt.id} value={rt.id}>
-                    {rt.name}
-                  </option>
-                ))}
-              </select>
             </div>
-
             <div>
-              <label htmlFor="roomId" className="block text-sm font-semibold text-[#111827] mb-3">
-                🏨 Select Room <span className="text-[#8E0E1C]">*</span>
-              </label>
-              <select
-                id="roomId"
-                required
-                value={formData.roomId}
-                onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827]"
-              >
-                <option value="">Select a room</option>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.roomNumber} ({room.roomType.name})
-                  </option>
-                ))}
-              </select>
-              {rooms.length === 0 && formData.roomTypeId && (
-                <p className="mt-2 text-sm text-[#64748B] font-medium">No available rooms of this type</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="guestName" className="block text-sm font-semibold text-[#111827] mb-3">
-                👤 Guest Name <span className="text-[#8E0E1C]">*</span>
-              </label>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Bill No</label>
               <input
-                id="guestName"
                 type="text"
+                value={formData.billNumber}
+                onChange={(e) => setFormData({ ...formData, billNumber: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C]"
+                placeholder="Enter bill no"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Bill Date</label>
+              <input
+                type="date"
+                value={formData.billDate}
+                onChange={(e) => setFormData({ ...formData, billDate: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C]"
+              />
+            </div>
+            <div>
+              {/* Room Selection serves as "Room No" */}
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Select Room (Manual)</label>
+              <div className="flex gap-2">
+                <select
+                  required
+                  value={formData.roomTypeId}
+                  onChange={(e) => setFormData({ ...formData, roomTypeId: e.target.value, roomId: '' })}
+                  className="w-1/2 px-2 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                >
+                  <option value="">Type</option>
+                  {roomTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                </select>
+                <select
+                  required
+                  value={formData.roomId}
+                  onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
+                  className="w-1/2 px-2 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                >
+                  <option value="">No.</option>
+                  {rooms.map(r => <option key={r.id} value={r.id}>{r.roomNumber} (₹{r.roomType.price})</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Guest Profile */}
+        <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden shadow-sm">
+          <div className="bg-[#1e293b] px-6 sm:px-8 py-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              👤 Guest Profile
+            </h3>
+          </div>
+          <div className="p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Guest Name <span className="text-red-500">*</span></label>
+              <input
                 required
+                type="text"
                 value={formData.guestName}
                 onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827] placeholder:text-[#94A3B8]"
-                placeholder="Enter guest name"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                placeholder="Full Name"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Address</label>
+              <textarea
+                value={formData.guestAddress}
+                onChange={(e) => setFormData({ ...formData, guestAddress: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                placeholder="Full Address"
+                rows={2}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Mobile No</label>
+              <input
+                type="tel"
+                value={formData.guestMobile}
+                onChange={(e) => setFormData({ ...formData, guestMobile: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                placeholder="10-digit number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">GST No</label>
+              <input
+                type="text"
+                value={formData.guestGstNumber}
+                onChange={(e) => setFormData({ ...formData, guestGstNumber: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                placeholder="Optional"
               />
             </div>
 
+            {/* ID Proof */}
             <div>
-              <label htmlFor="idType" className="block text-sm font-semibold text-[#111827] mb-3">
-                🆔 ID Type <span className="text-[#8E0E1C]">*</span>
-              </label>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">ID Type <span className="text-red-500">*</span></label>
               <select
-                id="idType"
                 required
                 value={formData.idType}
-                onChange={(e) => setFormData({ ...formData, idType: e.target.value as 'AADHAAR' | 'DL' | 'VOTER_ID' | 'PASSPORT' | 'OTHER' })}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827]"
+                onChange={(e) => setFormData({ ...formData, idType: e.target.value as any })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
               >
                 <option value="AADHAAR">Aadhaar</option>
                 <option value="DL">Driving License</option>
@@ -244,141 +332,220 @@ export default function NewBookingPage() {
                 <option value="OTHER">Other</option>
               </select>
             </div>
-
             <div>
-              <label htmlFor="idNumber" className="block text-sm font-semibold text-[#111827] mb-3">
-                🔢 ID Number
-              </label>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">ID Number</label>
               <input
-                id="idNumber"
                 type="text"
                 value={formData.idNumber}
                 onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827] placeholder:text-[#94A3B8]"
-                placeholder="Enter ID number"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                placeholder="ID Number"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Corporate Fields */}
+        <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden shadow-sm">
+          <div className="bg-[#1e293b] px-6 sm:px-8 py-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              🏢 Corporate Details (Optional)
+            </h3>
+          </div>
+          <div className="p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Company Name</label>
+              <input
+                type="text"
+                value={formData.companyName}
+                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Department</label>
+              <input
+                type="text"
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Designation</label>
+              <input
+                type="text"
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Occupancy & Purpose */}
+        <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden shadow-sm">
+          <div className="bg-[#1e293b] px-6 sm:px-8 py-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              👥 Occupancy & Purpose
+            </h3>
+          </div>
+          <div className="p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Adults</label>
+              <input
+                type="number"
+                min="1"
+                value={formData.adults}
+                onChange={(e) => setFormData({ ...formData, adults: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Children</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.children}
+                onChange={(e) => setFormData({ ...formData, children: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Booking Purpose <span className="text-red-500">*</span></label>
+              <input
+                required
+                type="text"
+                value={formData.purpose}
+                onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                placeholder="e.g. Business, Tourism"
               />
             </div>
 
+            {/* Additional Guests (legacy or extra?) Keeping as per requirements 'Occupancy' handles basic. */}
             <div>
-              <label htmlFor="additionalGuests" className="block text-sm font-semibold text-[#111827] mb-3">
-                👥 Additional Guests
-              </label>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Extra Guests</label>
               <input
-                id="additionalGuests"
                 type="number"
                 min="0"
                 value={formData.additionalGuests}
                 onChange={(e) => setFormData({ ...formData, additionalGuests: e.target.value })}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827] placeholder:text-[#94A3B8]"
-                placeholder="Number of additional guests"
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
               />
             </div>
+          </div>
+        </div>
 
-            {parseInt(formData.additionalGuests) > 0 && (
-              <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg p-4 sm:p-6">
-                <div>
-                  <label htmlFor="additionalGuestCharges" className="block text-sm font-semibold text-[#111827] mb-3">
-                    💰 Additional Guest Charges (₹ per guest) <span className="text-[#8E0E1C]">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
-                    <input
-                      id="additionalGuestCharges"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.additionalGuestCharges}
-                      onChange={(e) => setFormData({ ...formData, additionalGuestCharges: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827] placeholder:text-[#94A3B8]"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  {totalAdditionalCharges > 0 && (
-                    <div className="mt-3 p-3 bg-white rounded-lg border border-[#CBD5E1]">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-semibold text-[#64748B]">
-                          Total Additional Guest Charges:
-                        </span>
-                        <span className="text-lg font-bold text-[#111827]">
-                          ₹{totalAdditionalCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#64748B] mt-1 font-medium">
-                        ({formData.additionalGuests} guest(s) × ₹{parseFloat(formData.additionalGuestCharges) || 0})
-                      </p>
-                    </div>
-                  )}
+        {/* 5. Financial Calculations */}
+        <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden shadow-sm">
+          <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              💰 Payment Details
+            </h3>
+          </div>
+          <div className="p-6 sm:p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+              <div>
+                <label className="block text-sm font-semibold text-[#111827] mb-2">Rent per day</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
+                  <input
+                    required
+                    type="number"
+                    value={formData.roomPrice}
+                    onChange={(e) => setFormData({ ...formData, roomPrice: e.target.value })}
+                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                  />
                 </div>
               </div>
-            )}
-
-            <div>
-              <label htmlFor="mattresses" className="block text-sm font-semibold text-[#111827] mb-3">
-                🛏️ Mattresses
-              </label>
-              <input
-                id="mattresses"
-                type="number"
-                min="0"
-                value={formData.mattresses}
-                onChange={(e) => setFormData({ ...formData, mattresses: e.target.value })}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827] placeholder:text-[#94A3B8]"
-                placeholder="Number of mattresses"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="roomPrice" className="block text-sm font-semibold text-[#111827] mb-3">
-                💰 Room Price (₹) <span className="text-[#8E0E1C]">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
+              <div>
+                <label className="block text-sm font-semibold text-[#111827] mb-2">No. of Days</label>
                 <input
-                  id="roomPrice"
                   type="number"
-                  required
-                  min="0"
-                  step="0.01"
-                  value={formData.roomPrice}
-                  onChange={(e) => setFormData({ ...formData, roomPrice: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white text-[#111827] placeholder:text-[#94A3B8]"
-                  placeholder="Enter room price"
+                  min="1"
+                  value={formData.numberOfDays}
+                  onChange={(e) => setFormData({ ...formData, numberOfDays: e.target.value })}
+                  className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111827] mb-2">Discount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
+                  <input
+                    type="number"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111827] mb-2">Advance Amount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
+                  <input
+                    type="number"
+                    value={(formData as any).advanceAmount || ''}
+                    onChange={(e) => setFormData({ ...formData, advanceAmount: e.target.value } as any)}
+                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-[#111827] mb-2">Extra Guest Charge</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
+                  <input
+                    type="number"
+                    value={formData.additionalGuestCharges}
+                    onChange={(e) => setFormData({ ...formData, additionalGuestCharges: e.target.value })}
+                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-3 sm:px-8 sm:py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Creating...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>✅</span>
-                    <span>Create Booking</span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => router.back()}
-                className="flex-1 px-6 py-3 sm:px-8 sm:py-4 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-bold min-h-[44px]"
-              >
-                Cancel
-              </button>
+            {/* Totals Summary */}
+            <div className="border-t border-dashed border-gray-300 pt-6">
+              <div className="flex flex-col gap-2 max-w-md ml-auto">
+                <div className="flex justify-between text-gray-600">
+                  <span>Total Rent ({days} days):</span>
+                  <span>₹{totalRent.toFixed(2)}</span>
+                </div>
+                {addGuestCharges > 0 && <div className="flex justify-between text-gray-600">
+                  <span>Extra Guest Charges:</span>
+                  <span>+ ₹{addGuestCharges.toFixed(2)}</span>
+                </div>}
+                {discount > 0 && <div className="flex justify-between text-green-600">
+                  <span>Discount:</span>
+                  <span>- ₹{discount.toFixed(2)}</span>
+                </div>}
+                <div className="flex justify-between text-gray-600">
+                  <span>GST ({gstRate * 100}%):</span>
+                  <span>+ ₹{gstAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xl font-bold text-[#8E0E1C] border-t border-gray-300 pt-2 mt-2">
+                  <span>Total Amount:</span>
+                  <span>₹{totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
-          </form>
+          </div>
         </div>
-      </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 px-6 py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity font-bold disabled:opacity-50 text-lg shadow-lg"
+          >
+            {loading ? 'Creating...' : '✅ Confirm Booking'}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }

@@ -63,6 +63,7 @@ interface BillData {
   paymentMode: string
   showGst?: boolean // Option to show/hide GST section
   foodItems?: FoodItem[] // Optional array of food items for itemized bills
+  purpose?: string | null // Purpose of stay
 }
 
 // Helper function to format currency with rupee symbol
@@ -229,6 +230,10 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   }
   if (billData.guestMobile) {
     doc.text(`Mobile No.: ${billData.guestMobile}`, guestLeftX + 2, guestY)
+    guestY += 4
+  }
+  if (billData.purpose) {
+    doc.text(`Purpose: ${billData.purpose}`, guestLeftX + 2, guestY)
   }
 
   // Right column
@@ -297,17 +302,17 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
       // Use order time if available (for kitchen bills), otherwise use bill date
       const orderDate = item.orderTime
         ? new Date(item.orderTime).toLocaleString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
         : new Date(billData.billDate).toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          })
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        })
       billingItemsData.push([
         orderDate,
         item.quantity.toString(),
@@ -365,10 +370,10 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   const tariffCharges = billData.tariff || 0
   const additionalGuestChargesTotal = (billData.additionalGuestCharges || 0) * (billData.additionalGuests || 0)
   const roomChargesBeforeTax = baseRoomCharges + tariffCharges + additionalGuestChargesTotal
-  
+
   // Calculate GST on room charges
   const roomGst = showGst && billData.gstEnabled ? (roomChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
-  
+
   // Food charges
   const foodChargesBeforeTax = billData.foodCharges
   const foodGst = showGst && billData.gstEnabled ? (foodChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
@@ -467,18 +472,11 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
 // Helper function to mask ID number
 export function maskIdNumber(idNumber: string | null | undefined, idType?: string): string {
   if (!idNumber) return 'N/A'
-  
-  // For Aadhaar: Show first 4 and last 4, mask middle
-  if (idType === 'AADHAAR' || idNumber.length === 12) {
-    if (idNumber.length >= 8) {
-      return `${idNumber.substring(0, 4)} XXXX XXXX ${idNumber.substring(idNumber.length - 4)}`
-    }
-  }
-  
-  // For other IDs: Show first 2 and last 2, mask middle
+
+  // Requirement: "Last 4 digits of their ID"
   if (idNumber.length >= 4) {
-    return `${idNumber.substring(0, 2)}${'X'.repeat(idNumber.length - 4)}${idNumber.substring(idNumber.length - 2)}`
+    return `XXXX XXXX ${idNumber.substring(idNumber.length - 4)}`
   }
-  
-  return 'XXXX'
+
+  return idNumber // Return as is if too short
 }

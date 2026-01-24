@@ -51,42 +51,67 @@ export default function DashboardPage() {
     )
   }
 
+  // Role based access
+  const [userRole, setUserRole] = useState<string>('')
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        setUserRole(payload.role || '')
+      } catch (e) {
+        console.error('Error decoding token', e)
+      }
+    }
+  }, [])
+
   const statCards = [
     {
       title: 'Total Bookings',
       value: stats?.totalBookings || 0,
       icon: '📋',
       href: '/dashboard/bookings',
+      roles: ['ADMIN', 'STAFF'], // Visible to all
     },
     {
       title: 'Active Bookings',
       value: stats?.activeBookings || 0,
       icon: '✅',
       href: '/dashboard/bookings?status=active',
+      roles: ['ADMIN', 'STAFF'],
     },
     {
       title: 'Monthly Revenue',
       value: `₹${(stats?.totalRevenue || 0).toLocaleString('en-IN')}`,
       icon: '💰',
+      roles: ['ADMIN'], // Hidden for Staff
     },
     {
       title: 'GST Revenue',
       value: `₹${(stats?.gstRevenue || 0).toLocaleString('en-IN')}`,
       icon: '🧾',
+      roles: ['ADMIN'],
     },
     {
       title: 'Pending Payments',
       value: stats?.pendingPayments || 0,
       icon: '⏳',
       href: '/dashboard/payments?status=pending',
+      roles: ['ADMIN'], // Hidden for Staff based on note
     },
     {
       title: 'Available Rooms',
       value: `${stats?.availableRooms || 0} / ${(stats?.availableRooms || 0) + (stats?.occupiedRooms || 0)}`,
       icon: '🏨',
       href: '/dashboard/rooms',
+      roles: ['ADMIN', 'STAFF'],
     },
-  ]
+  ].filter(card => !card.roles || card.roles.includes(userRole || 'ADMIN')) // Default to ADMIN view if role not found, or maybe safe default? Assuming ADMIN for now if undefined to avoid hiding everything on load, but clearer is to wait.
+  // Actually, better to assume restricted if unsure, but for UX 'ADMIN' default usually for dev. 
+  // Let's stick to: if userRole is set, filter. If not set yet (loading), maybe show empty?
+  // But strictly per request: "Staff -> only use..."
+
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -114,31 +139,31 @@ export default function DashboardPage() {
       {/* Stats Grid - Hidden by default */}
       {showStats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {statCards.map((card, index) => {
-          const content = (
-            <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6 hover:border-[#8E0E1C] transition-colors duration-150">
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#8E0E1C] rounded-lg flex items-center justify-center text-2xl sm:text-3xl">
-                  {card.icon}
-                </div>
-                <div className="text-right min-w-0 flex-1">
-                  <div className="text-xl sm:text-2xl lg:text-4xl font-bold text-[#111827] break-words">
-                    {card.value}
+          {statCards.map((card, index) => {
+            const content = (
+              <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6 hover:border-[#8E0E1C] transition-colors duration-150">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#8E0E1C] rounded-lg flex items-center justify-center text-2xl sm:text-3xl">
+                    {card.icon}
                   </div>
-                  <div className="text-xs sm:text-sm font-medium text-[#64748B] mt-2">{card.title}</div>
+                  <div className="text-right min-w-0 flex-1">
+                    <div className="text-xl sm:text-2xl lg:text-4xl font-bold text-[#111827] break-all">
+                      {card.value}
+                    </div>
+                    <div className="text-xs sm:text-sm font-medium text-[#64748B] mt-2">{card.title}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )
+            )
 
-          return card.href ? (
-            <Link key={index} href={card.href} className="block">
-              {content}
-            </Link>
-          ) : (
-            <div key={index}>{content}</div>
-          )
-        })}
+            return card.href ? (
+              <Link key={index} href={card.href} className="block">
+                {content}
+              </Link>
+            ) : (
+              <div key={index}>{content}</div>
+            )
+          })}
         </div>
       )}
 

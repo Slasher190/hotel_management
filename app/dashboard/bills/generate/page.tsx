@@ -9,6 +9,7 @@ interface Room {
   roomNumber: string
   roomType: {
     name: string
+    price: number
   }
 }
 
@@ -24,7 +25,6 @@ export default function BillGeneratorPage() {
     guestState: '',
     guestNationality: 'Indian',
     guestGstNumber: '',
-    guestStateCode: '',
     guestMobile: '',
     idType: 'AADHAAR',
     idNumber: '',
@@ -33,6 +33,7 @@ export default function BillGeneratorPage() {
     department: '',
     designation: '',
     businessPhoneNumber: '',
+    purpose: '', // Mandatory field
     roomNumber: '', // Auto-filled from particulars selection
     particulars: '', // Selection from rooms
     rentPerDay: '',
@@ -48,13 +49,14 @@ export default function BillGeneratorPage() {
     additionalGuestCharges: '0',
     additionalGuests: '0',
     discount: '0',
-    gstEnabled: false,
-    showGst: false,
-    gstPercent: '5',
+    gstEnabled: true,
+    showGst: true,
+    gstPercent: '12',
     gstNumber: '',
     advanceAmount: '0',
     roundOff: '0',
     paymentMode: 'CASH' as 'CASH' | 'ONLINE',
+    guestStateCode: '20', // Default Jharkhand
   })
   const [loading, setLoading] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
@@ -122,7 +124,8 @@ export default function BillGeneratorPage() {
       setFormData(prev => ({
         ...prev,
         particulars: roomId,
-        roomNumber: selectedRoom.roomNumber
+        roomNumber: selectedRoom.roomNumber,
+        rentPerDay: selectedRoom.roomType.price.toString()
       }))
     }
   }
@@ -136,12 +139,16 @@ export default function BillGeneratorPage() {
     const additionalGuestsTotal = additionalGuestCharges * additionalGuests
     const discount = Number.parseFloat(formData.discount) || 0
     const advance = Number.parseFloat(formData.advanceAmount) || 0
-    const roundOff = Number.parseFloat(formData.roundOff) || 0
     const gstPercent = Number.parseFloat(formData.gstPercent) || 0
-    
+
     const baseAmount = roomCharges + tariff + foodCharges + additionalGuestsTotal - discount
     const gstAmount = (formData.gstEnabled && formData.showGst) ? (baseAmount * gstPercent) / 100 : 0
-    const totalAmount = baseAmount + gstAmount - advance + roundOff
+
+    // Logic to reach nearest whole number
+    const totalBeforeRound = baseAmount + gstAmount - advance
+    const targetTotal = Math.round(totalBeforeRound)
+    const roundOff = targetTotal - totalBeforeRound
+    const totalAmount = targetTotal
 
     return {
       roomCharges,
@@ -188,6 +195,7 @@ export default function BillGeneratorPage() {
           totalGuests: parseInt(formData.totalGuests) || 1,
           numberOfDays: parseInt(formData.numberOfDays) || 1,
           rentPerDay: parseFloat(formData.rentPerDay) || 0,
+          purpose: formData.purpose,
         }),
       })
 
@@ -556,7 +564,7 @@ export default function BillGeneratorPage() {
                       <option value="">Select a room</option>
                       {rooms.map((room) => (
                         <option key={room.id} value={room.id}>
-                          {room.roomNumber} - {room.roomType.name}
+                          {room.roomNumber} - {room.roomType.name} (Rent: ₹{room.roomType.price})
                         </option>
                       ))}
                     </select>
@@ -621,6 +629,20 @@ export default function BillGeneratorPage() {
                       value={formData.checkOutDate}
                       onChange={(e) => setFormData({ ...formData, checkOutDate: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">
+                      📝 Purpose of Stay <span className="text-[#8E0E1C]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.purpose}
+                      onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="Enter purpose of stay"
                     />
                   </div>
                 </div>
@@ -756,9 +778,9 @@ export default function BillGeneratorPage() {
                       <input
                         type="number"
                         step="0.01"
-                        value={formData.roundOff}
-                        onChange={(e) => setFormData({ ...formData, roundOff: e.target.value })}
-                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                        value={calculations.roundOff.toFixed(2)}
+                        readOnly
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] bg-gray-100 font-medium"
                         placeholder="0.00"
                       />
                     </div>
@@ -873,9 +895,9 @@ export default function BillGeneratorPage() {
 
             <div className="space-y-4 sm:space-y-5">
               <div className="bg-[#F8FAFC] rounded-lg p-4 sm:p-6 border border-[#CBD5E1]">
-                  <div className="flex justify-between items-center mb-3 gap-2">
-                  <span className="text-sm font-semibold text-[#64748B] flex-shrink-0">🏨 Room Charges</span>
-                  <span className="text-sm font-bold text-[#111827] break-words text-right min-w-0">
+                <div className="flex justify-between items-center mb-3 gap-2">
+                  <span className="text-sm font-semibold text-[#64748B] shrink-0">🏨 Room Charges</span>
+                  <span className="text-sm font-bold text-[#111827] wrap-break-word text-right min-w-0">
                     ₹{calculations.roomCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -957,8 +979,8 @@ export default function BillGeneratorPage() {
 
               <div className="bg-[#8E0E1C] rounded-lg p-4 sm:p-6 border border-[#8E0E1C]">
                 <div className="flex justify-between items-center mb-3 gap-2 flex-wrap">
-                  <span className="text-lg sm:text-xl font-bold text-white flex-shrink-0">💰 Total Amount</span>
-                  <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white break-words text-right min-w-0">
+                  <span className="text-lg sm:text-xl font-bold text-white shrink-0">💰 Total Amount</span>
+                  <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white wrap-break-word text-right min-w-0">
                     ₹{calculations.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>

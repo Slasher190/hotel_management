@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireManager } from '@/lib/role-auth'
+import { requireStaffOrManager } from '@/lib/role-auth'
 import { generateBillPDF } from '@/lib/pdf-utils'
 
 // Generate backdated bill
 export async function POST(request: NextRequest) {
   try {
-    const user = requireManager(request)
+    const user = requireStaffOrManager(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
+      return NextResponse.json({ error: 'Unauthorized - Staff or Manager access required' }, { status: 403 })
     }
 
     const {
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       department,
       designation,
       businessPhoneNumber,
+      purpose,
       roomNumber,
       particulars,
       rentPerDay,
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     const additionalGuestsCount = Number.parseInt(additionalGuests) || 0
     const additionalGuestsTotal = additionalGuestChargesValue * additionalGuestsCount
     const discountAmount = Number.parseFloat(discount) || 0
-    
+
     const baseTotal = baseAmount + tariffAmount + foodAmount + additionalGuestsTotal - discountAmount
     const gstAmount = (gstEnabled && showGst)
       ? (baseTotal * (Number.parseFloat(gstPercent) || 5)) / 100
@@ -113,9 +114,11 @@ export async function POST(request: NextRequest) {
         department: department || null,
         designation: designation || null,
         businessPhoneNumber: businessPhoneNumber || null,
+        purpose: purpose || null,
         roomNumber: roomNumber || null,
         roomType: booking?.room.roomType.name || null,
         particulars: particulars || null,
+
         rentPerDay: Number.parseFloat(rentPerDay) || 0,
         numberOfDays: Number.parseInt(numberOfDays) || 1,
         checkInDate: checkInDate ? new Date(checkInDate) : null,
@@ -145,7 +148,7 @@ export async function POST(request: NextRequest) {
         (booking.checkoutDate
           ? new Date(booking.checkoutDate).getTime()
           : Date.now() - new Date(booking.checkInDate).getTime()) /
-          (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24)
       )
     }
 
@@ -195,6 +198,7 @@ export async function POST(request: NextRequest) {
       totalAmount,
       paymentMode,
       showGst, // This controls GSTIN visibility
+      purpose: purpose || null,
     })
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

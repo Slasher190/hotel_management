@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = request.nextUrl.searchParams.get('sortOrder') || 'desc'
 
     const where: Prisma.BookingWhereInput = {}
-    
+
     // Filter for checked out bookings with pending payment
     if (paymentPending === 'true') {
       where.status = 'CHECKED_OUT'
@@ -97,11 +97,11 @@ export async function GET(request: NextRequest) {
       pagination: showAll
         ? null
         : {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-          },
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
     })
   } catch (error) {
     console.error('Error fetching bookings:', error)
@@ -119,17 +119,29 @@ export async function POST(request: NextRequest) {
     const {
       roomId,
       guestName,
+      guestAddress,
+      guestMobile,
+      guestGstNumber,
+      companyName,
+      department,
+      designation,
+      purpose,
+      billNumber,
+      billDate,
       idType,
       idNumber,
+      adults,
+      children,
       additionalGuests,
       additionalGuestCharges,
       mattresses,
       roomPrice,
+      discount,
     } = await request.json()
 
-    if (!roomId || !guestName || !idType || !roomPrice) {
+    if (!roomId || !guestName || !idType || !roomPrice || !purpose) {
       return NextResponse.json(
-        { error: 'Room, guest name, ID type, and room price are required' },
+        { error: 'Room, guest name, ID type, room price, and purpose are required' },
         { status: 400 }
       )
     }
@@ -152,12 +164,24 @@ export async function POST(request: NextRequest) {
       data: {
         roomId,
         guestName,
+        guestAddress,
+        guestMobile,
+        guestGstNumber,
+        companyName,
+        department,
+        designation,
+        purpose,
+        billNumber,
+        billDate: billDate ? new Date(billDate) : undefined,
         idType: idType as 'AADHAAR' | 'DL' | 'VOTER_ID' | 'PASSPORT' | 'OTHER',
         idNumber: idNumber || null,
+        adults: parseInt(adults) || 1,
+        children: parseInt(children) || 0,
         additionalGuests: parseInt(additionalGuests) || 0,
         additionalGuestCharges: parseFloat(additionalGuestCharges) || 0,
         mattresses: parseInt(mattresses) || 0,
         roomPrice: parseFloat(roomPrice),
+        discount: parseFloat(discount) || 0,
         status: 'ACTIVE',
       },
     })

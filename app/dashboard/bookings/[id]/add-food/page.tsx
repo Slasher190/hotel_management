@@ -32,6 +32,19 @@ interface Booking {
   }>
 }
 
+
+interface Invoice {
+  id: string
+  invoiceNumber: string
+  totalAmount: number
+  createdAt: string
+  foodOrders: Array<{
+    id: string
+    quantity: number
+    foodItem: FoodItem
+  }>
+}
+
 export default function AddFoodPage() {
   const router = useRouter()
   const params = useParams()
@@ -39,6 +52,7 @@ export default function AddFoodPage() {
 
   const [booking, setBooking] = useState<Booking | null>(null)
   const [foodItems, setFoodItems] = useState<FoodItem[]>([])
+  const [pastBills, setPastBills] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFoodItem, setSelectedFoodItem] = useState('')
   const [quantity, setQuantity] = useState(1)
@@ -49,8 +63,54 @@ export default function AddFoodPage() {
     if (bookingId) {
       fetchBooking()
       fetchFoodItems()
+      fetchPastBills()
     }
   }, [bookingId])
+
+  const fetchPastBills = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/bookings/${bookingId}/kitchen-bill`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setPastBills(data.invoices || [])
+      }
+    } catch {
+      // concise error handling
+    }
+  }
+
+  const handleDownloadInvoice = async (invoice: Invoice) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/invoices/${invoice.id}/download`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = globalThis.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `invoice-${invoice.invoiceNumber}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        globalThis.URL.revokeObjectURL(url)
+        a.remove()
+        toast.success('Invoice downloaded!')
+      } else {
+        toast.error('Failed to download invoice')
+      }
+    } catch {
+      toast.error('An error occurred')
+    }
+  }
 
   const fetchBooking = async () => {
     try {
@@ -221,6 +281,7 @@ export default function AddFoodPage() {
 
         toast.success('Kitchen bill downloaded successfully!')
         fetchBooking() // Refresh to update invoice status
+        fetchPastBills()
       } else {
         const errorData = await response.json().catch(() => ({}))
         toast.error(errorData.error || 'Failed to generate kitchen bill')
@@ -370,6 +431,66 @@ export default function AddFoodPage() {
           </>
         ) : (
           <p className="text-gray-500 text-center py-8">No unpaid food items. Add items to generate a bill.</p>
+        )}
+      </div>
+
+      {/* Past Food Bills */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Past Food Bills</h3>
+        {pastBills.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bill No</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {pastBills.map((invoice) => (
+                  <tr key={invoice.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {invoice.invoiceNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(invoice.createdAt).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      <div className="max-w-xs truncate" title={invoice.foodOrders.map(o => `${o.foodItem.name} x${o.quantity}`).join(', ')}>
+                        {invoice.foodOrders.length} items
+                        <span className="text-xs text-gray-400 block">
+                          {invoice.foodOrders.slice(0, 2).map(o => `${o.foodItem.name}`).join(', ')}
+                          {invoice.foodOrders.length > 2 && '...'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                      ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                      <button
+                        onClick={() => handleDownloadInvoice(invoice)}
+                        className="text-[#8E0E1C] hover:text-[#7a0c18] font-medium"
+                      >
+                        Download PDF
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-8">No past food bills found.</p>
         )}
       </div>
     </div>
