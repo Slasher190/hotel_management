@@ -20,6 +20,7 @@ interface FoodItem {
 
 interface BillData {
   invoiceNumber: string
+  visitorRegistrationNumber?: string | null
   billNumber?: string | null
   billDate: Date | string
   guestName: string
@@ -29,18 +30,30 @@ interface BillData {
   guestGstNumber?: string | null
   guestStateCode?: string | null
   guestMobile?: string | null
+  idType?: string | null
+  idNumber?: string | null
   companyName?: string | null
   companyCode?: string | null
+  department?: string | null
+  designation?: string | null
+  businessPhoneNumber?: string | null
   roomNumber?: string
   roomType?: string
+  particulars?: string | null
+  rentPerDay?: number
+  numberOfDays?: number
   checkInDate?: Date | string
   checkoutDate?: Date | string
+  adults?: number
+  children?: number
+  totalGuests?: number
   days?: number
   roomCharges: number
   tariff: number
   foodCharges: number
   additionalGuestCharges?: number
   additionalGuests?: number
+  discount?: number
   gstEnabled: boolean
   gstPercent?: number
   gstAmount: number

@@ -1,29 +1,53 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+
+interface Room {
+  id: string
+  roomNumber: string
+  roomType: {
+    name: string
+  }
+}
 
 export default function BillGeneratorPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
     bookingId: '',
+    visitorRegistrationNumber: '', // Auto-generated
     billNumber: '',
     billDate: new Date().toISOString().split('T')[0],
     guestName: '',
     guestAddress: '',
     guestState: '',
-    guestNationality: 'indian',
+    guestNationality: 'Indian',
     guestGstNumber: '',
     guestStateCode: '',
     guestMobile: '',
+    idType: 'AADHAAR',
+    idNumber: '',
     companyName: '',
     companyCode: '',
+    department: '',
+    designation: '',
+    businessPhoneNumber: '',
+    roomNumber: '', // Auto-filled from particulars selection
+    particulars: '', // Selection from rooms
+    rentPerDay: '',
+    numberOfDays: '1',
+    checkInDate: new Date().toISOString().split('T')[0],
+    checkOutDate: new Date().toISOString().split('T')[0],
+    adults: '1',
+    children: '0',
+    totalGuests: '1', // Calculated field
     roomCharges: '',
     tariff: '',
     foodCharges: '0',
     additionalGuestCharges: '0',
     additionalGuests: '0',
+    discount: '0',
     gstEnabled: false,
     showGst: false,
     gstPercent: '5',
@@ -33,6 +57,75 @@ export default function BillGeneratorPage() {
     paymentMode: 'CASH' as 'CASH' | 'ONLINE',
   })
   const [loading, setLoading] = useState(false)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [loadingRooms, setLoadingRooms] = useState(true)
+
+  // Fetch rooms for particulars selection
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/rooms', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setRooms(data)
+        }
+      } catch (error) {
+        console.error('Error fetching rooms:', error)
+      } finally {
+        setLoadingRooms(false)
+      }
+    }
+
+    fetchRooms()
+  }, [])
+
+  // Auto-generate visitor registration number
+  useEffect(() => {
+    const generateVisitorRegNumber = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/bills/visitor-registration-count', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (response.ok) {
+          const { count } = await response.json()
+          const newRegNumber = `VR-${String(count + 1).padStart(6, '0')}`
+          setFormData(prev => ({ ...prev, visitorRegistrationNumber: newRegNumber }))
+        }
+      } catch (error) {
+        console.error('Error generating visitor registration number:', error)
+      }
+    }
+
+    generateVisitorRegNumber()
+  }, [])
+
+  // Calculate total guests when adults or children change
+  useEffect(() => {
+    const adults = parseInt(formData.adults) || 0
+    const children = parseInt(formData.children) || 0
+    const total = adults + children
+    setFormData(prev => ({ ...prev, totalGuests: total.toString() }))
+  }, [formData.adults, formData.children])
+
+  // Auto-fill room number when particulars is selected
+  const handleParticularsChange = (roomId: string) => {
+    const selectedRoom = rooms.find(room => room.id === roomId)
+    if (selectedRoom) {
+      setFormData(prev => ({
+        ...prev,
+        particulars: roomId,
+        roomNumber: selectedRoom.roomNumber
+      }))
+    }
+  }
 
   const calculations = useMemo(() => {
     const roomCharges = Number.parseFloat(formData.roomCharges) || 0
@@ -41,11 +134,12 @@ export default function BillGeneratorPage() {
     const additionalGuestCharges = Number.parseFloat(formData.additionalGuestCharges) || 0
     const additionalGuests = Number.parseInt(formData.additionalGuests) || 0
     const additionalGuestsTotal = additionalGuestCharges * additionalGuests
+    const discount = Number.parseFloat(formData.discount) || 0
     const advance = Number.parseFloat(formData.advanceAmount) || 0
     const roundOff = Number.parseFloat(formData.roundOff) || 0
     const gstPercent = Number.parseFloat(formData.gstPercent) || 0
     
-    const baseAmount = roomCharges + tariff + foodCharges + additionalGuestsTotal
+    const baseAmount = roomCharges + tariff + foodCharges + additionalGuestsTotal - discount
     const gstAmount = (formData.gstEnabled && formData.showGst) ? (baseAmount * gstPercent) / 100 : 0
     const totalAmount = baseAmount + gstAmount - advance + roundOff
 
@@ -56,6 +150,7 @@ export default function BillGeneratorPage() {
       additionalGuestCharges,
       additionalGuests,
       additionalGuestsTotal,
+      discount,
       baseAmount,
       gstAmount,
       advance,
@@ -83,10 +178,16 @@ export default function BillGeneratorPage() {
           foodCharges: calculations.foodCharges,
           additionalGuestCharges: calculations.additionalGuestCharges,
           additionalGuests: calculations.additionalGuests,
+          discount: calculations.discount,
           gstPercent: parseFloat(formData.gstPercent) || 5,
           advanceAmount: calculations.advance,
           roundOff: calculations.roundOff,
           showGst: formData.showGst,
+          adults: parseInt(formData.adults) || 1,
+          children: parseInt(formData.children) || 0,
+          totalGuests: parseInt(formData.totalGuests) || 1,
+          numberOfDays: parseInt(formData.numberOfDays) || 1,
+          rentPerDay: parseFloat(formData.rentPerDay) || 0,
         }),
       })
 
@@ -161,30 +262,31 @@ export default function BillGeneratorPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">
-                      🆔 Booking ID <span className="text-[#64748B] text-xs font-normal">(Optional)</span>
+                      🔢 Visitor Registration Number <span className="text-[#8E0E1C]">*</span>
                     </label>
                     <input
                       type="text"
-                      value={formData.bookingId}
-                      onChange={(e) => setFormData({ ...formData, bookingId: e.target.value })}
-                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                      placeholder="Leave empty for standalone bill"
+                      value={formData.visitorRegistrationNumber}
+                      readOnly
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] bg-gray-100 font-medium"
+                      placeholder="Auto-generated"
                     />
                     <p className="text-xs text-[#64748B] mt-2 font-medium">
-                      💡 All bills are saved in Bill History
+                      🤖 Auto-generated serial number
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">
-                      🧾 Bill Number
+                      🧾 Bill Number <span className="text-[#8E0E1C]">*</span>
                     </label>
                     <input
                       type="text"
+                      required
                       value={formData.billNumber}
                       onChange={(e) => setFormData({ ...formData, billNumber: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                      placeholder="Visitor's Register Sr. No."
+                      placeholder="Enter bill number"
                     />
                   </div>
 
@@ -229,7 +331,7 @@ export default function BillGeneratorPage() {
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-semibold text-[#111827] mb-3">📍 Guest Address</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">📍 Address</label>
                     <textarea
                       value={formData.guestAddress}
                       onChange={(e) => setFormData({ ...formData, guestAddress: e.target.value })}
@@ -262,6 +364,32 @@ export default function BillGeneratorPage() {
                   </div>
 
                   <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🆔 ID Type</label>
+                    <select
+                      value={formData.idType}
+                      onChange={(e) => setFormData({ ...formData, idType: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    >
+                      <option value="AADHAAR">Aadhaar Card</option>
+                      <option value="DL">Driving License</option>
+                      <option value="VOTER_ID">Voter ID</option>
+                      <option value="PASSPORT">Passport</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🔢 ID Number</label>
+                    <input
+                      type="text"
+                      value={formData.idNumber}
+                      onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="Enter ID number"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">📱 Mobile Number</label>
                     <input
                       type="text"
@@ -274,7 +402,7 @@ export default function BillGeneratorPage() {
 
                   {formData.showGst && (
                     <div>
-                      <label className="block text-sm font-semibold text-[#111827] mb-3">🧾 Guest GST Number</label>
+                      <label className="block text-sm font-semibold text-[#111827] mb-3">🧾 GST of Guest</label>
                       <input
                         type="text"
                         value={formData.guestGstNumber}
@@ -290,12 +418,65 @@ export default function BillGeneratorPage() {
                     <input
                       type="text"
                       value={formData.guestStateCode}
-                      onChange={(e) => setFormData({ ...formData, guestStateCode: e.target.value })}
+                      readOnly
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] bg-gray-100 font-medium"
+                      placeholder="Auto-filled"
+                    />
+                    <p className="text-xs text-[#64748B] mt-2 font-medium">
+                      🤖 Auto-filled based on state
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">👥 Adults</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.adults}
+                      onChange={(e) => setFormData({ ...formData, adults: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                      placeholder="Enter state code"
+                      placeholder="1"
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">👶 Children</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.children}
+                      onChange={(e) => setFormData({ ...formData, children: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">👨‍👩‍👧‍👦 Total Guests</label>
+                    <input
+                      type="number"
+                      value={formData.totalGuests}
+                      readOnly
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] bg-gray-100 font-medium"
+                    />
+                    <p className="text-xs text-[#64748B] mt-2 font-medium">
+                      🤖 Auto-calculated (Adults + Children)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Company Information Section */}
+            <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+              <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                  <span className="text-2xl sm:text-3xl">🏢</span>
+                  Company Information
+                </h3>
+              </div>
+              <div className="p-6 sm:p-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">🏢 Company Name</label>
                     <input
@@ -315,6 +496,131 @@ export default function BillGeneratorPage() {
                       onChange={(e) => setFormData({ ...formData, companyCode: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                       placeholder="Enter company code"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🏬 Department</label>
+                    <input
+                      type="text"
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="Enter department"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">👔 Designation</label>
+                    <input
+                      type="text"
+                      value={formData.designation}
+                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="Enter designation"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">☎️ Business Phone Number</label>
+                    <input
+                      type="text"
+                      value={formData.businessPhoneNumber}
+                      onChange={(e) => setFormData({ ...formData, businessPhoneNumber: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="Enter business phone"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Room & Stay Information Section */}
+            <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+              <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                  <span className="text-2xl sm:text-3xl">🏨</span>
+                  Room & Stay Information
+                </h3>
+              </div>
+              <div className="p-6 sm:p-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🏠 Particulars (Room Selection)</label>
+                    <select
+                      value={formData.particulars}
+                      onChange={(e) => handleParticularsChange(e.target.value)}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      disabled={loadingRooms}
+                    >
+                      <option value="">Select a room</option>
+                      {rooms.map((room) => (
+                        <option key={room.id} value={room.id}>
+                          {room.roomNumber} - {room.roomType.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🚪 Room Number</label>
+                    <input
+                      type="text"
+                      value={formData.roomNumber}
+                      readOnly
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] bg-gray-100 font-medium"
+                      placeholder="Auto-filled from room selection"
+                    />
+                    <p className="text-xs text-[#64748B] mt-2 font-medium">
+                      🤖 Auto-filled when room is selected
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">💰 Rent Per Day</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.rentPerDay}
+                        onChange={(e) => setFormData({ ...formData, rentPerDay: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">📅 Number of Days</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.numberOfDays}
+                      onChange={(e) => setFormData({ ...formData, numberOfDays: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="1"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">📥 Check In Date</label>
+                    <input
+                      type="date"
+                      value={formData.checkInDate}
+                      onChange={(e) => setFormData({ ...formData, checkInDate: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">📤 Check Out Date</label>
+                    <input
+                      type="date"
+                      value={formData.checkOutDate}
+                      onChange={(e) => setFormData({ ...formData, checkOutDate: e.target.value })}
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                     />
                   </div>
                 </div>
@@ -421,6 +727,22 @@ export default function BillGeneratorPage() {
                         step="0.01"
                         value={formData.advanceAmount}
                         onChange={(e) => setFormData({ ...formData, advanceAmount: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">🏷️ Discount</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#111827] font-bold text-lg">₹</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.discount}
+                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
                         className="w-full pl-10 pr-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                         placeholder="0.00"
                       />
@@ -580,6 +902,14 @@ export default function BillGeneratorPage() {
                     </span>
                     <span className="text-sm font-bold text-[#111827]">
                       ₹{calculations.additionalGuestsTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+                {calculations.discount > 0 && (
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-semibold text-[#64748B]">🏷️ Discount</span>
+                    <span className="text-sm font-bold text-[#8E0E1C]">
+                      - ₹{calculations.discount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 )}

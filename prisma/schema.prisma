@@ -153,7 +153,8 @@ model Invoice {
   bookingId             String?   // Nullable - allows independent manual bills
   booking               Booking?   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   invoiceNumber         String     @unique
-  billNumber            String?    // Visitor's Register Sr. No.
+  visitorRegistrationNumber String? // Auto-generated visitor register serial number
+  billNumber            String?    // Manual input bill number
   invoiceType           String     // "ROOM" or "FOOD"
   isManual              Boolean    @default(false) // true for manually generated bills
   guestName             String
@@ -163,13 +164,28 @@ model Invoice {
   guestGstNumber        String?
   guestStateCode        String?
   guestMobile           String?
+  idType                String?    // ID type (Aadhaar, DL, etc.)
+  idNumber              String?    // ID number
   companyName           String?
   companyCode           String?
+  department            String?    // Company department
+  designation           String?    // Job designation
+  businessPhoneNumber   String?    // Business phone
+  roomNumber            String?    // Room number (auto-filled)
   roomType              String?
+  particulars           String?    // Selection from rooms
+  rentPerDay            Float?     // Manual input rent per day
+  numberOfDays          Int        @default(1) // Manual input, default 1
+  checkInDate           DateTime?  // Check-in date
+  checkOutDate          DateTime?  // Check-out date
+  adults                Int        @default(1) // Adult count, default 1
+  children              Int        @default(0) // Children count, default 0
+  totalGuests           Int        @default(1) // Calculated: adults + children
   roomCharges           Float      @default(0)
   foodCharges           Float      @default(0)
   tariff                Float      @default(0) // Additional tariff
   additionalGuestCharges Float     @default(0) // Charges for additional guests
+  discount              Float      @default(0) // Discount amount
   gstEnabled            Boolean     @default(false)
   gstNumber             String?
   gstAmount             Float       @default(0)

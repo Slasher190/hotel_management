@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
 
     const {
       bookingId,
+      visitorRegistrationNumber,
       billNumber,
       billDate,
       guestName,
@@ -22,13 +23,28 @@ export async function POST(request: NextRequest) {
       guestGstNumber,
       guestStateCode,
       guestMobile,
+      idType,
+      idNumber,
       companyName,
       companyCode,
+      department,
+      designation,
+      businessPhoneNumber,
+      roomNumber,
+      particulars,
+      rentPerDay,
+      numberOfDays,
+      checkInDate,
+      checkOutDate,
+      adults,
+      children,
+      totalGuests,
       roomCharges,
       tariff,
       foodCharges,
       additionalGuestCharges,
       additionalGuests,
+      discount,
       gstEnabled,
       gstPercent,
       gstNumber,
@@ -60,8 +76,9 @@ export async function POST(request: NextRequest) {
     const additionalGuestChargesValue = Number.parseFloat(additionalGuestCharges) || 0
     const additionalGuestsCount = Number.parseInt(additionalGuests) || 0
     const additionalGuestsTotal = additionalGuestChargesValue * additionalGuestsCount
+    const discountAmount = Number.parseFloat(discount) || 0
     
-    const baseTotal = baseAmount + tariffAmount + foodAmount + additionalGuestsTotal
+    const baseTotal = baseAmount + tariffAmount + foodAmount + additionalGuestsTotal - discountAmount
     const gstAmount = (gstEnabled && showGst)
       ? (baseTotal * (Number.parseFloat(gstPercent) || 5)) / 100
       : 0
@@ -78,6 +95,7 @@ export async function POST(request: NextRequest) {
       data: {
         bookingId: (bookingId && bookingId.trim() !== '') ? bookingId : null,
         invoiceNumber,
+        visitorRegistrationNumber: visitorRegistrationNumber || null,
         billNumber: billNumber || null,
         invoiceType: (bookingId && bookingId.trim() !== '') ? 'ROOM' : 'MANUAL',
         isManual: !bookingId || bookingId.trim() === '', // true if no bookingId or empty
@@ -88,13 +106,28 @@ export async function POST(request: NextRequest) {
         guestGstNumber: guestGstNumber || null,
         guestStateCode: guestStateCode || null,
         guestMobile: guestMobile || null,
+        idType: idType || null,
+        idNumber: idNumber || null,
         companyName: companyName || null,
         companyCode: companyCode || null,
+        department: department || null,
+        designation: designation || null,
+        businessPhoneNumber: businessPhoneNumber || null,
+        roomNumber: roomNumber || null,
         roomType: booking?.room.roomType.name || null,
+        particulars: particulars || null,
+        rentPerDay: Number.parseFloat(rentPerDay) || 0,
+        numberOfDays: Number.parseInt(numberOfDays) || 1,
+        checkInDate: checkInDate ? new Date(checkInDate) : null,
+        checkOutDate: checkOutDate ? new Date(checkOutDate) : null,
+        adults: Number.parseInt(adults) || 1,
+        children: Number.parseInt(children) || 0,
+        totalGuests: Number.parseInt(totalGuests) || 1,
         roomCharges: baseAmount,
         tariff: tariffAmount,
         additionalGuestCharges: additionalGuestsTotal,
         foodCharges: foodAmount,
+        discount: discountAmount,
         gstEnabled: gstEnabled && showGst,
         gstNumber: (gstEnabled && showGst) ? gstNumber : null,
         gstAmount,
@@ -120,6 +153,7 @@ export async function POST(request: NextRequest) {
     // Only pass guestGstNumber if showGst is true (GSTIN visibility depends only on showGst)
     const doc = generateBillPDF(settings, {
       invoiceNumber,
+      visitorRegistrationNumber: visitorRegistrationNumber || null,
       billNumber: billNumber || null,
       billDate: billDate || new Date(),
       guestName,
@@ -129,18 +163,30 @@ export async function POST(request: NextRequest) {
       guestGstNumber: showGst ? (guestGstNumber || null) : null, // Only include if showGst is checked
       guestStateCode: guestStateCode || null,
       guestMobile: guestMobile || null,
+      idType: idType || null,
+      idNumber: idNumber || null,
       companyName: companyName || null,
       companyCode: companyCode || null,
-      roomNumber: booking?.room.roomNumber,
+      department: department || null,
+      designation: designation || null,
+      businessPhoneNumber: businessPhoneNumber || null,
+      roomNumber: roomNumber || booking?.room.roomNumber,
       roomType: booking?.room.roomType.name,
-      checkInDate: booking?.checkInDate,
-      checkoutDate: booking?.checkoutDate || undefined,
+      particulars: particulars || null,
+      rentPerDay: Number.parseFloat(rentPerDay) || 0,
+      numberOfDays: Number.parseInt(numberOfDays) || 1,
+      checkInDate: checkInDate ? new Date(checkInDate) : booking?.checkInDate,
+      checkoutDate: checkOutDate ? new Date(checkOutDate) : booking?.checkoutDate || undefined,
+      adults: Number.parseInt(adults) || 1,
+      children: Number.parseInt(children) || 0,
+      totalGuests: Number.parseInt(totalGuests) || 1,
       days,
       roomCharges: baseAmount,
       tariff: tariffAmount,
       foodCharges: foodAmount,
       additionalGuestCharges: additionalGuestChargesValue,
       additionalGuests: additionalGuestsCount,
+      discount: discountAmount,
       gstEnabled: gstEnabled && showGst, // GST calculation still depends on both
       gstPercent: Number.parseFloat(gstPercent) || 5,
       gstAmount,
