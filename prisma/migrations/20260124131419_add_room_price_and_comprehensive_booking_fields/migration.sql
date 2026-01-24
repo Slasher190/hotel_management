@@ -1,0 +1,17 @@
+-- AlterTable
+ALTER TABLE "invoices" ADD COLUMN     "adults" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "businessPhoneNumber" TEXT,
+ADD COLUMN     "checkInDate" TIMESTAMP(3),
+ADD COLUMN     "checkOutDate" TIMESTAMP(3),
+ADD COLUMN     "children" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "department" TEXT,
+ADD COLUMN     "designation" TEXT,
+ADD COLUMN     "discount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "idNumber" TEXT,
+ADD COLUMN     "idType" TEXT,
+ADD COLUMN     "numberOfDays" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "particulars" TEXT,
+ADD COLUMN     "rentPerDay" DOUBLE PRECISION,
+ADD COLUMN     "roomNumber" TEXT,
+ADD COLUMN     "totalGuests" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "visitorRegistrationNumber" TEXT;
