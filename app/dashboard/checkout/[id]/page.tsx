@@ -28,6 +28,10 @@ interface Booking {
       gstPercent: number
     }
   }>
+  companyName?: string
+  department?: string
+  designation?: string
+  guestGstNumber?: string // Helper field if available
 }
 
 export default function CheckoutPage() {
@@ -58,6 +62,14 @@ export default function CheckoutPage() {
     createdAt: string
   }>>([])
 
+  // New fields for complete bill
+  const [companyName, setCompanyName] = useState('')
+  const [department, setDepartment] = useState('')
+  const [designation, setDesignation] = useState('')
+  const [roundOff, setRoundOff] = useState(0)
+  const [autoRoundOff, setAutoRoundOff] = useState(true)
+  const [checkoutDate, setCheckoutDate] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16))
+
   const fetchBooking = useCallback(async () => {
     if (!bookingId) {
       setLoading(false)
@@ -86,8 +98,15 @@ export default function CheckoutPage() {
           if (response.ok) {
             const data = await response.json()
             setBooking(data)
+            setBooking(data)
             setBaseAmount(data.roomPrice)
-            
+
+            // Pre-fill company details from booking if available
+            setCompanyName(data.companyName || '')
+            setDepartment(data.department || '')
+            setDesignation(data.designation || '')
+            setGstNumber(data.guestGstNumber || '')
+
             // Fetch previous food bills for this booking
             const billsResponse = await fetch(`/api/invoices?type=FOOD&bookingId=${bookingId}`, {
               headers: {
@@ -98,7 +117,7 @@ export default function CheckoutPage() {
               const billsData = await billsResponse.json()
               setPreviousFoodBills(billsData.invoices || [])
             }
-            
+
             setLoading(false)
             return
           } else if (response.status === 404) {
@@ -154,13 +173,13 @@ export default function CheckoutPage() {
     const additionalGuestsTotal = booking && booking.additionalGuests && booking.additionalGuests > 0
       ? additionalGuestCharges * booking.additionalGuests
       : 0
-    
+
     // Calculate combined food bill total
     let combinedFoodTotal = 0
     if (showCombinedFoodBill) {
       // Sum all previous food bills
       const previousBillsTotal = previousFoodBills.reduce((sum, bill) => sum + bill.totalAmount, 0)
-      
+
       // Calculate current food orders total (no GST for food)
       let currentFoodTotal = 0
       if (booking?.foodOrders) {
@@ -168,16 +187,50 @@ export default function CheckoutPage() {
           currentFoodTotal += order.foodItem.price * order.quantity
         })
       }
-      
+
       combinedFoodTotal = previousBillsTotal + currentFoodTotal - complimentary
     }
-    
+
     const baseTotal = baseAmount + tariff + additionalGuestsTotal + (showCombinedFoodBill ? combinedFoodTotal : 0)
     const gstAmount = (gstEnabled && showGst) ? (baseTotal * gstPercent) / 100 : 0
-    const total = baseTotal + gstAmount
+    const subtotal = baseTotal + gstAmount
 
-    return { baseAmount, tariff, additionalGuestsTotal, combinedFoodTotal, complimentary, gstAmount, gstPercent, total }
+    // Calculate round-off
+    let calculatedRoundOff = roundOff
+    if (autoRoundOff) {
+      const remainder = subtotal % 1
+      if (remainder >= 0.5) {
+        calculatedRoundOff = Math.ceil(subtotal) - subtotal
+      } else {
+        calculatedRoundOff = -remainder
+      }
+      calculatedRoundOff = Math.round(calculatedRoundOff * 100) / 100
+    }
+
+    const total = subtotal + calculatedRoundOff
+
+    return {
+      baseAmount,
+      tariff,
+      additionalGuestsTotal,
+      combinedFoodTotal,
+      complimentary,
+      gstAmount,
+      gstPercent,
+      subtotal,
+      roundOff: calculatedRoundOff,
+      total
+    }
   }
+
+  // Update round-off when auto is enabled and totals change
+  useEffect(() => {
+    if (autoRoundOff) {
+      const totals = calculateTotals()
+      setRoundOff(totals.roundOff)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseAmount, tariff, additionalGuestCharges, gstEnabled, gstPercent, showCombinedFoodBill, complimentary, autoRoundOff])
 
   const handleCheckout = async () => {
     if (!booking) return
@@ -201,11 +254,16 @@ export default function CheckoutPage() {
           showGst,
           gstPercent: gstEnabled ? gstPercent : 0,
           gstNumber: gstEnabled ? gstNumber : null,
-          paymentMode,
           paymentStatus,
           kitchenBillPaid,
           showCombinedFoodBill,
           complimentary: showCombinedFoodBill ? complimentary : 0,
+          // New fields
+          companyName: companyName || null,
+          department: department || null,
+          designation: designation || null,
+          roundOff: totals.roundOff,
+          checkoutDate,
         }),
       })
 
@@ -325,156 +383,249 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Amount & Payment */}
-        <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Amount & Payment</h3>
+      </div>
 
+      {/* Company Details */}
+      <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Company Details (Optional)</h3>
+        <div>
+          <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+            Company Name
+          </label>
+          <input
+            id="companyName"
+            type="text"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            placeholder="Enter company name"
+          />
+        </div>
+        <div>
+          <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
+            Department
+          </label>
+          <input
+            id="department"
+            type="text"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            placeholder="Enter department"
+          />
+        </div>
+        <div>
+          <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-2">
+            Designation
+          </label>
+          <input
+            id="designation"
+            type="text"
+            value={designation}
+            onChange={(e) => setDesignation(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            placeholder="Enter designation"
+          />
+        </div>
+      </div>
+
+      {/* Amount & Payment */}
+      <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Amount & Payment</h3>
+
+        <div>
+          <label htmlFor="checkoutDate" className="block text-sm font-medium text-gray-700 mb-2">
+            Checkout Date & Time
+          </label>
+          <input
+            id="checkoutDate"
+            type="datetime-local"
+            value={checkoutDate}
+            onChange={(e) => setCheckoutDate(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="baseAmount" className="block text-sm font-medium text-gray-700 mb-2">
+            Room Charges (₹) *
+          </label>
+          <input
+            id="baseAmount"
+            type="number"
+            required
+            min="0"
+            step="0.01"
+            value={baseAmount}
+            onChange={(e) => setBaseAmount(Number.parseFloat(e.target.value) || 0)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            placeholder="Enter room charges"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="tariff" className="block text-sm font-medium text-gray-700 mb-2">
+            Tariff (₹)
+          </label>
+          <input
+            id="tariff"
+            type="number"
+            step="0.01"
+            value={tariff}
+            onChange={(e) => setTariff(Number.parseFloat(e.target.value) || 0)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            placeholder="Enter tariff amount (can be negative)"
+          />
+        </div>
+
+        {booking && booking.additionalGuests && booking.additionalGuests > 0 && (
           <div>
-            <label htmlFor="baseAmount" className="block text-sm font-medium text-gray-700 mb-2">
-              Room Charges (₹) *
+            <label htmlFor="additionalGuestCharges" className="block text-sm font-medium text-gray-700 mb-2">
+              Additional Guest Charges (₹) - {booking.additionalGuests} guest(s)
             </label>
             <input
-              id="baseAmount"
+              id="additionalGuestCharges"
               type="number"
-              required
               min="0"
               step="0.01"
-              value={baseAmount}
-              onChange={(e) => setBaseAmount(Number.parseFloat(e.target.value) || 0)}
+              value={additionalGuestCharges}
+              onChange={(e) => setAdditionalGuestCharges(Number.parseFloat(e.target.value) || 0)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              placeholder="Enter room charges"
+              placeholder="Enter charges per additional guest"
             />
           </div>
+        )}
 
-          <div>
-            <label htmlFor="tariff" className="block text-sm font-medium text-gray-700 mb-2">
-              Tariff (₹)
-            </label>
-            <input
-              id="tariff"
-              type="number"
-              step="0.01"
-              value={tariff}
-              onChange={(e) => setTariff(Number.parseFloat(e.target.value) || 0)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              placeholder="Enter tariff amount (can be negative)"
-            />
-          </div>
-
-          {booking && booking.additionalGuests && booking.additionalGuests > 0 && (
-            <div>
-              <label htmlFor="additionalGuestCharges" className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Guest Charges (₹) - {booking.additionalGuests} guest(s)
-              </label>
-              <input
-                id="additionalGuestCharges"
-                type="number"
-                min="0"
-                step="0.01"
-                value={additionalGuestCharges}
-                onChange={(e) => setAdditionalGuestCharges(Number.parseFloat(e.target.value) || 0)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                placeholder="Enter charges per additional guest"
-              />
-            </div>
-          )}
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="showGst"
-                checked={showGst}
-                onChange={(e) => setShowGst(e.target.checked)}
-                className="mr-2"
-              />
-              <label htmlFor="showGst" className="text-sm font-medium text-gray-900 cursor-pointer">
-                Show GST on Bill
-              </label>
-            </div>
-          </div>
-
+        <div className="flex items-center space-x-4">
           <div className="flex items-center">
             <input
               type="checkbox"
-              id="gstEnabled"
-              checked={gstEnabled}
-              onChange={(e) => setGstEnabled(e.target.checked)}
+              id="showGst"
+              checked={showGst}
+              onChange={(e) => setShowGst(e.target.checked)}
               className="mr-2"
             />
-            <label htmlFor="gstEnabled" className="text-sm font-medium text-gray-900 cursor-pointer">
-              Include GST (5%)
+            <label htmlFor="showGst" className="text-sm font-medium text-gray-900 cursor-pointer">
+              Show GST on Bill
             </label>
           </div>
+        </div>
 
-          {gstEnabled && (
-            <>
-              <div>
-                <label htmlFor="gstPercent" className="block text-sm font-medium text-gray-700 mb-2">
-                  GST Percentage (%)
-                </label>
-                <input
-                  id="gstPercent"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={gstPercent}
-                  onChange={(e) => setGstPercent(Number.parseFloat(e.target.value) || 5)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                  placeholder="5"
-                />
-              </div>
-              <div>
-                <label htmlFor="gstNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                  GST Number
-                </label>
-                <input
-                  id="gstNumber"
-                  type="text"
-                  value={gstNumber}
-                  onChange={(e) => setGstNumber(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder:text-gray-500"
-                  placeholder="Enter GST number"
-                />
-              </div>
-            </>
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="gstEnabled"
+            checked={gstEnabled}
+            onChange={(e) => setGstEnabled(e.target.checked)}
+            className="mr-2"
+          />
+          <label htmlFor="gstEnabled" className="text-sm font-medium text-gray-900 cursor-pointer">
+            Include GST (5%)
+          </label>
+        </div>
+
+        {gstEnabled && (
+          <>
+            <div>
+              <label htmlFor="gstPercent" className="block text-sm font-medium text-gray-700 mb-2">
+                GST Percentage (%)
+              </label>
+              <input
+                id="gstPercent"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={gstPercent}
+                onChange={(e) => setGstPercent(Number.parseFloat(e.target.value) || 5)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                placeholder="5"
+              />
+            </div>
+            <div>
+              <label htmlFor="gstNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                GST Number
+              </label>
+              <input
+                id="gstNumber"
+                type="text"
+                value={gstNumber}
+                onChange={(e) => setGstNumber(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder:text-gray-500"
+                placeholder="Enter GST number"
+              />
+            </div>
+          </>
+        )}
+
+        <div>
+          <label htmlFor="paymentMode" className="block text-sm font-medium text-gray-700 mb-2">
+            Payment Mode
+          </label>
+          <select
+            id="paymentMode"
+            value={paymentMode}
+            onChange={(e) => setPaymentMode(e.target.value as 'CASH' | 'ONLINE')}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+          >
+            <option value="CASH">Cash</option>
+            <option value="ONLINE">Online</option>
+          </select>
+        </div>
+
+        {/* Round-off Section */}
+        <div className="border-t pt-4">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="autoRoundOff"
+                checked={autoRoundOff}
+                onChange={(e) => setAutoRoundOff(e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="autoRoundOff" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Auto Round-off
+              </label>
+            </div>
+          </div>
+
+          {!autoRoundOff && (
+            <div>
+              <label htmlFor="roundOff" className="block text-sm font-medium text-gray-700 mb-2">
+                Round-off Amount (₹) - Positive adds, negative subtracts
+              </label>
+              <input
+                id="roundOff"
+                type="number"
+                step="0.01"
+                value={roundOff}
+                onChange={(e) => setRoundOff(Number.parseFloat(e.target.value) || 0)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                placeholder="0.00"
+              />
+            </div>
           )}
+        </div>
 
-          <div>
-            <label htmlFor="paymentMode" className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Mode
-            </label>
-            <select
-              id="paymentMode"
-              value={paymentMode}
-              onChange={(e) => setPaymentMode(e.target.value as 'CASH' | 'ONLINE')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
-            >
-              <option value="CASH">Cash</option>
-              <option value="ONLINE">Online</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="paymentStatus" className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Status
-            </label>
-            <select
-              id="paymentStatus"
-              value={paymentStatus}
-              onChange={(e) => setPaymentStatus(e.target.value as 'PAID' | 'PENDING')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
-            >
-              <option value="PAID">Paid</option>
-              <option value="PENDING">Pending</option>
-            </select>
-          </div>
+        <div>
+          <label htmlFor="paymentStatus" className="block text-sm font-medium text-gray-700 mb-2">
+            Payment Status
+          </label>
+          <select
+            id="paymentStatus"
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value as 'PAID' | 'PENDING')}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
+          >
+            <option value="PAID">Paid</option>
+            <option value="PENDING">Pending</option>
+          </select>
         </div>
       </div>
 
       {/* Kitchen Bill Section */}
-      {(booking.foodOrders && booking.foodOrders.length > 0) || previousFoodBills.length > 0 ? (
+      {((booking?.foodOrders && booking.foodOrders.length > 0) || previousFoodBills.length > 0) && (
         <div className="bg-white rounded-xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Kitchen Bill</h3>
           <div className="space-y-4">
@@ -490,7 +641,7 @@ export default function CheckoutPage() {
                 Include Combined Food Bill in Checkout
               </label>
             </div>
-            
+
             {previousFoodBills.length > 0 && (
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Previous Food Bills:</div>
@@ -506,17 +657,17 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-            
-            {booking.foodOrders && booking.foodOrders.length > 0 && (
+
+            {booking?.foodOrders && booking.foodOrders.length > 0 && (
               <div className="bg-orange-50 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-sm font-medium text-gray-700">Current Food Orders:</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {booking.foodOrders.length} item(s)
+                    {booking.foodOrders?.length} item(s)
                   </span>
                 </div>
                 <div className="space-y-2 text-sm">
-                  {booking.foodOrders.map((order) => {
+                  {booking.foodOrders?.map((order) => {
                     const itemTotal = order.foodItem.price * order.quantity
                     return (
                       <div key={order.id} className="flex justify-between text-gray-600">
@@ -532,7 +683,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
-            
+
             {showCombinedFoodBill && (
               <div>
                 <label htmlFor="complimentary" className="block text-sm font-medium text-gray-700 mb-2">
@@ -550,7 +701,7 @@ export default function CheckoutPage() {
                 />
               </div>
             )}
-            
+
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -565,7 +716,7 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
       {/* Total */}
       <div className="bg-indigo-50 rounded-xl shadow-md p-6">
@@ -574,7 +725,7 @@ export default function CheckoutPage() {
             <span className="text-gray-700">Room Charges:</span>
             <span className="font-medium">₹{totals.baseAmount.toLocaleString('en-IN')}</span>
           </div>
-          {totals.tariff > 0 && (
+          {totals.tariff !== 0 && (
             <div className="flex justify-between">
               <span className="text-gray-700">Tariff:</span>
               <span className="font-medium">₹{totals.tariff.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -604,6 +755,14 @@ export default function CheckoutPage() {
             <div className="flex justify-between">
               <span className="text-gray-700">GST ({gstPercent}%):</span>
               <span className="font-medium">₹{totals.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {totals.roundOff !== 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-700">Round-off:</span>
+              <span className={`font-medium ${totals.roundOff < 0 ? 'text-red-600' : ''}`}>
+                {totals.roundOff < 0 ? '- ' : ''}₹{Math.abs(totals.roundOff).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
             </div>
           )}
           <div className="flex justify-between pt-2 border-t border-indigo-200">

@@ -64,6 +64,14 @@ export function canRead(role: string | undefined): boolean {
 }
 
 /**
+ * Check if user can perform delete operations
+ * Only MANAGER can delete (SuperAdmin level)
+ */
+export function canDelete(role: string | undefined): boolean {
+  return role === 'MANAGER'
+}
+
+/**
  * Helper to return unauthorized response for API routes
  */
 export function unauthorizedResponse(): NextResponse {

@@ -39,6 +39,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Only MANAGER role can delete
+    if (user.role !== 'MANAGER') {
+      return NextResponse.json({ error: 'Forbidden - Only managers can delete records' }, { status: 403 })
+    }
+
     const { id } = await params
 
     await prisma.busBooking.delete({

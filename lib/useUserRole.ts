@@ -21,6 +21,7 @@ export function useUserRole() {
   const isStaff = role === 'STAFF'
   const canWrite = role === 'MANAGER'
   const canRead = role === 'MANAGER' || role === 'STAFF'
+  const canDelete = role === 'MANAGER'
 
   return {
     role,
@@ -29,6 +30,7 @@ export function useUserRole() {
     isStaff,
     canWrite,
     canRead,
+    canDelete,
     loading,
   }
 }

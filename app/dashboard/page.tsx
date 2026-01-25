@@ -11,6 +11,7 @@ interface DashboardStats {
   pendingPayments: number
   availableRooms: number
   occupiedRooms: number
+  activeTours: number
 }
 
 export default function DashboardPage() {
@@ -105,6 +106,13 @@ export default function DashboardPage() {
       value: `${stats?.availableRooms || 0} / ${(stats?.availableRooms || 0) + (stats?.occupiedRooms || 0)}`,
       icon: '🏨',
       href: '/dashboard/rooms',
+      roles: ['ADMIN', 'STAFF'],
+    },
+    {
+      title: 'Tours & Travels',
+      value: stats?.activeTours || 0,
+      icon: '🚌',
+      href: '/dashboard/tours',
       roles: ['ADMIN', 'STAFF'],
     },
   ].filter(card => !card.roles || card.roles.includes(userRole || 'ADMIN')) // Default to ADMIN view if role not found, or maybe safe default? Assuming ADMIN for now if undefined to avoid hiding everything on load, but clearer is to wait.

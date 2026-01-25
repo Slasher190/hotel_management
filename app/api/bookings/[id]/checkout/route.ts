@@ -26,7 +26,12 @@ export async function POST(
       showGst = false,
       kitchenBillPaid = false,
       showCombinedFoodBill = false,
-      complimentary = 0
+      complimentary = 0,
+      companyName,
+      department,
+      designation,
+      roundOff = 0,
+      checkoutDate
     } = await request.json()
 
     const booking = await prisma.booking.findUnique({
@@ -52,6 +57,8 @@ export async function POST(
     if (booking.status === 'CHECKED_OUT') {
       return NextResponse.json({ error: 'Booking already checked out' }, { status: 400 })
     }
+
+    const checkoutDateTime = checkoutDate ? new Date(checkoutDate) : new Date()
 
     // Calculate totals using editable baseAmount and tariff
     const roomCharges = Number.parseFloat(baseAmount) || booking.roomPrice
@@ -84,7 +91,8 @@ export async function POST(
 
     const baseTotal = roomCharges + tariffAmount + additionalGuestsTotal + combinedFoodCharges
     const gstAmount = (gstEnabled && showGst) ? (baseTotal * (gstPercent || 5)) / 100 : 0
-    const totalAmount = baseTotal + gstAmount
+    // Final total includes roundOff
+    const totalAmount = baseTotal + gstAmount + (Number.parseFloat(roundOff) || 0)
 
     // Update booking with tariff and additional guest charges
     await prisma.booking.update({
@@ -92,6 +100,9 @@ export async function POST(
       data: {
         tariff: tariffAmount,
         additionalGuestCharges: additionalGuestChargesValue,
+        companyName: companyName || booking.companyName,
+        department: department || booking.department,
+        designation: designation || booking.designation,
       },
     })
 
@@ -117,15 +128,15 @@ export async function POST(
         guestNationality: null, // Can be added if available
         guestStateCode: null, // Can be added if available
 
-        companyName: booking.companyName || null,
-        department: booking.department || null,
-        designation: booking.designation || null,
+        companyName: companyName || booking.companyName || null,
+        department: department || booking.department || null,
+        designation: designation || booking.designation || null,
         companyCode: null, // Can be added if available
 
         roomType: booking.room.roomType.name,
         roomNumber: booking.room.roomNumber,
         checkInDate: booking.checkInDate,
-        checkOutDate: new Date(),
+        checkOutDate: checkoutDateTime,
 
         adults: booking.adults || 1,
         children: booking.children || 0,
@@ -141,7 +152,7 @@ export async function POST(
         gstNumber: (gstEnabled && showGst) ? gstNumber : null,
         gstAmount,
         advanceAmount: 0, // Can be added if available in request
-        roundOff: 0, // Can be added if available in request
+        roundOff: Number.parseFloat(roundOff) || 0,
         totalAmount,
       },
     })
@@ -161,7 +172,7 @@ export async function POST(
       where: { id },
       data: {
         status: 'CHECKED_OUT',
-        checkoutDate: new Date(),
+        checkoutDate: checkoutDateTime,
       },
     })
 
@@ -179,14 +190,14 @@ export async function POST(
 
     // Calculate days
     const days = Math.ceil(
-      (Date.now() - new Date(booking.checkInDate).getTime()) / (1000 * 60 * 60 * 24)
+      (checkoutDateTime.getTime() - new Date(booking.checkInDate).getTime()) / (1000 * 60 * 60 * 24)
     )
 
     // Generate PDF using utility function - use invoice data for all fields
     const doc = generateBillPDF(settings, {
       invoiceNumber,
       billNumber: null, // Can be added if needed
-      billDate: new Date(),
+      billDate: checkoutDateTime,
       guestName: invoice.guestName,
       guestAddress: invoice.guestAddress || null,
       guestState: invoice.guestState || null,
@@ -196,10 +207,12 @@ export async function POST(
       guestMobile: invoice.guestMobile || null,
       companyName: invoice.companyName || null,
       companyCode: invoice.companyCode || null,
+      department: invoice.department || null,
+      designation: invoice.designation || null,
       roomNumber: booking.room.roomNumber,
       roomType: booking.room.roomType.name,
       checkInDate: booking.checkInDate,
-      checkoutDate: new Date(),
+      checkoutDate: checkoutDateTime,
       days,
       roomCharges,
       tariff: tariffAmount,

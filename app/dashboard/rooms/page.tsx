@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
+import { useUserRole } from '@/lib/useUserRole'
 
 interface Room {
   id: string
@@ -15,6 +16,7 @@ interface Room {
 }
 
 export default function RoomsPage() {
+  const { canDelete } = useUserRole()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; roomId: string | null; roomNumber: string }>({
@@ -48,6 +50,10 @@ export default function RoomsPage() {
   }
 
   const handleDelete = async (id: string, roomNumber: string) => {
+    if (!canDelete) {
+      toast.error('You do not have permission to delete rooms')
+      return
+    }
     setDeleteModal({ isOpen: true, roomId: id, roomNumber })
   }
 
@@ -97,14 +103,14 @@ export default function RoomsPage() {
 
       <div className="flex justify-between items-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 p-6">
         <div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h2 className="text-4xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
             🏨 Room Management
           </h2>
           <p className="text-slate-600 font-medium">Manage all your hotel rooms and their availability</p>
         </div>
         <Link
           href="/dashboard/rooms/new"
-          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+          className="px-6 py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
         >
           <span className="text-xl">➕</span>
           <span>Add Room</span>
@@ -113,7 +119,7 @@ export default function RoomsPage() {
 
       <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-gradient-to-r from-indigo-600 to-purple-600">
+          <thead className="bg-linear-to-r from-indigo-600 to-purple-600">
             <tr>
               <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
                 🏨 Room Number
@@ -131,7 +137,7 @@ export default function RoomsPage() {
           </thead>
           <tbody className="bg-white divide-y divide-slate-100">
             {rooms.map((room) => (
-              <tr key={room.id} className="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
+              <tr key={room.id} className="hover:bg-linear-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-bold text-slate-900">{room.roomNumber}</div>
                 </td>
@@ -140,22 +146,23 @@ export default function RoomsPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${
-                      room.status === 'AVAILABLE'
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                        : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
-                    }`}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-full shadow-md ${room.status === 'AVAILABLE'
+                      ? 'bg-linear-to-r from-green-500 to-emerald-500 text-white'
+                      : 'bg-linear-to-r from-red-500 to-pink-500 text-white'
+                      }`}
                   >
                     {room.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <button
-                    onClick={() => handleDelete(room.id, room.roomNumber)}
-                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
-                  >
-                    🗑️ Delete
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDelete(room.id, room.roomNumber)}
+                      className="px-4 py-2 bg-linear-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all font-semibold text-xs shadow-md hover:shadow-lg transform hover:scale-105"
+                    >
+                      🗑️ Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

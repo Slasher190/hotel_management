@@ -4,14 +4,24 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
 
+import { useUserRole } from '@/lib/useUserRole'
+
 interface RoomType {
   id: string
   name: string
+  price: number
 }
 
 export default function RoomTypesPage() {
+  const { isManager } = useUserRole()
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [newRoomType, setNewRoomType] = useState('')
+  const [newRoomPrice, setNewRoomPrice] = useState('')
+  // Edit State
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPrice, setEditPrice] = useState('')
+
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; roomTypeId: string | null; roomTypeName: string }>({
     isOpen: false,
     roomTypeId: null,
@@ -60,13 +70,17 @@ export default function RoomTypesPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newRoomType.trim() }),
+        body: JSON.stringify({
+          name: newRoomType.trim(),
+          price: parseFloat(newRoomPrice) || 0
+        }),
       })
 
       if (response.ok) {
         const data = await response.json()
         setRoomTypes([...roomTypes, data])
         setNewRoomType('')
+        setNewRoomPrice('')
         toast.success('Room type added successfully!')
       } else {
         const data = await response.json()
@@ -79,6 +93,49 @@ export default function RoomTypesPage() {
 
   const handleDeleteRoomType = async (id: string, name: string) => {
     setDeleteModal({ isOpen: true, roomTypeId: id, roomTypeName: name })
+  }
+
+  const handleStartEdit = (type: RoomType) => {
+    setEditingId(type.id)
+    setEditName(type.name)
+    setEditPrice(type.price.toString())
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditName('')
+    setEditPrice('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editName.trim()) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/room-types/${editingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: editName.trim(),
+          price: parseFloat(editPrice) || 0,
+        }),
+      })
+
+      if (response.ok) {
+        const updatedType = await response.json()
+        setRoomTypes(roomTypes.map((rt) => (rt.id === editingId ? updatedType : rt)))
+        toast.success('Room type updated successfully!')
+        handleCancelEdit()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to update room type')
+      }
+    } catch {
+      toast.error('An error occurred. Please try again.')
+    }
   }
 
   const confirmDeleteRoomType = async () => {
@@ -134,8 +191,15 @@ export default function RoomTypesPage() {
                 type="text"
                 value={newRoomType}
                 onChange={(e) => setNewRoomType(e.target.value)}
-                placeholder="Enter room type (e.g., AC, Non-AC, Deluxe, Single Bed)"
+                placeholder="Enter room type (e.g., Deluxe)"
                 className="flex-1 px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+              />
+              <input
+                type="number"
+                value={newRoomPrice}
+                onChange={(e) => setNewRoomPrice(e.target.value)}
+                placeholder="Price (₹)"
+                className="w-32 px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleAddRoomType()
@@ -156,13 +220,60 @@ export default function RoomTypesPage() {
                   key={roomType.id}
                   className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]"
                 >
-                  <span className="text-[#111827] font-bold text-base sm:text-lg">{roomType.name}</span>
-                  <button
-                    onClick={() => handleDeleteRoomType(roomType.id, roomType.name)}
-                    className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-sm min-h-[44px] w-full sm:w-auto"
-                  >
-                    🗑️ Delete
-                  </button>
+                  {editingId === roomType.id ? (
+                    <div className="flex-1 flex gap-3 items-center">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
+                        placeholder="Name"
+                      />
+                      <input
+                        type="number"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        className="w-24 px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
+                        placeholder="Price"
+                      />
+                      <button
+                        onClick={handleSaveEdit}
+                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:opacity-90 text-sm font-semibold"
+                      >
+                        💾 Save
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:opacity-90 text-sm font-semibold"
+                      >
+                        ❌ Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-[#111827] font-bold text-base sm:text-lg">
+                        {roomType.name} - ₹{roomType.price}
+                      </span>
+                      <div className="flex gap-2">
+                        {isManager && (
+                          <button
+                            onClick={() => handleStartEdit(roomType)}
+                            className="px-3 py-2 bg-[#64748B] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-sm min-h-[44px]"
+                          >
+                            ✏️ Edit
+                          </button>
+                        )}
+                        {isManager && (
+                          <button
+                            onClick={() => handleDeleteRoomType(roomType.id, roomType.name)}
+                            className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-sm min-h-[44px]"
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
               {roomTypes.length === 0 && (
@@ -174,7 +285,7 @@ export default function RoomTypesPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div >
     </>
   )
 }

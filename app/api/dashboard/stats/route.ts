@@ -89,6 +89,19 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Total active tours/bus bookings (status BOOKED or PENDING)
+    const activeTours = await prisma.busBooking.count({
+      where: {
+        OR: [
+          { status: 'BOOKED' },
+          { status: 'PENDING' },
+        ],
+        toDate: {
+          gte: new Date(), // Only count tours that haven't ended
+        },
+      },
+    })
+
     return NextResponse.json({
       totalBookings,
       activeBookings,
@@ -97,6 +110,7 @@ export async function GET(request: NextRequest) {
       pendingPayments,
       availableRooms,
       occupiedRooms,
+      activeTours,
     })
   } catch (error) {
     console.error('Dashboard stats error:', error)

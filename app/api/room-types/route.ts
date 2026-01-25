@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       meta: err.meta,
     })
     return NextResponse.json(
-      { 
+      {
         error: err.message || 'Internal server error',
         details: process.env.NODE_ENV === 'development' ? err.stack : undefined
       },
@@ -58,14 +58,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
     }
 
-    const { name } = await request.json()
+    const { name, price } = await request.json()
 
     if (!name || name.trim() === '') {
       return NextResponse.json({ error: 'Room type name is required' }, { status: 400 })
     }
 
     const roomType = await prisma.roomType.create({
-      data: { name: name.trim() },
+      data: {
+        name: name.trim(),
+        price: typeof price === 'number' ? price : 0
+      },
     })
 
     return NextResponse.json(roomType)

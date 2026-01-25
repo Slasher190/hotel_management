@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
+import { useUserRole } from '@/lib/useUserRole'
 
 interface Room {
   id: string
@@ -15,6 +16,7 @@ interface Room {
 }
 
 export default function RoomsManagementPage() {
+  const { canDelete } = useUserRole()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; roomId: string | null; roomNumber: string }>({
@@ -147,22 +149,23 @@ export default function RoomsManagementPage() {
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span
-                        className={`px-2 py-1 text-xs font-bold rounded-full ${
-                          room.status === 'AVAILABLE'
+                        className={`px-2 py-1 text-xs font-bold rounded-full ${room.status === 'AVAILABLE'
                             ? 'bg-[#64748B] text-white'
                             : 'bg-[#8E0E1C] text-white'
-                        }`}
+                          }`}
                       >
                         {room.status}
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => handleDelete(room.id, room.roomNumber)}
-                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px]"
-                      >
-                        🗑️ Delete
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(room.id, room.roomNumber)}
+                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px]"
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

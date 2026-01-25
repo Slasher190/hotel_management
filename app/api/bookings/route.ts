@@ -137,6 +137,7 @@ export async function POST(request: NextRequest) {
       mattresses,
       roomPrice,
       discount,
+      checkInDate,
     } = await request.json()
 
     if (!roomId || !guestName || !idType || !roomPrice || !purpose) {
@@ -182,6 +183,7 @@ export async function POST(request: NextRequest) {
         mattresses: parseInt(mattresses) || 0,
         roomPrice: parseFloat(roomPrice),
         discount: parseFloat(discount) || 0,
+        checkInDate: checkInDate ? new Date(checkInDate) : undefined,
         status: 'ACTIVE',
       },
     })

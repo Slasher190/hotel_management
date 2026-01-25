@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
+import { useUserRole } from '@/lib/useUserRole'
+import Pagination from '@/app/components/Pagination'
 
 interface BusBooking {
   id: string
@@ -16,6 +18,7 @@ interface BusBooking {
 
 function ToursContent() {
   const searchParams = useSearchParams()
+  const { canDelete, canWrite } = useUserRole()
   const [bookings, setBookings] = useState<BusBooking[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(
@@ -36,6 +39,10 @@ function ToursContent() {
     notes: '',
   })
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
   const fetchBookings = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
@@ -53,7 +60,13 @@ function ToursContent() {
 
       if (response.ok) {
         const data = await response.json()
-        setBookings(Array.isArray(data) ? data : data.bookings || [])
+        const fetchedBookings = Array.isArray(data) ? data : data.bookings || []
+
+        // Sort by fromDate descending (newest first)
+        fetchedBookings.sort((a: BusBooking, b: BusBooking) =>
+          new Date(b.fromDate).getTime() - new Date(a.fromDate).getTime()
+        )
+        setBookings(fetchedBookings)
       }
     } catch {
       // Error handled by console.error
@@ -66,9 +79,14 @@ function ToursContent() {
     fetchBookings()
   }, [fetchBookings])
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedDate, showAll])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.busNumber || !formData.fromDate || !formData.toDate) {
       toast.error('All fields are required')
       return
@@ -136,6 +154,11 @@ function ToursContent() {
   }
 
   const handleDelete = async (id: string, busNumber: string) => {
+    // Only allow delete if user has delete permissions
+    if (!canDelete) {
+      toast.error('You do not have permission to delete records')
+      return
+    }
     setDeleteModal({ isOpen: true, bookingId: id, busNumber })
   }
 
@@ -168,6 +191,12 @@ function ToursContent() {
   const bookedCount = bookings.filter((b) => b.status === 'BOOKED').length
   const pendingCount = bookings.filter((b) => b.status === 'PENDING').length
 
+  // Calculate paginated bookings for client-side pagination
+  const paginatedBookings = bookings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   if (loading) {
     return (
       <div className="text-center py-16">
@@ -197,13 +226,15 @@ function ToursContent() {
           </h2>
           <p className="text-sm sm:text-base text-[#64748B] font-medium">Manage bus bookings for tours and travel</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
-        >
-          <span className="text-xl">➕</span>
-          <span>Add Bus Booking</span>
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
+          >
+            <span className="text-xl">➕</span>
+            <span>Add Bus Booking</span>
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center flex-wrap bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
@@ -226,11 +257,10 @@ function ToursContent() {
               setSelectedDate(new Date().toISOString().split('T')[0])
             }
           }}
-          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] ${
-            showAll
+          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] ${showAll
               ? 'bg-[#8E0E1C] text-white'
               : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
+            }`}
         >
           {showAll ? '📅 Show by Date' : '📋 Show All Bookings'}
         </button>
@@ -273,7 +303,7 @@ function ToursContent() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-[#CBD5E1]">
-              {bookings.map((booking) => (
+              {paginatedBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
                   <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <div className="text-sm font-bold text-[#111827]">{booking.busNumber}</div>
@@ -291,11 +321,10 @@ function ToursContent() {
                   </td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 py-1 text-xs font-bold rounded-full ${
-                        booking.status === 'BOOKED'
+                      className={`px-2 py-1 text-xs font-bold rounded-full ${booking.status === 'BOOKED'
                           ? 'bg-[#64748B] text-white'
                           : 'bg-[#8E0E1C] text-white'
-                      }`}
+                        }`}
                     >
                       {booking.status}
                     </span>
@@ -312,20 +341,21 @@ function ToursContent() {
                             booking.status === 'BOOKED' ? 'PENDING' : 'BOOKED'
                           )
                         }
-                        className={`px-3 py-2 rounded-lg text-xs font-semibold transition-opacity duration-150 min-h-[44px] ${
-                          booking.status === 'BOOKED'
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold transition-opacity duration-150 min-h-[44px] ${booking.status === 'BOOKED'
                             ? 'bg-[#8E0E1C] text-white hover:opacity-90'
                             : 'bg-[#64748B] text-white hover:opacity-90'
-                        }`}
+                          }`}
                       >
                         {booking.status === 'BOOKED' ? '⏳ Mark Pending' : '✅ Mark Booked'}
                       </button>
-                      <button
-                        onClick={() => handleDelete(booking.id, booking.busNumber)}
-                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity duration-150 min-h-[44px]"
-                      >
-                        🗑️ Delete
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(booking.id, booking.busNumber)}
+                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity duration-150 min-h-[44px]"
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -333,6 +363,17 @@ function ToursContent() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {bookings.length > itemsPerPage && (
+          <div className="border-t border-[#CBD5E1]">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(bookings.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
         {bookings.length === 0 && (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🚌</div>

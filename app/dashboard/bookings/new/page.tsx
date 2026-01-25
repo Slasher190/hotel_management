@@ -32,6 +32,16 @@ export default function NewBookingPage() {
     // Bill Details
     billNumber: '',
     billDate: new Date().toISOString().split('T')[0],
+    checkInDate: (() => {
+      const now = new Date()
+      // Adjust for local timezone (approximate or use library if strictly needed, but simple shift often enough for UI default)
+      // Actually simpler: new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16) is a hack but works for YYYY-MM-DDTHH:mm
+      // Or just ISO string slice if UTC is close enough or user corrects it. 
+      // Better:
+      const d = new Date()
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
+      return d.toISOString().slice(0, 16)
+    })(),
 
     // Guest Profile
     guestName: '',
@@ -145,6 +155,7 @@ export default function NewBookingPage() {
           children: parseInt(formData.children) || 0,
           discount: parseFloat(formData.discount) || 0,
           advanceAmount: parseFloat((formData as any).advanceAmount) || 0,
+          checkInDate: new Date(formData.checkInDate).toISOString(),
         }),
       })
 
@@ -236,6 +247,15 @@ export default function NewBookingPage() {
                 type="date"
                 value={formData.billDate}
                 onChange={(e) => setFormData({ ...formData, billDate: e.target.value })}
+                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">Check In Time</label>
+              <input
+                type="datetime-local"
+                value={formData.checkInDate}
+                onChange={(e) => setFormData({ ...formData, checkInDate: e.target.value })}
                 className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C]"
               />
             </div>

@@ -24,6 +24,10 @@ interface Booking {
     }
   }
   mobileNumber?: string
+  // For inline editing of manually added rows
+  isManual?: boolean
+  editableRoomNumber?: string
+  editableTotalPeople?: number
 }
 
 export default function PoliceVerificationPage() {
@@ -68,6 +72,9 @@ export default function PoliceVerificationPage() {
             additionalGuests: b.additionalGuests || 0,
             purpose: b.purpose || '',
             mobileNumber: b.mobileNumber || '',
+            isManual: false,
+            editableRoomNumber: b.room?.roomNumber || '',
+            editableTotalPeople: (b.adults || 1) + (b.children || 0) + (b.additionalGuests || 0),
           }))
         )
       }
@@ -78,10 +85,21 @@ export default function PoliceVerificationPage() {
     }
   }
 
-  const handleUpdateBooking = (index: number, field: keyof Booking, value: string | number) => {
+  const handleUpdateBooking = (index: number, field: keyof Booking | 'editableRoomNumber' | 'editableTotalPeople', value: string | number) => {
     const updated = [...editableBookings]
     if (field === 'idNumber' || field === 'guestName' || field === 'purpose' || field === 'mobileNumber') {
       updated[index] = { ...updated[index], [field]: value }
+    } else if (field === 'editableRoomNumber') {
+      updated[index] = {
+        ...updated[index],
+        editableRoomNumber: value as string,
+        room: { ...updated[index].room, roomNumber: value as string }
+      }
+    } else if (field === 'editableTotalPeople') {
+      updated[index] = {
+        ...updated[index],
+        editableTotalPeople: value as number
+      }
     }
     setEditableBookings(updated)
   }
@@ -109,6 +127,9 @@ export default function PoliceVerificationPage() {
         },
       },
       mobileNumber: '',
+      isManual: true, // Mark as manually added
+      editableRoomNumber: '',
+      editableTotalPeople: 1,
     }
     setEditableBookings([...editableBookings, newRecord])
   }
@@ -127,11 +148,19 @@ export default function PoliceVerificationPage() {
       })
 
       const tableData = editableBookings.map((guest, index) => {
-        const totalPeople = (guest.adults || 0) + (guest.children || 0) + (guest.additionalGuests || 0)
+        // Use editable values for manual records, calculated for existing
+        const totalPeople = guest.isManual
+          ? guest.editableTotalPeople || 1
+          : (guest.adults || 0) + (guest.children || 0) + (guest.additionalGuests || 0)
+
+        const roomNumber = guest.isManual
+          ? guest.editableRoomNumber || 'N/A'
+          : guest.room.roomNumber || 'N/A'
+
         return [
           (index + 1).toString(),
           guest.guestName,
-          guest.room.roomNumber || 'N/A',
+          roomNumber,
           totalPeople.toString(),
           guest.purpose || '-',
           guest.mobileNumber || '-',
@@ -250,9 +279,32 @@ export default function PoliceVerificationPage() {
                           className="px-2 py-1 border rounded w-full"
                         />
                       </td>
-                      <td className="px-4 py-3 font-bold text-[#8E0E1C]">{booking.room.roomNumber || '-'}</td>
                       <td className="px-4 py-3">
-                        {totalPeople}
+                        {booking.isManual ? (
+                          <input
+                            type="text"
+                            value={booking.editableRoomNumber || ''}
+                            onChange={(e) => handleUpdateBooking(index, 'editableRoomNumber', e.target.value)}
+                            className="px-2 py-1 border rounded w-20 text-[#8E0E1C] font-bold"
+                            placeholder="Room #"
+                          />
+                        ) : (
+                          <span className="font-bold text-[#8E0E1C]">{booking.room.roomNumber || '-'}</span>
+                        )}
+                      </td>
+                      {/* No. of People - Inline editable for manual rows */}
+                      <td className="px-4 py-3">
+                        {booking.isManual ? (
+                          <input
+                            type="number"
+                            min="1"
+                            value={booking.editableTotalPeople || 1}
+                            onChange={(e) => handleUpdateBooking(index, 'editableTotalPeople', parseInt(e.target.value) || 1)}
+                            className="px-2 py-1 border rounded w-16 text-center"
+                          />
+                        ) : (
+                          <span>{totalPeople}</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <input
