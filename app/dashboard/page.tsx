@@ -74,47 +74,47 @@ export default function DashboardPage() {
       value: stats?.totalBookings || 0,
       icon: '📋',
       href: '/dashboard/bookings',
-      roles: ['ADMIN', 'STAFF'], // Visible to all
+      roles: ['ADMIN', 'MANAGER', 'STAFF'], // Visible to all
     },
     {
       title: 'Active Bookings',
       value: stats?.activeBookings || 0,
       icon: '✅',
       href: '/dashboard/bookings?status=active',
-      roles: ['ADMIN', 'STAFF'],
+      roles: ['ADMIN', 'MANAGER', 'STAFF'],
     },
     {
       title: 'Monthly Revenue',
       value: `₹${(stats?.totalRevenue || 0).toLocaleString('en-IN')}`,
       icon: '💰',
-      roles: ['ADMIN'], // Hidden for Staff
+      roles: ['ADMIN', 'MANAGER'], // Stats for Managers too
     },
     {
       title: 'GST Revenue',
       value: `₹${(stats?.gstRevenue || 0).toLocaleString('en-IN')}`,
       icon: '🧾',
-      roles: ['ADMIN'],
+      roles: ['ADMIN', 'MANAGER'],
     },
     {
       title: 'Pending Payments',
       value: stats?.pendingPayments || 0,
       icon: '⏳',
       href: '/dashboard/payments?status=pending',
-      roles: ['ADMIN'], // Hidden for Staff based on note
+      roles: ['ADMIN', 'MANAGER'],
     },
     {
       title: 'Available Rooms',
       value: `${stats?.availableRooms || 0} / ${(stats?.availableRooms || 0) + (stats?.occupiedRooms || 0)}`,
       icon: '🏨',
       href: '/dashboard/rooms',
-      roles: ['ADMIN', 'STAFF'],
+      roles: ['ADMIN', 'MANAGER', 'STAFF'],
     },
     {
       title: 'Tours & Travels',
       value: stats?.activeTours || 0,
       icon: '🚌',
       href: '/dashboard/tours',
-      roles: ['ADMIN', 'STAFF'],
+      roles: ['ADMIN', 'MANAGER', 'STAFF'],
     },
   ].filter(card => !card.roles || card.roles.includes(userRole || 'ADMIN')) // Default to ADMIN view if role not found, or maybe safe default? Assuming ADMIN for now if undefined to avoid hiding everything on load, but clearer is to wait.
   // Actually, better to assume restricted if unsure, but for UX 'ADMIN' default usually for dev. 
