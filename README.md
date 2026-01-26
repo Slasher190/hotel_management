@@ -1,6 +1,6 @@
 # Hotel Management System
 
-A comprehensive internal hotel management system built with Next.js, PostgreSQL, and Prisma. Designed for efficient room booking, billing, and operations management.
+A comprehensive internal hotel management system built with Next.js, PostgreSQL, and Prisma. Designed for efficient room booking, billing, and operations management
 
 ## Features
 
