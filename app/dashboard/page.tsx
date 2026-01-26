@@ -44,15 +44,6 @@ export default function DashboardPage() {
     fetchDashboardStats()
   }, [fetchDashboardStats])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-[#64748B]">Loading dashboard...</div>
-      </div>
-    )
-  }
-
-  // Role based access
   const [userRole, setUserRole] = useState<string>('')
 
   useEffect(() => {
@@ -66,6 +57,16 @@ export default function DashboardPage() {
       }
     }
   }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-[#64748B]">Loading dashboard...</div>
+      </div>
+    )
+  }
+
+  // Role based access removed from here as it is moved up
 
   const statCards = [
     {
