@@ -31,7 +31,11 @@ export async function POST(
       department,
       designation,
       roundOff = 0,
-      checkoutDate
+      checkoutDate,
+      guestState,
+      guestStateCode,
+      guestNationality,
+      businessPhoneNumber
     } = await request.json()
 
     const booking = await prisma.booking.findUnique({
@@ -69,16 +73,34 @@ export async function POST(
       : 0
 
     // Calculate combined food bill if enabled
+    // Calculate combined food bill if enabled
     let combinedFoodCharges = 0
+    let allFoodOrders: any[] = [...booking.foodOrders]
+
     if (showCombinedFoodBill) {
-      // Get previous food bills
+      // Get previous food bills with their orders
       const previousFoodBills = await prisma.invoice.findMany({
         where: {
           bookingId: id,
           invoiceType: 'FOOD',
         },
+        include: {
+          foodOrders: {
+            include: {
+              foodItem: true
+            }
+          }
+        }
       })
+
       const previousBillsTotal = previousFoodBills.reduce((sum, bill) => sum + bill.totalAmount, 0)
+
+      // Add previous orders to the list for itemized view
+      previousFoodBills.forEach(bill => {
+        if (bill.foodOrders) {
+          allFoodOrders = [...allFoodOrders, ...bill.foodOrders]
+        }
+      })
 
       // Calculate current food orders total (no GST)
       let currentFoodTotal = 0
@@ -106,8 +128,24 @@ export async function POST(
       },
     })
 
-    // Generate invoice number
+    // Generate Invoice Number
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
+    // Prepare food items for PDF (itemized)
+    // Sort by creation date
+    allFoodOrders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+
+    const foodItems = allFoodOrders.map(order => ({
+      name: order.foodItem.name,
+      quantity: order.quantity,
+      price: order.foodItem.price,
+      total: order.foodItem.price * order.quantity,
+      orderTime: order.createdAt // We can use order creation time
+    }))
+
+    // Use passed checkInDate as it might be edited in frontend, otherwise booking's
+    // (Actually the request doesn't send checkInDate usually, it sends checkoutDate. 
+    // But we should use booking.checkInDate)
 
     // Create invoice - save all available data
     const invoice = await prisma.invoice.create({
@@ -115,23 +153,27 @@ export async function POST(
         bookingId: id,
         invoiceNumber,
         invoiceType: 'ROOM',
-        isManual: false, // This is from a booking checkout
+        isManual: false,
         billNumber: booking.billNumber || null,
-        billDate: booking.billDate || null,
+        billDate: checkoutDateTime, // Use checkout date as bill date
         visitorRegistrationNumber: booking.visitorRegistrationNumber?.toString() || null,
 
         guestName: booking.guestName,
         guestAddress: booking.guestAddress || null,
         guestMobile: booking.guestMobile || null,
         guestGstNumber: (gstEnabled && showGst) ? (booking.guestGstNumber || null) : null,
-        guestState: null, // Can be added if available
-        guestNationality: null, // Can be added if available
-        guestStateCode: null, // Can be added if available
+
+        // Use passed values from request
+        guestState: guestState || null,
+        guestNationality: guestNationality || null,
+        guestStateCode: guestStateCode || null,
 
         companyName: companyName || booking.companyName || null,
         department: department || booking.department || null,
         designation: designation || booking.designation || null,
-        companyCode: null, // Can be added if available
+
+        // Use passed business phone
+        businessPhoneNumber: businessPhoneNumber || null,
 
         roomType: booking.room.roomType.name,
         roomNumber: booking.room.roomNumber,
@@ -151,7 +193,7 @@ export async function POST(
         gstEnabled: gstEnabled && showGst,
         gstNumber: (gstEnabled && showGst) ? gstNumber : null,
         gstAmount,
-        advanceAmount: 0, // Can be added if available in request
+        advanceAmount: 0,
         roundOff: Number.parseFloat(roundOff) || 0,
         totalAmount,
       },
@@ -196,29 +238,43 @@ export async function POST(
     // Generate PDF using utility function - use invoice data for all fields
     const doc = generateBillPDF(settings, {
       invoiceNumber,
-      billNumber: null, // Can be added if needed
+      billNumber: booking.visitorRegistrationNumber?.toString(), // Use visitor no as bill no / register no? Image has both.
+      // Actually image has: Visitor's Register Sr. No. AND Bill No.
+      // We'll pass both.
+      visitorRegistrationNumber: booking.visitorRegistrationNumber?.toString(),
       billDate: checkoutDateTime,
+
       guestName: invoice.guestName,
       guestAddress: invoice.guestAddress || null,
       guestState: invoice.guestState || null,
       guestNationality: invoice.guestNationality || null,
-      guestGstNumber: showGst && invoice.gstEnabled ? (invoice.guestGstNumber || null) : null,
       guestStateCode: invoice.guestStateCode || null,
+
+      guestGstNumber: showGst && invoice.gstEnabled ? (invoice.guestGstNumber || null) : null,
       guestMobile: invoice.guestMobile || null,
+      businessPhoneNumber: invoice.businessPhoneNumber || null,
+
       companyName: invoice.companyName || null,
-      companyCode: invoice.companyCode || null,
+      companyCode: null,
       department: invoice.department || null,
       designation: invoice.designation || null,
+
       roomNumber: booking.room.roomNumber,
-      roomType: booking.room.roomType.name,
+      roomType: booking.room.roomType.name, // Use this for "PARTICULARS"
+
       checkInDate: booking.checkInDate,
       checkoutDate: checkoutDateTime,
       days,
+
       roomCharges,
       tariff: tariffAmount,
+
       foodCharges: showCombinedFoodBill ? combinedFoodCharges : 0,
+      foodItems: showCombinedFoodBill ? foodItems : [], // Pass the itemized list!
+
       additionalGuestCharges: additionalGuestChargesValue,
       additionalGuests: booking.additionalGuests,
+
       gstEnabled: gstEnabled && showGst,
       gstPercent: gstPercent || 5,
       gstAmount,

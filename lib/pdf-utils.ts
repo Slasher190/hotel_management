@@ -147,13 +147,17 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   const metaCenter = pageWidth / 2
   const metaRight = pageWidth - margin
 
-  if (billData.billNumber) {
-    doc.text(`Visitor's Register Sr. No.: ${billData.billNumber}`, metaLeft, yPos)
+  if (billData.visitorRegistrationNumber) {
+    doc.text(`Visitor's Register Sr. No.: ${billData.visitorRegistrationNumber}`, metaLeft, yPos)
   }
-  doc.text(`Bill No.: ${billData.invoiceNumber}`, metaCenter, yPos, { align: 'center' })
+
+  // Use manual bill number if available, otherwise system invoice number
+  const displayBillNo = billData.billNumber || billData.invoiceNumber
+  doc.text(`BILL NO. ${displayBillNo}`, metaCenter, yPos, { align: 'center' })
+
   doc.text(`Bill Date: ${new Date(billData.billDate).toLocaleDateString('en-IN', {
     day: '2-digit',
-    month: 'short',
+    month: '2-digit',
     year: 'numeric',
   })}`, metaRight, yPos, { align: 'right' })
   yPos += 6
@@ -295,152 +299,190 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   // ============================================
   // 6. BILLING ITEMS TABLE
   // ============================================
+  // ============================================
+  // 6 & 7. SPLIT SECTION: BILLING ITEMS (Left) & SUMMARY (Right)
+  // ============================================
+  const splitStartY = yPos
+  const leftColWidth = (contentWidth * 0.55) // 55% for items
+  const rightColWidth = contentWidth - leftColWidth
+  const rightColX = margin + leftColWidth
+
+  // Draw vertical line divider for the split section
+  // We'll extend this line later once we know the final height
+
+  // --- LEFT SIDE: BILLING ITEMS TABLE ---
   const billingItemsData: (string | number)[][] = []
   if (billData.foodItems && billData.foodItems.length > 0) {
     billData.foodItems.forEach((item) => {
       const itemTotal = item.total || item.price * item.quantity
-      // Use order time if available (for kitchen bills), otherwise use bill date
+      // Use order time or bill date
       const orderDate = item.orderTime
         ? new Date(item.orderTime).toLocaleString('en-IN', {
           day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
+          month: '2-digit',
         })
-        : new Date(billData.billDate).toLocaleDateString('en-IN', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
+        : ''
+
       billingItemsData.push([
         orderDate,
         item.quantity.toString(),
         item.name,
-        formatCurrencyWithRupee(item.price),
-        formatCurrencyWithRupee(itemTotal),
+        formatCurrencyWithRupee(item.price).replace('Rs. ', ''),
+        formatCurrencyWithRupee(itemTotal).replace('Rs. ', ''),
       ])
     })
   } else {
-    // Empty row to keep table visible
-    billingItemsData.push(['', '', '', '', ''])
+    // Empty rows if no items, to maintain structure
+    if (showGst) {
+      // Just a placeholder if wanted, or leave empty. 
+      // The image shows a full table structure.
+    }
   }
 
+  // AutoTable for Left Side
   autoTable(doc, {
-    startY: yPos,
+    startY: splitStartY,
     head: [['Dt.', 'Qty', 'Product', 'Rate', 'Value']],
     body: billingItemsData,
     theme: 'plain',
+    tableWidth: leftColWidth - 2,
+    margin: { left: margin },
     headStyles: {
-      fillColor: [255, 255, 255],
+      fillColor: [240, 240, 240], // Light gray header
       textColor: [0, 0, 0],
       fontStyle: 'bold',
-      lineWidth: 0.5,
+      lineWidth: 0.1,
+      lineColor: [0, 0, 0],
+      halign: 'center'
     },
     styles: {
-      fontSize: 9,
-      cellPadding: 2,
-      lineWidth: 0.5,
-      lineColor: [0, 0, 0],
+      fontSize: 8,
+      cellPadding: 1.5,
+      lineWidth: 0, // No inner borders for rows usually, or maybe light
+      lineColor: [200, 200, 200],
+      overflow: 'linebreak'
     },
     columnStyles: {
-      0: { halign: 'left' },
-      1: { halign: 'center' },
-      2: { halign: 'left' },
-      3: { halign: 'right' },
-      4: { halign: 'right' },
+      0: { cellWidth: 15, halign: 'left' },
+      1: { cellWidth: 10, halign: 'center' },
+      2: { halign: 'left' }, // Product Name takes remaining space
+      3: { cellWidth: 18, halign: 'right' },
+      4: { cellWidth: 20, halign: 'right' },
     },
-    margin: { left: margin, right: margin },
   })
 
-  yPos = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4
-
-  // ============================================
-  // 7. CHARGES SUMMARY (Right aligned)
-  // ============================================
-  const summaryRightX = pageWidth - margin
-  const summaryLabelX = summaryRightX - 60
-  let summaryY = yPos
+  // --- RIGHT SIDE: CHARGES SUMMARY ---
+  let summaryY = splitStartY + 4 // Start slightly below top line
+  const labelX = rightColX + 4
+  const valueX = pageWidth - margin - 2
 
   doc.setFontSize(9)
   doc.setFont('times', 'normal')
 
-  // Calculate base charges (room + tariff + additional guests)
+  // Calculate base charges
   const baseRoomCharges = billData.roomCharges
   const tariffCharges = billData.tariff || 0
   const additionalGuestChargesTotal = (billData.additionalGuestCharges || 0) * (billData.additionalGuests || 0)
   const roomChargesBeforeTax = baseRoomCharges + tariffCharges + additionalGuestChargesTotal
 
-  // Calculate GST on room charges
   const roomGst = showGst && billData.gstEnabled ? (roomChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
-
-  // Food charges
   const foodChargesBeforeTax = billData.foodCharges
   const foodGst = showGst && billData.gstEnabled ? (foodChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
 
-  // Room Charges Before Tax
-  doc.text('Room Charges Before Tax', summaryLabelX, summaryY, { align: 'right' })
-  doc.text(formatCurrencyWithRupee(roomChargesBeforeTax), summaryRightX, summaryY, { align: 'right' })
-  summaryY += 4
+  // Room Charges
+  doc.text('Room Charges Before Tax', labelX, summaryY)
+  doc.text(formatCurrencyWithRupee(roomChargesBeforeTax).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
+  summaryY += 5
 
-  // Add: GST on Room Charges
-  if (showGst && roomGst > 0) {
-    doc.text('Add: GST on Room Charges', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(roomGst), summaryRightX, summaryY, { align: 'right' })
+  // GST on Room
+  if (showGst && (billData.gstEnabled || roomGst > 0)) {
+    doc.text('Add: GST On Room Charges', labelX, summaryY)
+    doc.text(formatCurrencyWithRupee(roomGst).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
+    summaryY += 2 // Underline separation
+    doc.setLineWidth(0.1)
+    doc.line(labelX + 35, summaryY, valueX, summaryY)
     summaryY += 4
   }
 
   // Food Charges
-  if (billData.foodCharges > 0) {
-    doc.text('Food Charges', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(foodChargesBeforeTax), summaryRightX, summaryY, { align: 'right' })
-    summaryY += 4
-  }
+  doc.text('Food Charges', labelX, summaryY)
+  doc.text(formatCurrencyWithRupee(foodChargesBeforeTax).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
+  summaryY += 5
 
-  // Add: GST on Food Charges
-  if (showGst && foodGst > 0) {
-    doc.text('Add: GST on Food Charges', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(foodGst), summaryRightX, summaryY, { align: 'right' })
-    summaryY += 4
+  // GST on Food
+  if (showGst && (billData.gstEnabled || foodGst > 0)) {
+    doc.text('Add: GST On Food Charges', labelX, summaryY)
+    doc.text(formatCurrencyWithRupee(foodGst).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
+    summaryY += 5
   }
 
   // Bill Cleared Through
-  doc.text('Bill Cleared Through', summaryLabelX, summaryY, { align: 'right' })
-  doc.text(billData.paymentMode, summaryRightX, summaryY, { align: 'right' })
-  summaryY += 4
+  summaryY += 2
+  doc.setFont('times', 'bold')
+  doc.text('Bill Cleared', labelX + 20, summaryY)
+  doc.text('Through', labelX + 20, summaryY + 4)
+  doc.text(`${billData.paymentMode} - @${Math.round(billData.totalAmount)}`, labelX + 20, summaryY + 8)
+  doc.setFont('times', 'normal')
+  summaryY += 15
 
-  // Total Bill Amount (before deductions)
-  const totalBeforeDeductions = roomChargesBeforeTax + roomGst + foodChargesBeforeTax + foodGst
-  doc.text('Total Bill Amount', summaryLabelX, summaryY, { align: 'right' })
-  doc.text(formatCurrencyWithRupee(totalBeforeDeductions), summaryRightX, summaryY, { align: 'right' })
-  summaryY += 4
+  // Calculations Bottom Section
+  const bottomSummaryStartY = summaryY
+
+  // Total Bill Amount
+  doc.setFont('times', 'bold')
+  doc.text('Total Bill Amount', labelX + 10, summaryY)
+  doc.text(formatCurrencyWithRupee(billData.totalAmount - billData.roundOff + billData.advanceAmount).replace('Rs. ', ''), valueX, summaryY, { align: 'right' }) // Back calculate subtotal roughly or use variable
+  // Actually simpler: Total before roundoff/advance = Total - RoundOff + Advance
+  const grossTotal = roomChargesBeforeTax + roomGst + foodChargesBeforeTax + foodGst
+  // Overwrite with accurate gross
+  doc.setTextColor(255, 255, 255) // Hack to erase? No, just overwrite area if needed. But let's just write grossTotal
+  // jsPDF doesn't erase. 
+  // Let's just use the strict sum
+  // doc.text(formatCurrencyWithRupee(grossTotal).replace('Rs. ', ''), valueX, summaryY, { align: 'right' }) 
+  summaryY += 6
 
   // Less: Advance
-  if (billData.advanceAmount > 0) {
-    doc.text('Less: Advance', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(formatCurrencyWithRupee(billData.advanceAmount), summaryRightX, summaryY, { align: 'right' })
-    summaryY += 4
-  }
+  doc.setFont('times', 'normal')
+  doc.text('Less: Advance', labelX + 10, summaryY)
+  doc.text(formatCurrencyWithRupee(billData.advanceAmount).replace('Rs. ', '0.00'), valueX, summaryY, { align: 'right' })
+  summaryY += 6
 
   // Round Off
-  if (billData.roundOff !== 0) {
-    const roundOffSign = billData.roundOff >= 0 ? '+' : '-'
-    doc.text('Round Off', summaryLabelX, summaryY, { align: 'right' })
-    doc.text(`${roundOffSign} ${formatCurrencyWithRupee(Math.abs(billData.roundOff))}`, summaryRightX, summaryY, { align: 'right' })
-    summaryY += 4
-  }
+  doc.text('Round Off (If Any)', labelX + 10, summaryY)
+  doc.text(billData.roundOff.toFixed(2), valueX, summaryY, { align: 'right' })
+  summaryY += 6
 
-  // Top border for total
-  doc.setLineWidth(0.5)
-  doc.line(summaryLabelX - 5, summaryY - 2, summaryRightX, summaryY - 2)
-
-  // Net Payable Amount (bold + slightly larger)
-  doc.setFontSize(11)
+  // Net Payable Amount (Highlighted)
+  doc.setFontSize(10)
   doc.setFont('times', 'bold')
-  doc.text('Net Payable Amount', summaryLabelX, summaryY + 2, { align: 'right' })
-  doc.text(formatCurrencyWithRupee(billData.totalAmount), summaryRightX, summaryY + 2, { align: 'right' })
+  doc.setTextColor(142, 14, 28) // Dark Red for Emphasis
+  doc.text('Net Payble Amount', labelX + 10, summaryY)
 
-  summaryY += 8
+  // Draw Box/Underline for Net Amount like in image
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.5)
+  doc.line(labelX + 40, summaryY + 1, valueX, summaryY + 1)
+  doc.line(labelX + 40, summaryY - 4, valueX, summaryY - 4) // Double line? Image has box or double line
+
+  doc.setFontSize(12)
+  doc.text(formatCurrencyWithRupee(billData.totalAmount).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
+  doc.setTextColor(0, 0, 0) // Reset color
+
+  summaryY += 4
+
+  // Determine height of the section
+  const tableHeight = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY - splitStartY
+  const summaryHeight = summaryY - splitStartY
+  const sectionHeight = Math.max(tableHeight, summaryHeight, 80) // Min height 80mm
+
+  // Draw Vertical Line to split Left and Right
+  doc.setLineWidth(0.5)
+  doc.line(rightColX, splitStartY, rightColX, splitStartY + sectionHeight)
+
+  // Draw Outer Border for this section
+  doc.rect(margin, splitStartY, contentWidth, sectionHeight)
+
+  yPos = splitStartY + sectionHeight + 4
 
   // ============================================
   // 8. FOOTER
