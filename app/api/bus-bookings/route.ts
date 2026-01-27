@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { busNumber, fromDate, toDate, status, notes } = await request.json()
+    const { busNumber, fromDate, toDate, status, notes, bookingAmount, advanceAmount } = await request.json()
 
     if (!busNumber || !fromDate || !toDate) {
       return NextResponse.json(
@@ -90,6 +90,8 @@ export async function POST(request: NextRequest) {
         toDate: new Date(toDate),
         status: status || 'PENDING',
         notes: notes || null,
+        bookingAmount: Number(bookingAmount) || 0,
+        advanceAmount: Number(advanceAmount) || 0,
       },
     })
 
