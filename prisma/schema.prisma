@@ -46,6 +46,7 @@ enum BusStatus {
 enum UserRole {
   MANAGER
   STAFF
+  CHEF
 }
 
 model User {

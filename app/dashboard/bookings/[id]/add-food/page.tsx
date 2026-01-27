@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import ThermalSlip from '@/app/components/ThermalSlip'
 
 interface FoodItem {
   id: string
@@ -58,6 +59,8 @@ export default function AddFoodPage() {
   const [quantity, setQuantity] = useState(1)
   const [adding, setAdding] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [printableBill, setPrintableBill] = useState<Invoice | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (bookingId) {
@@ -84,33 +87,28 @@ export default function AddFoodPage() {
     }
   }
 
-  const handleDownloadInvoice = async (invoice: Invoice) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/invoices/${invoice.id}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = globalThis.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `invoice-${invoice.invoiceNumber}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        globalThis.URL.revokeObjectURL(url)
-        a.remove()
-        toast.success('Invoice downloaded!')
-      } else {
-        toast.error('Failed to download invoice')
-      }
-    } catch {
-      toast.error('An error occurred')
+  // Effect to trigger print when bill is set
+  useEffect(() => {
+    if (printableBill) {
+      // Small delay to ensure render
+      const timer = setTimeout(() => {
+        window.print()
+        // Optional: clear after print dialog closes (though js execution pauses)
+        // setPrintableBill(null) 
+      }, 100)
+      return () => clearTimeout(timer)
     }
+  }, [printableBill])
+
+  const handlePrintInvoice = (invoice: Invoice) => {
+    setPrintableBill(invoice)
   }
+
+  /* Legacy download function kept if needed, but unused now
+  const handleDownloadInvoice = async (invoice: Invoice) => {
+     ...
+  }
+  */
 
   const fetchBooking = async () => {
     try {
@@ -247,7 +245,7 @@ export default function AddFoodPage() {
     return total
   }
 
-  const handleDownloadBill = async () => {
+  const handleGenerateAndPrintBill = async () => {
     if (unpaidOrders.length === 0) {
       toast.error('No unpaid food items to generate bill')
       return
@@ -265,21 +263,18 @@ export default function AddFoodPage() {
         },
         body: JSON.stringify({
           includeOrders: orderIds,
+          format: 'json',
         }),
       })
 
       if (response.ok) {
-        const blob = await response.blob()
-        const url = globalThis.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `kitchen-bill-${Date.now()}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        globalThis.URL.revokeObjectURL(url)
-        a.remove()
+        const data = await response.json()
+        const invoice = data.invoice
 
-        toast.success('Kitchen bill downloaded successfully!')
+        // Trigger print for the new invoice
+        setPrintableBill(invoice)
+
+        toast.success('Kitchen bill generated!')
         fetchBooking() // Refresh to update invoice status
         fetchPastBills()
       } else {
@@ -317,19 +312,41 @@ export default function AddFoodPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Food Item *</label>
-              <select
-                value={selectedFoodItem}
-                onChange={(e) => setSelectedFoodItem(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Select food item</option>
-                {foodItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} - ₹{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({item.gstPercent}% GST)
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Search food items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                />
+                <select
+                  value={selectedFoodItem}
+                  onChange={(e) => {
+                    setSelectedFoodItem(e.target.value)
+                    setSearchQuery('') // Clear search after selection
+                  }}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+                  size={searchQuery ? Math.min(foodItems.filter(item =>
+                    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).length + 1, 8) : 1}
+                >
+                  <option value="">Select food item</option>
+                  {foodItems
+                    .filter(item =>
+                      searchQuery === '' ||
+                      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} - ₹{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({item.category})
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
@@ -361,11 +378,12 @@ export default function AddFoodPage() {
           <h3 className="text-lg font-semibold text-gray-900">Unpaid Food Orders</h3>
           {unpaidOrders.length > 0 && (
             <button
-              onClick={handleDownloadBill}
+              onClick={handleGenerateAndPrintBill}
               disabled={downloading}
-              className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50"
+              className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50 flex items-center gap-2"
             >
-              {downloading ? 'Generating...' : '📥 Download Bill'}
+              <span>🖨️</span>
+              {downloading ? 'Generating...' : 'Print Bill'}
             </button>
           )}
         </div>
@@ -478,10 +496,10 @@ export default function AddFoodPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
                       <button
-                        onClick={() => handleDownloadInvoice(invoice)}
-                        className="text-[#8E0E1C] hover:text-[#7a0c18] font-medium"
+                        onClick={() => handlePrintInvoice(invoice)}
+                        className="text-[#8E0E1C] hover:text-[#7a0c18] font-medium flex items-center justify-center gap-1 mx-auto"
                       >
-                        Download PDF
+                        <span>🖨️</span> Print PDF
                       </button>
                     </td>
                   </tr>
@@ -493,6 +511,33 @@ export default function AddFoodPage() {
           <p className="text-gray-500 text-center py-8">No past food bills found.</p>
         )}
       </div>
+
+      {/* Hidden Thermal Slip Component */}
+      {printableBill && booking && (
+        <ThermalSlip
+          lotNumber={printableBill.invoiceNumber}
+          dateTime={new Date(printableBill.createdAt).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          }).replace(/\//g, '-')}
+          roomNumber={booking.room.roomNumber}
+          guestName={booking.guestName}
+          attendantName="Staff"
+          items={printableBill.foodOrders.map(order => ({
+            id: order.id,
+            name: order.foodItem.name,
+            quantity: order.quantity,
+            amount: order.foodItem.price * order.quantity
+          }))}
+          subtotal={printableBill.totalAmount}
+          discount={0}
+          total={printableBill.totalAmount}
+        />
+      )}
     </div>
   )
 }

@@ -27,6 +27,7 @@ export async function GET(
         foodOrders: {
           include: {
             foodItem: true,
+            invoice: true, // Include invoice details for Bill Number
           },
         },
         invoices: true,

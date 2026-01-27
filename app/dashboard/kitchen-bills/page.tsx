@@ -1,329 +1,211 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import Modal from '@/app/components/Modal'
+import Pagination from '@/app/components/Pagination'
 
-interface CombinedBill {
-  bookingId: string
+interface ActiveKitchenBill {
+  id: string
   guestName: string
-  room: {
-    roomNumber: string
-    roomType: {
-      name: string
-    }
-  }
-  invoices: Array<{
-    id: string
-    invoiceNumber: string
-    totalAmount: number
-    foodCharges: number
-    gstAmount: number
-    createdAt: string
-  }>
+  roomNumber: string
+  totalFoodOrders: number
   totalAmount: number
-  totalFoodCharges: number
-  totalGst: number
+  status: string
+  createdAt: string
 }
 
-interface Summary {
-  totalInvoices: number
-  totalAmount: number
-  totalGst: number
-  totalFoodCharges: number
-}
-
-export default function KitchenBillsPage() {
+export default function GlobalKitchenBillsPage() {
   const router = useRouter()
-  const [invoices, setInvoices] = useState<CombinedBill[]>([])
-  const [summary, setSummary] = useState<Summary>({
-    totalInvoices: 0,
-    totalAmount: 0,
-    totalGst: 0,
-    totalFoodCharges: 0,
-  })
   const [loading, setLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toISOString().slice(0, 7)
-  )
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; invoiceId: string | null; invoiceNumber: string }>({
-    isOpen: false,
-    invoiceId: null,
-    invoiceNumber: '',
-  })
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [historyBills, setHistoryBills] = useState<any[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalRevenue, setTotalRevenue] = useState(0)
+  const itemsPerPage = 10
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+
+  const years = [2024, 2025, 2026, 2027]
 
   useEffect(() => {
-    fetchKitchenBills()
-  }, [selectedMonth])
-
-  const fetchKitchenBills = async () => {
-    setLoading(true)
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/kitchen-bills?month=${selectedMonth}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        // Use combined bills if available, otherwise use individual invoices
-        setInvoices(data.invoices || [])
-        setSummary(data.summary || {
-          totalInvoices: 0,
-          totalAmount: 0,
-          totalGst: 0,
-          totalFoodCharges: 0,
-        })
-      } else {
-        toast.error('Failed to fetch kitchen bills')
-      }
-    } catch {
-      toast.error('An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDownloadBill = async (bookingId: string, combinedBill: CombinedBill) => {
-    try {
-      const token = localStorage.getItem('token')
-      // Download the most recent invoice for this booking, or generate a combined one
-      if (combinedBill.invoices.length > 0) {
-        // Download the latest invoice
-        const latestInvoice = combinedBill.invoices[0]
-        const response = await fetch(`/api/invoices/${latestInvoice.id}/download`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        if (response.ok) {
-          const blob = await response.blob()
-          const url = globalThis.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `kitchen-bill-${combinedBill.bookingId}.pdf`
-          document.body.appendChild(a)
-          a.click()
-          globalThis.URL.revokeObjectURL(url)
-          a.remove()
-          toast.success('Kitchen bill downloaded successfully!')
-        } else {
-          toast.error('Failed to download bill')
+    const fetchBills = async () => {
+      setLoading(true)
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          router.push('/login')
+          return
         }
-      }
-    } catch {
-      toast.error('An error occurred while downloading bill')
-    }
-  }
 
-  const confirmDeleteInvoice = async () => {
-    if (!deleteModal.invoiceId) return
+        const url = `/api/kitchen-bills?type=history&month=${selectedMonth}&year=${selectedYear}&page=${currentPage}&limit=${itemsPerPage}`
 
-    try {
-      const token = localStorage.getItem('token')
-      // Find the invoice in the combined bills to get all invoice IDs for this booking
-      const combinedBill = invoices.find((bill) => 
-        bill.invoices.some((inv) => inv.id === deleteModal.invoiceId)
-      )
-      
-      if (combinedBill && combinedBill.invoices.length > 1) {
-        // Delete only the specific invoice
-        const response = await fetch(`/api/invoices/${deleteModal.invoiceId}`, {
-          method: 'DELETE',
+        const response = await fetch(url, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         })
+
         if (response.ok) {
-          toast.success('Kitchen bill deleted successfully!')
-          fetchKitchenBills()
-        } else {
           const data = await response.json()
-          toast.error(data.error || 'Failed to delete kitchen bill')
+          // Check if API returns pagination data
+          if (data.bills) {
+            setHistoryBills(data.bills)
+            setTotalPages(data.pagination?.totalPages || 1)
+            setTotalRevenue(data.totalRevenue || 0)
+          } else {
+            // Fallback for old API format
+            setHistoryBills(data)
+            const total = data.reduce((sum: number, bill: any) => sum + (bill.amount || 0), 0)
+            setTotalRevenue(total)
+            setTotalPages(Math.ceil(data.length / itemsPerPage))
+          }
+        } else {
+          toast.error('Failed to fetch kitchen bills')
         }
-      } else {
-        // Delete all invoices for this booking
-        for (const invoice of combinedBill?.invoices || []) {
-          await fetch(`/api/invoices/${invoice.id}`, {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
-        }
-        toast.success('All kitchen bills for this booking deleted successfully!')
-        fetchKitchenBills()
+      } catch (error) {
+        console.error('Error fetching kitchen bills:', error)
+        toast.error('An error occurred')
+      } finally {
+        setLoading(false)
       }
-    } catch {
-      toast.error('An error occurred while deleting kitchen bill')
-    } finally {
-      setDeleteModal({ isOpen: false, invoiceId: null, invoiceNumber: '' })
     }
-  }
 
-  if (loading) {
+    fetchBills()
+  }, [router, selectedMonth, selectedYear, currentPage])
+
+  // Reset to page 1 when month/year changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedMonth, selectedYear])
+
+  if (loading && historyBills.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="text-6xl mb-4">🍳</div>
-        <div className="text-lg font-semibold text-[#64748B]">Loading kitchen bills...</div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-lg text-gray-600">Loading kitchen bills...</div>
       </div>
     )
   }
 
   return (
-    <>
-      <Modal
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, invoiceId: null, invoiceNumber: '' })}
-        onConfirm={confirmDeleteInvoice}
-        title="Delete Kitchen Bill"
-        message={`Are you sure you want to delete invoice "${deleteModal.invoiceNumber}"? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        confirmButtonClass="bg-[#8E0E1C] hover:opacity-90"
-      />
-      <div className="space-y-6 sm:space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+    <div className="max-w-6xl mx-auto mb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
-            🍳 Kitchen Bills
-          </h2>
-          <p className="text-sm sm:text-base text-[#64748B] font-medium">View monthly kitchen bills and food invoices</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <label className="text-sm font-semibold text-[#111827]">📅 Month:</label>
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-          />
+          <h1 className="text-2xl font-bold text-gray-900">Kitchen Bills History</h1>
+          <p className="text-gray-600 mt-1">View finalized kitchen bills by month</p>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
-          <p className="text-sm font-semibold text-[#64748B] mb-2">🧾 Total Invoices</p>
-          <p className="text-2xl sm:text-4xl font-bold text-[#111827]">{summary.totalInvoices}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
-          <p className="text-sm font-semibold text-[#64748B] mb-2">🍽️ Total Food Charges</p>
-          <p className="text-2xl sm:text-4xl font-bold text-[#111827]">
-            ₹{summary.totalFoodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
-          <p className="text-sm font-semibold text-[#64748B] mb-2">🧾 Total GST</p>
-          <p className="text-2xl sm:text-4xl font-bold text-[#111827]">
-            ₹{summary.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
-          <p className="text-sm font-semibold text-[#64748B] mb-2">💰 Total Amount</p>
-          <p className="text-2xl sm:text-4xl font-bold text-[#111827]">
-            ₹{summary.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
+      {/* Total Revenue Card */}
+      <div className="bg-gradient-to-r from-[#8E0E1C] to-[#6B0A15] rounded-xl shadow-lg p-6 mb-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-red-100 text-sm font-medium mb-1">Total Revenue</p>
+            <p className="text-xs text-red-200">{months[selectedMonth]} {selectedYear}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold">₹{totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+            <p className="text-sm text-red-100 mt-1">{historyBills.length} bills</p>
+          </div>
         </div>
       </div>
 
-      {/* Invoices Table */}
-      <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
-        {invoices.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">🍳</div>
-            <p className="text-lg font-semibold text-[#64748B]">No kitchen bills found for this month</p>
-            <p className="text-sm text-[#94A3B8] mt-2">Kitchen bills will appear here once generated</p>
+      <div className="flex gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 items-center">
+        <span className="text-sm font-medium text-gray-700">Filter by period:</span>
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+          className="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+        >
+          {months.map((m, i) => (
+            <option key={i} value={i}>{m}</option>
+          ))}
+        </select>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+          className="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+        >
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {historyBills.length === 0 ? (
+          <div className="p-8 text-center">
+            <div className="text-4xl mb-3">📅</div>
+            <h3 className="text-lg font-medium text-gray-900">No Finalized Bills Found</h3>
+            <p className="text-gray-500 mt-1">
+              No master kitchen bills found for {months[selectedMonth]} {selectedYear}.
+            </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-[#CBD5E1]">
-              <thead className="bg-[#8E0E1C]">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">📋 Combined Bills</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase">👤 Guest Name</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase hidden sm:table-cell">🏨 Room</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase">🍽️ Food Charges</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase hidden md:table-cell">🧾 GST</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase">💰 Total</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase hidden lg:table-cell">📅 Date</th>
-                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-center text-xs font-bold text-white uppercase">⚡ Action</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-[#CBD5E1]">
-                {invoices.map((combinedBill) => (
-                  <tr key={combinedBill.bookingId} className="hover:bg-[#F8FAFC] transition-colors duration-150">
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-[#111827]">
-                        {combinedBill.invoices.length} bill(s)
-                      </div>
-                      <div className="text-xs text-[#64748B]">
-                        {combinedBill.invoices.map((inv) => inv.invoiceNumber).join(', ')}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-[#111827]">{combinedBill.guestName}</div>
-                      <div className="text-xs text-[#64748B] sm:hidden">{combinedBill.room.roomNumber}</div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
-                      <div className="text-sm font-medium text-[#111827]">
-                        <span className="font-bold text-[#8E0E1C]">{combinedBill.room.roomNumber}</span>
-                        <span className="text-[#64748B]"> ({combinedBill.room.roomType.name})</span>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
-                      <div className="text-sm font-bold text-[#111827] break-words">
-                        ₹{combinedBill.totalFoodCharges.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right hidden md:table-cell">
-                      <div className="text-sm font-medium text-[#64748B] break-words">
-                        ₹{combinedBill.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-right">
-                      <div className="text-sm font-bold text-[#111827] break-words">
-                        ₹{combinedBill.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden lg:table-cell">
-                      <div className="text-sm font-medium text-[#64748B]">
-                        {combinedBill.invoices.length > 0 && new Date(combinedBill.invoices[0].createdAt).toLocaleDateString('en-IN', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleDownloadBill(combinedBill.bookingId, combinedBill)}
-                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
-                        >
-                          📥 Download
-                        </button>
-                        {combinedBill.invoices.length > 0 && (
-                          <button
-                            onClick={() => setDeleteModal({ isOpen: true, invoiceId: combinedBill.invoices[0].id, invoiceNumber: combinedBill.invoices[0].invoiceNumber })}
-                            className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] inline-flex items-center"
-                          >
-                            🗑️ Delete
-                          </button>
-                        )}
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {historyBills.map((bill) => (
+                    <tr key={bill.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(bill.createdAt).toLocaleDateString('en-IN')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {bill.invoiceNumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {bill.guestName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {bill.roomNumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-indigo-600">
+                        ₹{bill.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link
+                          href={`/dashboard/bookings/${bill.bookingId}/kitchen-bills`}
+                          className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded-md"
+                        >
+                          View Bill
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
-    </>
   )
 }

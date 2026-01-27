@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import StaffChefManager from '../../components/StaffChefManager'
 
 interface HotelSettings {
   id: string
@@ -87,6 +88,14 @@ export default function HotelInfoPage() {
     }
   }
 
+  const tabs = [
+    { id: 'info', label: 'Hotel Information', icon: '🏨' },
+    { id: 'staff', label: 'Staff Management', icon: '👥' },
+    { id: 'chef', label: 'Chef Management', icon: '👨‍🍳' },
+  ]
+
+  const [activeTab, setActiveTab] = useState('info')
+
   if (loading) {
     return (
       <div className="text-center py-16">
@@ -112,104 +121,140 @@ export default function HotelInfoPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
-      <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
-        <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
-          <span className="text-2xl sm:text-3xl">🏨</span>
-          Hotel Information
-        </h3>
-      </div>
-      <div className="p-6 sm:p-8">
-        <div className="space-y-6">
-          <div>
-            <label htmlFor="hotelName" className="block text-sm font-semibold text-[#111827] mb-3">
-              🏨 Hotel Name <span className="text-[#8E0E1C]">*</span>
-            </label>
-            <input
-              id="hotelName"
-              type="text"
-              value={settings.name}
-              onChange={(e) => setSettings({ ...settings, name: e.target.value })}
-              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="hotelAddress" className="block text-sm font-semibold text-[#111827] mb-3">
-              📍 Address <span className="text-[#8E0E1C]">*</span>
-            </label>
-            <textarea
-              id="hotelAddress"
-              value={settings.address}
-              onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white resize-none"
-              rows={3}
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="hotelPhone" className="block text-sm font-semibold text-[#111827] mb-3">
-              📱 Phone <span className="text-[#8E0E1C]">*</span>
-            </label>
-            <input
-              id="hotelPhone"
-              type="text"
-              value={settings.phone}
-              onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
-              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="hotelEmail" className="block text-sm font-semibold text-[#111827] mb-3">
-              📧 Email
-            </label>
-            <input
-              id="hotelEmail"
-              type="email"
-              value={settings.email || ''}
-              onChange={(e) => setSettings({ ...settings, email: e.target.value })}
-              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="hotelGstin" className="block text-sm font-semibold text-[#111827] mb-3">
-              🧾 GSTIN
-            </label>
-            <input
-              id="hotelGstin"
-              type="text"
-              value={settings.gstin || ''}
-              onChange={(e) => setSettings({ ...settings, gstin: e.target.value })}
-              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-            />
-          </div>
-
+    <div className="space-y-6">
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 border-b border-[#CBD5E1] pb-1">
+        {tabs.map((tab) => (
           <button
-            onClick={handleSaveSettings}
-            disabled={saving}
-            className="w-full sm:w-auto px-8 py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 font-semibold text-sm sm:text-base rounded-t-lg transition-colors ${activeTab === tab.id
+              ? 'bg-[#8E0E1C] text-white'
+              : 'bg-white text-[#64748B] hover:text-[#111827] hover:bg-gray-50'
+              }`}
           >
-            {saving ? (
-              <>
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <span>💾</span>
-                <span>Save Hotel Information</span>
-              </>
-            )}
+            <span className="mr-2">{tab.icon}</span>
+            {tab.label}
           </button>
-        </div>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+        {activeTab === 'info' && (
+          <>
+            <div className="bg-[#8E0E1C] px-6 sm:px-8 py-4 sm:py-5">
+              <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+                <span className="text-2xl sm:text-3xl">🏨</span>
+                Hotel Information
+              </h3>
+            </div>
+            <div className="p-6 sm:p-8">
+              <div className="space-y-6">
+                <div>
+                  <label htmlFor="hotelName" className="block text-sm font-semibold text-[#111827] mb-3">
+                    🏨 Hotel Name <span className="text-[#8E0E1C]">*</span>
+                  </label>
+                  <input
+                    id="hotelName"
+                    type="text"
+                    value={settings.name}
+                    onChange={(e) => setSettings({ ...settings, name: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="hotelAddress" className="block text-sm font-semibold text-[#111827] mb-3">
+                    📍 Address <span className="text-[#8E0E1C]">*</span>
+                  </label>
+                  <textarea
+                    id="hotelAddress"
+                    value={settings.address}
+                    onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white resize-none"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="hotelPhone" className="block text-sm font-semibold text-[#111827] mb-3">
+                    📱 Phone <span className="text-[#8E0E1C]">*</span>
+                  </label>
+                  <input
+                    id="hotelPhone"
+                    type="text"
+                    value={settings.phone}
+                    onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="hotelEmail" className="block text-sm font-semibold text-[#111827] mb-3">
+                    📧 Email
+                  </label>
+                  <input
+                    id="hotelEmail"
+                    type="email"
+                    value={settings.email || ''}
+                    onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="hotelGstin" className="block text-sm font-semibold text-[#111827] mb-3">
+                    🧾 GSTIN
+                  </label>
+                  <input
+                    id="hotelGstin"
+                    type="text"
+                    value={settings.gstin || ''}
+                    onChange={(e) => setSettings({ ...settings, gstin: e.target.value })}
+                    className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={saving}
+                  className="w-full sm:w-auto px-8 py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[44px]"
+                >
+                  {saving ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>💾</span>
+                      <span>Save Hotel Information</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'staff' && (
+          <div className="p-6">
+            <StaffChefManager role="STAFF" />
+          </div>
+        )}
+
+        {activeTab === 'chef' && (
+          <div className="p-6">
+            <StaffChefManager role="CHEF" />
+          </div>
+        )}
       </div>
     </div>
   )
