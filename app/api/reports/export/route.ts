@@ -36,7 +36,13 @@ export async function GET(request: NextRequest) {
             roomType: true,
           },
         },
-        invoices: true,
+        invoices: {
+          where: {
+            invoiceType: {
+              in: ['ROOM', 'MANUAL'],
+            },
+          },
+        },
         payments: true,
       },
       orderBy: {
