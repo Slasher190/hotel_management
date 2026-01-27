@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
+import { getLocalDateISOString, getLocalDateTimeISOString } from '@/lib/utils'
+
 interface Room {
   id: string
   roomNumber: string
@@ -31,17 +33,8 @@ export default function NewBookingPage() {
     roomTypeId: '',
     // Bill Details
     billNumber: '',
-    billDate: new Date().toISOString().split('T')[0],
-    checkInDate: (() => {
-      const now = new Date()
-      // Adjust for local timezone (approximate or use library if strictly needed, but simple shift often enough for UI default)
-      // Actually simpler: new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16) is a hack but works for YYYY-MM-DDTHH:mm
-      // Or just ISO string slice if UTC is close enough or user corrects it. 
-      // Better:
-      const d = new Date()
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset())
-      return d.toISOString().slice(0, 16)
-    })(),
+    billDate: getLocalDateISOString(),
+    checkInDate: getLocalDateTimeISOString(),
 
     // Guest Profile
     guestName: '',

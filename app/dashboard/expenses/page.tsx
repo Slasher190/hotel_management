@@ -6,6 +6,8 @@ import Modal from '@/app/components/Modal'
 import Pagination from '@/app/components/Pagination'
 import ExpenseBillPrint from '@/app/components/ExpenseBillPrint'
 
+import { getLocalDateISOString } from '@/lib/utils'
+
 interface Staff {
     id: string
     name: string
@@ -48,7 +50,7 @@ export default function ExpensesPage() {
         recipient: '',
         description: '',
         amount: '',
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateISOString(),
     })
 
     // Fetch initial data

@@ -6,6 +6,8 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import Pagination from '@/app/components/Pagination'
 
+import { getLocalDateISOString } from '@/lib/utils'
+
 interface Payment {
   id: string
   mode: string
@@ -45,7 +47,7 @@ function PaymentsContent() {
         page: page.toString(),
         limit: '10',
       })
-      
+
       if (statusFilter) {
         params.append('status', statusFilter)
       }
@@ -67,7 +69,7 @@ function PaymentsContent() {
       if (maxAmount) {
         params.append('maxAmount', maxAmount)
       }
-      
+
       const response = await fetch(`/api/payments?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -102,7 +104,7 @@ function PaymentsContent() {
   const handleUpdateStatus = async (paymentId: string, newStatus: 'PAID' | 'PENDING') => {
     setUpdatingPaymentId(paymentId)
     const loadingToast = toast.loading(`Updating payment status to ${newStatus}...`)
-    
+
     try {
       const token = localStorage.getItem('token')
       const response = await fetch(`/api/payments/${paymentId}`, {
@@ -208,7 +210,7 @@ function PaymentsContent() {
                 id="dateFrom"
                 type="date"
                 value={dateFrom}
-                max={dateTo || new Date().toISOString().split('T')[0]}
+                max={dateTo || getLocalDateISOString()}
                 onChange={(e) => {
                   const selectedDate = e.target.value
                   if (!dateTo || selectedDate <= dateTo) {
@@ -228,7 +230,7 @@ function PaymentsContent() {
                 type="date"
                 value={dateTo}
                 min={dateFrom || undefined}
-                max={new Date().toISOString().split('T')[0]}
+                max={getLocalDateISOString()}
                 onChange={(e) => {
                   const selectedDate = e.target.value
                   if (!dateFrom || selectedDate >= dateFrom) {
@@ -292,31 +294,28 @@ function PaymentsContent() {
       <div className="flex gap-2 sm:gap-3 flex-wrap">
         <Link
           href="/dashboard/payments"
-          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${
-            statusFilter === null
+          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === null
               ? 'bg-[#8E0E1C] text-white'
               : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
+            }`}
         >
           📋 All
         </Link>
         <Link
           href="/dashboard/payments?status=PENDING"
-          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${
-            statusFilter === 'PENDING'
+          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === 'PENDING'
               ? 'bg-[#8E0E1C] text-white'
               : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
+            }`}
         >
           ⏳ Pending
         </Link>
         <Link
           href="/dashboard/payments?status=PAID"
-          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${
-            statusFilter === 'PAID'
+          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === 'PAID'
               ? 'bg-[#8E0E1C] text-white'
               : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
+            }`}
         >
           ✅ Paid
         </Link>
@@ -354,74 +353,74 @@ function PaymentsContent() {
               {payments.map((payment) => {
                 const isUpdating = updatingPaymentId === payment.id
                 return (
-                <tr key={payment.id} className={`hover:bg-[#F8FAFC] transition-colors duration-150 ${isUpdating ? 'opacity-60' : ''}`}>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-[#111827]">{payment.booking.guestName}</div>
-                    <div className="text-xs text-[#64748B] sm:hidden">{payment.booking.room.roomNumber}</div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
-                    <div className="text-sm font-medium text-[#111827]">
-                      <span className="font-bold text-[#8E0E1C]">{payment.booking.room.roomNumber}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-[#111827]">
-                      ₹{payment.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
-                    <div className="text-sm font-medium text-[#64748B]">{payment.mode}</div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 text-xs font-bold rounded-full ${
-                        payment.status === 'PAID'
-                          ? 'bg-[#64748B] text-white'
-                          : 'bg-[#8E0E1C] text-white'
-                      }`}
-                    >
-                      {payment.status}
-                    </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden lg:table-cell">
-                    <div className="text-sm font-medium text-[#64748B]">
-                      {new Date(payment.createdAt).toLocaleDateString('en-IN')}
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                    {payment.status === 'PENDING' && (
-                      <button
-                        onClick={() => handleUpdateStatus(payment.id, 'PAID')}
-                        disabled={isUpdating}
-                        className={`px-3 py-2 bg-[#64748B] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center gap-2 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  <tr key={payment.id} className={`hover:bg-[#F8FAFC] transition-colors duration-150 ${isUpdating ? 'opacity-60' : ''}`}>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">{payment.booking.guestName}</div>
+                      <div className="text-xs text-[#64748B] sm:hidden">{payment.booking.room.roomNumber}</div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                      <div className="text-sm font-medium text-[#111827]">
+                        <span className="font-bold text-[#8E0E1C]">{payment.booking.room.roomNumber}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">
+                        ₹{payment.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
+                      <div className="text-sm font-medium text-[#64748B]">{payment.mode}</div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span
+                        className={`px-2 py-1 text-xs font-bold rounded-full ${payment.status === 'PAID'
+                            ? 'bg-[#64748B] text-white'
+                            : 'bg-[#8E0E1C] text-white'
+                          }`}
                       >
-                        {isUpdating && (
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        )}
-                        ✅ Mark Paid
-                      </button>
-                    )}
-                    {payment.status === 'PAID' && (
-                      <button
-                        onClick={() => handleUpdateStatus(payment.id, 'PENDING')}
-                        disabled={isUpdating}
-                        className={`px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center gap-2 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {isUpdating && (
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        )}
-                        ⏳ Mark Pending
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              )})}
+                        {payment.status}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden lg:table-cell">
+                      <div className="text-sm font-medium text-[#64748B]">
+                        {new Date(payment.createdAt).toLocaleDateString('en-IN')}
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                      {payment.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleUpdateStatus(payment.id, 'PAID')}
+                          disabled={isUpdating}
+                          className={`px-3 py-2 bg-[#64748B] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center gap-2 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {isUpdating && (
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          ✅ Mark Paid
+                        </button>
+                      )}
+                      {payment.status === 'PAID' && (
+                        <button
+                          onClick={() => handleUpdateStatus(payment.id, 'PENDING')}
+                          disabled={isUpdating}
+                          className={`px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center gap-2 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          {isUpdating && (
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          ⏳ Mark Pending
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

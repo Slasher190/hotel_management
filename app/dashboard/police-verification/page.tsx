@@ -7,6 +7,8 @@ import autoTable from 'jspdf-autotable'
 import toast from 'react-hot-toast'
 import { maskIdNumber } from '@/lib/pdf-utils'
 
+import { getLocalDateISOString } from '@/lib/utils'
+
 interface Booking {
   id: string
   guestName: string
@@ -37,7 +39,7 @@ export default function PoliceVerificationPage() {
   const [saving, setSaving] = useState(false)
 
   // Single Date Filter - Defaults to Today
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState(() => getLocalDateISOString())
 
   useEffect(() => {
     fetchActiveBookings(selectedDate)
