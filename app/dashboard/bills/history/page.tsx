@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Pagination from '@/app/components/Pagination'
 import Modal from '@/app/components/Modal'
+import { useUserRole } from '@/lib/useUserRole'
 
 interface Invoice {
   id: string
@@ -35,6 +36,7 @@ interface Invoice {
 
 function BillsHistoryContent() {
   const searchParams = useSearchParams()
+  const { isManager } = useUserRole()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(Number.parseInt(searchParams.get('page') || '1'))
@@ -571,12 +573,14 @@ function BillsHistoryContent() {
                         >
                           📥 Download
                         </button>
-                        <button
-                          onClick={() => setDeleteModal({ isOpen: true, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber })}
-                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
-                        >
-                          🗑️ Delete
-                        </button>
+                        {isManager && (
+                          <button
+                            onClick={() => setDeleteModal({ isOpen: true, invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber })}
+                            className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -248,3 +248,62 @@ export async function POST(
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
+// ... existing code ...
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getUser(req)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { id: bookingId } = await params
+    const { searchParams } = new URL(req.url)
+    const invoiceId = searchParams.get('invoiceId')
+
+    if (!invoiceId) {
+      return NextResponse.json({ error: 'Invoice ID is required' }, { status: 400 })
+    }
+
+    // Verify the invoice belongs to this booking and is a kitchen bill
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        id: invoiceId,
+        bookingId,
+        invoiceType: { in: ['KITCHEN_BILL', 'KITCHEN_MASTER'] }
+      },
+      include: {
+        foodOrders: true
+      }
+    })
+
+    if (!invoice) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+    }
+
+    // Disconnect food orders (revert to unpaid)
+    if (invoice.foodOrders.length > 0) {
+      await prisma.foodOrder.updateMany({
+        where: {
+          id: { in: invoice.foodOrders.map(o => o.id) }
+        },
+        data: {
+          invoiceId: null
+        }
+      })
+    }
+
+    // Delete the invoice
+    await prisma.invoice.delete({
+      where: { id: invoiceId }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting kitchen bill:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}

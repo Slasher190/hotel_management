@@ -288,6 +288,31 @@ export default function AddFoodPage() {
     }
   }
 
+  const handleDeleteBill = async (invoiceId: string) => {
+    if (!confirm('Are you sure you want to delete this bill? The items will move back to "Unpaid Food Orders" and can be modified.')) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/bookings/${bookingId}/kitchen-bill?invoiceId=${invoiceId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        toast.success('Bill deleted successfully')
+        fetchBooking() // Refresh orders
+        fetchPastBills() // Refresh bills list
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        toast.error(errorData.error || 'Failed to delete bill')
+      }
+    } catch {
+      toast.error('An error occurred')
+    }
+  }
+
   return (
     <div className="max-w-4xl space-y-6">
       <div className="flex justify-between items-center">
@@ -495,12 +520,21 @@ export default function AddFoodPage() {
                       ₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                      <button
-                        onClick={() => handlePrintInvoice(invoice)}
-                        className="text-[#8E0E1C] hover:text-[#7a0c18] font-medium flex items-center justify-center gap-1 mx-auto"
-                      >
-                        <span>🖨️</span> Print PDF
-                      </button>
+                      <div className="flex items-center justify-center gap-4">
+                        <button
+                          onClick={() => handlePrintInvoice(invoice)}
+                          className="text-[#8E0E1C] hover:text-[#7a0c18] font-medium flex items-center gap-1"
+                        >
+                          <span>🖨️</span> Print PDF
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBill(invoice.id)}
+                          className="text-red-600 hover:text-red-900 font-medium flex items-center gap-1"
+                          title="Delete Bill (Revert items to unpaid)"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

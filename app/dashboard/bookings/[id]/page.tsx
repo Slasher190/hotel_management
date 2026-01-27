@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useUserRole } from '@/lib/useUserRole'
 
 interface Booking {
   id: string
@@ -56,6 +57,7 @@ export default function BookingDetailPage() {
   const params = useParams()
   const router = useRouter()
   const bookingId = params.id as string
+  const { isManager } = useUserRole()
   const [booking, setBooking] = useState<Booking | null>(null)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -247,7 +249,7 @@ export default function BookingDetailPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-gray-900">Booking Details</h2>
         <div className="flex gap-2">
-          {!editing && (
+          {!editing && isManager && (
             <button
               onClick={() => setEditing(true)}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"

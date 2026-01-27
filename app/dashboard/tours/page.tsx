@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
-import { useUserRole } from '@/lib/useUserRole'
 import Pagination from '@/app/components/Pagination'
 
 interface BusBooking {
@@ -20,7 +19,7 @@ interface BusBooking {
 
 function ToursContent() {
   const searchParams = useSearchParams()
-  const { canDelete, canWrite } = useUserRole()
+  // Tours manager is open to all users
   const [bookings, setBookings] = useState<BusBooking[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(
@@ -160,11 +159,6 @@ function ToursContent() {
   }
 
   const handleDelete = async (id: string, busNumber: string) => {
-    // Only allow delete if user has delete permissions
-    if (!canDelete) {
-      toast.error('You do not have permission to delete records')
-      return
-    }
     setDeleteModal({ isOpen: true, bookingId: id, busNumber })
   }
 
@@ -320,15 +314,13 @@ function ToursContent() {
           </h2>
           <p className="text-sm sm:text-base text-[#64748B] font-medium">Manage bus bookings for tours and travel</p>
         </div>
-        {canWrite && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
-          >
-            <span className="text-xl">➕</span>
-            <span>Add Bus Booking</span>
-          </button>
-        )}
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
+        >
+          <span className="text-xl">➕</span>
+          <span>Add Bus Booking</span>
+        </button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center flex-wrap bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
@@ -446,14 +438,12 @@ function ToursContent() {
                       >
                         {booking.status === 'BOOKED' ? '⏳ Mark Pending' : '✅ Mark Booked'}
                       </button>
-                      {canDelete && (
-                        <button
-                          onClick={() => handleDelete(booking.id, booking.busNumber)}
-                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity duration-150 min-h-[44px]"
-                        >
-                          🗑️ Delete
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDelete(booking.id, booking.busNumber)}
+                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity duration-150 min-h-[44px]"
+                      >
+                        🗑️ Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -482,147 +472,149 @@ function ToursContent() {
       </div>
 
       {/* Add Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg p-5 max-w-lg w-full border border-[#CBD5E1]">
-            <h3 className="text-lg font-bold text-[#111827] mb-4 flex items-center gap-2">
-              <span className="text-xl">🚌</span>
-              <span>Add Bus Booking</span>
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+      {
+        showAddModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-lg p-5 max-w-lg w-full border border-[#CBD5E1]">
+              <h3 className="text-lg font-bold text-[#111827] mb-4 flex items-center gap-2">
+                <span className="text-xl">🚌</span>
+                <span>Add Bus Booking</span>
+              </h3>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="busNumber" className="block text-xs font-semibold text-[#111827] mb-1">
+                      🚌 Bus Number <span className="text-[#8E0E1C]">*</span>
+                    </label>
+                    <input
+                      id="busNumber"
+                      type="text"
+                      required
+                      value={formData.busNumber}
+                      onChange={(e) => setFormData({ ...formData, busNumber: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="Enter bus number"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="status" className="block text-xs font-semibold text-[#111827] mb-1">📊 Status <span className="text-[#8E0E1C]">*</span></label>
+                    <select
+                      id="status"
+                      value={formData.status}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value as 'BOOKED' | 'PENDING' })
+                      }
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    >
+                      <option value="PENDING">Pending</option>
+                      <option value="BOOKED">Booked</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="fromDate" className="block text-xs font-semibold text-[#111827] mb-1">
+                      📅 From Date <span className="text-[#8E0E1C]">*</span>
+                    </label>
+                    <input
+                      id="fromDate"
+                      type="date"
+                      required
+                      value={formData.fromDate}
+                      onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="toDate" className="block text-xs font-semibold text-[#111827] mb-1">
+                      📅 To Date <span className="text-[#8E0E1C]">*</span>
+                    </label>
+                    <input
+                      id="toDate"
+                      type="date"
+                      required
+                      value={formData.toDate}
+                      onChange={(e) => setFormData({ ...formData, toDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="bookingAmount" className="block text-xs font-semibold text-[#111827] mb-1">
+                      💰 Booking Amount
+                    </label>
+                    <input
+                      id="bookingAmount"
+                      type="number"
+                      min="0"
+                      value={formData.bookingAmount}
+                      onChange={(e) => setFormData({ ...formData, bookingAmount: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="advanceAmount" className="block text-xs font-semibold text-[#111827] mb-1">
+                      💵 Advance
+                    </label>
+                    <input
+                      id="advanceAmount"
+                      type="number"
+                      min="0"
+                      value={formData.advanceAmount}
+                      onChange={(e) => setFormData({ ...formData, advanceAmount: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label htmlFor="busNumber" className="block text-xs font-semibold text-[#111827] mb-1">
-                    🚌 Bus Number <span className="text-[#8E0E1C]">*</span>
-                  </label>
-                  <input
-                    id="busNumber"
-                    type="text"
-                    required
-                    value={formData.busNumber}
-                    onChange={(e) => setFormData({ ...formData, busNumber: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                    placeholder="Enter bus number"
+                  <label htmlFor="notes" className="block text-xs font-semibold text-[#111827] mb-1">📝 Notes</label>
+                  <textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white resize-none"
+                    rows={2}
                   />
                 </div>
-                <div>
-                  <label htmlFor="status" className="block text-xs font-semibold text-[#111827] mb-1">📊 Status <span className="text-[#8E0E1C]">*</span></label>
-                  <select
-                    id="status"
-                    value={formData.status}
-                    onChange={(e) =>
-                      setFormData({ ...formData, status: e.target.value as 'BOOKED' | 'PENDING' })
-                    }
-                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-[#8E0E1C] text-white py-2 rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[40px] text-sm"
                   >
-                    <option value="PENDING">Pending</option>
-                    <option value="BOOKED">Booked</option>
-                  </select>
+                    ➕ Add Booking
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddModal(false)
+                      setFormData({
+                        busNumber: '',
+                        fromDate: selectedDate,
+                        toDate: selectedDate,
+                        status: 'PENDING',
+                        notes: '',
+                        bookingAmount: '',
+                        advanceAmount: '',
+                      })
+                    }}
+                    className="flex-1 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] py-2 rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[40px] text-sm"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="fromDate" className="block text-xs font-semibold text-[#111827] mb-1">
-                    📅 From Date <span className="text-[#8E0E1C]">*</span>
-                  </label>
-                  <input
-                    id="fromDate"
-                    type="date"
-                    required
-                    value={formData.fromDate}
-                    onChange={(e) => setFormData({ ...formData, fromDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="toDate" className="block text-xs font-semibold text-[#111827] mb-1">
-                    📅 To Date <span className="text-[#8E0E1C]">*</span>
-                  </label>
-                  <input
-                    id="toDate"
-                    type="date"
-                    required
-                    value={formData.toDate}
-                    onChange={(e) => setFormData({ ...formData, toDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="bookingAmount" className="block text-xs font-semibold text-[#111827] mb-1">
-                    💰 Booking Amount
-                  </label>
-                  <input
-                    id="bookingAmount"
-                    type="number"
-                    min="0"
-                    value={formData.bookingAmount}
-                    onChange={(e) => setFormData({ ...formData, bookingAmount: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="advanceAmount" className="block text-xs font-semibold text-[#111827] mb-1">
-                    💵 Advance
-                  </label>
-                  <input
-                    id="advanceAmount"
-                    type="number"
-                    min="0"
-                    value={formData.advanceAmount}
-                    onChange={(e) => setFormData({ ...formData, advanceAmount: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="notes" className="block text-xs font-semibold text-[#111827] mb-1">📝 Notes</label>
-                <textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white resize-none"
-                  rows={2}
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-[#8E0E1C] text-white py-2 rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[40px] text-sm"
-                >
-                  ➕ Add Booking
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false)
-                    setFormData({
-                      busNumber: '',
-                      fromDate: selectedDate,
-                      toDate: selectedDate,
-                      status: 'PENDING',
-                      notes: '',
-                      bookingAmount: '',
-                      advanceAmount: '',
-                    })
-                  }}
-                  className="flex-1 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] py-2 rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[40px] text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   )
 }
 

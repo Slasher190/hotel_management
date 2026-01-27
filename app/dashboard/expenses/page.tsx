@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
-import { useUserRole } from '@/lib/useUserRole'
 import Modal from '@/app/components/Modal'
 import Pagination from '@/app/components/Pagination'
 
@@ -27,7 +26,7 @@ interface Expense {
 }
 
 export default function ExpensesPage() {
-    const { canWrite, canDelete } = useUserRole()
+    // Expense manager is open to all users
     const [expenses, setExpenses] = useState<Expense[]>([])
     const [staffList, setStaffList] = useState<Staff[]>([])
     const [loading, setLoading] = useState(true)
@@ -122,7 +121,6 @@ export default function ExpensesPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!canDelete) return
         setDeleteModal({ isOpen: true, id })
     }
 
@@ -236,14 +234,12 @@ export default function ExpensesPage() {
                     <h2 className="text-2xl font-bold text-[#111827]">💸 Expense Manager</h2>
                     <p className="text-[#64748B]">Track and manage daily expenses</p>
                 </div>
-                {canWrite && (
-                    <button
-                        onClick={() => setShowAddModal(true)}
-                        className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 font-semibold"
-                    >
-                        ➕ Add Expense
-                    </button>
-                )}
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 font-semibold"
+                >
+                    ➕ Add Expense
+                </button>
             </div>
 
             <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
@@ -278,15 +274,13 @@ export default function ExpensesPage() {
                                     >
                                         🖨️
                                     </button>
-                                    {canDelete && (
-                                        <button
-                                            onClick={() => handleDelete(expense.id)}
-                                            className="text-red-600 hover:text-red-900"
-                                            title="Delete"
-                                        >
-                                            🗑️
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={() => handleDelete(expense.id)}
+                                        className="text-red-600 hover:text-red-900"
+                                        title="Delete"
+                                    >
+                                        🗑️
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -312,106 +306,108 @@ export default function ExpensesPage() {
                 )}
             </div>
 
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-lg p-5 max-w-lg w-full border border-[#CBD5E1]">
-                        <h3 className="text-lg font-bold text-[#111827] mb-4">Add Expense</h3>
-                        <form onSubmit={handleSubmit} className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
+            {
+                showAddModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-lg p-5 max-w-lg w-full border border-[#CBD5E1]">
+                            <h3 className="text-lg font-bold text-[#111827] mb-4">Add Expense</h3>
+                            <form onSubmit={handleSubmit} className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-[#111827] mb-1">
+                                            📅 Date <span className="text-red-600">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            required
+                                            value={formData.date}
+                                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                            className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-[#111827] mb-1">
+                                            🧑‍💼 Staff Name <span className="text-red-600">*</span>
+                                        </label>
+                                        <select
+                                            required
+                                            value={formData.staffId}
+                                            onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
+                                            className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
+                                        >
+                                            <option value="">Select Staff</option>
+                                            {staffList.map((staff) => (
+                                                <option key={staff.id} value={staff.id}>
+                                                    {staff.name} ({staff.role})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label className="block text-xs font-semibold text-[#111827] mb-1">
-                                        📅 Date <span className="text-red-600">*</span>
+                                        👤 To (Recipient) <span className="text-red-600">*</span>
                                     </label>
                                     <input
-                                        type="date"
+                                        type="text"
                                         required
-                                        value={formData.date}
-                                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                        placeholder="Paid to..."
+                                        value={formData.recipient}
+                                        onChange={(e) => setFormData({ ...formData, recipient: e.target.value })}
                                         className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-xs font-semibold text-[#111827] mb-1">
-                                        🧑‍💼 Staff Name <span className="text-red-600">*</span>
+                                        📝 Description <span className="text-red-600">*</span>
                                     </label>
-                                    <select
+                                    <textarea
                                         required
-                                        value={formData.staffId}
-                                        onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
-                                        className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
-                                    >
-                                        <option value="">Select Staff</option>
-                                        {staffList.map((staff) => (
-                                            <option key={staff.id} value={staff.id}>
-                                                {staff.name} ({staff.role})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        rows={2}
+                                        placeholder="Expense details..."
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm resize-none"
+                                    />
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-[#111827] mb-1">
-                                    👤 To (Recipient) <span className="text-red-600">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="Paid to..."
-                                    value={formData.recipient}
-                                    onChange={(e) => setFormData({ ...formData, recipient: e.target.value })}
-                                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
-                                />
-                            </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-[#111827] mb-1">
+                                        💰 Amount <span className="text-red-600">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        required
+                                        min="0"
+                                        placeholder="0.00"
+                                        value={formData.amount}
+                                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                        className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
+                                    />
+                                </div>
 
-                            <div>
-                                <label className="block text-xs font-semibold text-[#111827] mb-1">
-                                    📝 Description <span className="text-red-600">*</span>
-                                </label>
-                                <textarea
-                                    required
-                                    rows={2}
-                                    placeholder="Expense details..."
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm resize-none"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-[#111827] mb-1">
-                                    💰 Amount <span className="text-red-600">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="0"
-                                    placeholder="0.00"
-                                    value={formData.amount}
-                                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                                    className="w-full px-3 py-2 border border-[#CBD5E1] rounded-lg text-sm"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="submit"
-                                    className="flex-1 bg-[#8E0E1C] text-white py-2 rounded-lg hover:opacity-90 font-semibold text-sm"
-                                >
-                                    Save Expense
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddModal(false)}
-                                    className="flex-1 bg-gray-100 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-200 font-semibold text-sm"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="submit"
+                                        className="flex-1 bg-[#8E0E1C] text-white py-2 rounded-lg hover:opacity-90 font-semibold text-sm"
+                                    >
+                                        Save Expense
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddModal(false)}
+                                        className="flex-1 bg-gray-100 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-200 font-semibold text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
