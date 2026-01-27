@@ -58,6 +58,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  expenses Expense[]
+
   @@map("users")
 }
 
@@ -268,4 +270,19 @@ model BusBooking {
   updatedAt DateTime  @updatedAt
 
   @@map("bus_bookings")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  staffId     String
+  recipient   String   // "To" person/entity
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [staffId], references: [id])
+
+  @@map("expenses")
 }
