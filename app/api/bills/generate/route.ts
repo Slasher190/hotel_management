@@ -196,9 +196,10 @@ export async function POST(request: NextRequest) {
       advanceAmount: advance,
       roundOff: roundOffValue,
       totalAmount,
-      paymentMode,
+      paymentMode: paymentMode || 'CASH',
       showGst, // This controls GSTIN visibility
       purpose: purpose || null,
+      foodItems: [], // Manual bill generation usually doesn't have itemized food, allow empty
     })
 
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
