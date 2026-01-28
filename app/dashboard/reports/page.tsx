@@ -6,10 +6,13 @@ interface ReportData {
   bookings: Array<{
     id: string
     guestName: string
+    guestGstNumber?: string | null
     roomPrice: number
     checkInDate: string
     checkoutDate: string | null
     status: string
+    billNumber?: string | null
+    companyName?: string | null
     room: {
       roomNumber: string
       roomType: {
@@ -17,15 +20,24 @@ interface ReportData {
       }
     }
     invoices: Array<{
+      invoiceNumber: string
+      companyName?: string | null
       totalAmount: number
       gstEnabled: boolean
       gstAmount: number
+      guestGstNumber?: string | null
     }>
     payments: Array<{
       status: string
       amount: number
     }>
   }>
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
   summary: {
     totalBookings: number
     totalRevenue: number
@@ -43,6 +55,9 @@ function ReportsContent() {
   const [paymentFilter, setPaymentFilter] = useState('')
   const [userRole, setUserRole] = useState('')
 
+  const [page, setPage] = useState(1)
+  const limit = 10
+
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
@@ -53,11 +68,19 @@ function ReportsContent() {
     }
   }, [])
 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [month, gstFilter, paymentFilter])
+
   const fetchReports = useCallback(async () => {
     try {
+      setLoading(true)
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
         month,
+        page: page.toString(),
+        limit: limit.toString(),
         ...(gstFilter && { gst: 'true' }),
         ...(paymentFilter && { paymentStatus: paymentFilter }),
       })
@@ -77,7 +100,7 @@ function ReportsContent() {
     } finally {
       setLoading(false)
     }
-  }, [month, gstFilter, paymentFilter])
+  }, [month, gstFilter, paymentFilter, page])
 
   useEffect(() => {
     fetchReports()
@@ -115,16 +138,7 @@ function ReportsContent() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="text-center py-16">
-        <div className="text-6xl mb-4">📊</div>
-        <div className="text-lg font-semibold text-[#64748B]">Loading reports...</div>
-      </div>
-    )
-  }
-
-  if (!reportData) {
+  if (!reportData && !loading) {
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">📊</div>
@@ -160,7 +174,7 @@ function ReportsContent() {
         </div>
       </div>
 
-      {userRole !== 'STAFF' && (
+      {userRole !== 'STAFF' && reportData && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
             <div className="text-sm font-semibold text-[#64748B] mb-2">📋 Total Bookings</div>
@@ -224,56 +238,94 @@ function ReportsContent() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-[#CBD5E1]">
-            <thead className="bg-[#8E0E1C]">
-              <tr>
-                <th className="px-4 text-left text-xs font-bold text-white uppercase">Date</th>
-                <th className="px-4 text-left text-xs font-bold text-white uppercase">Bill No</th>
-                <th className="px-4 text-left text-xs font-bold text-white uppercase">Name</th>
-                <th className="px-4 text-left text-xs font-bold text-white uppercase">Company</th>
-                <th className="px-4 text-left text-xs font-bold text-white uppercase">GST</th>
-                <th className="px-4 text-left text-xs font-bold text-white uppercase">Payment</th>
-                <th className="px-4 text-left text-xs font-bold text-white uppercase">Total</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-[#CBD5E1]">
-              {reportData.bookings.map((booking: any) => {
-                const invoice = booking.invoices?.[0]
-                const date = booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : '-'
-                const billNo = booking.billNumber || invoice?.invoiceNumber || '-'
-                const company = booking.companyName || invoice?.companyName || '-'
-                const gst = invoice?.gstAmount ? `₹${invoice.gstAmount.toLocaleString('en-IN')}` : '-'
-                const total = invoice?.totalAmount || booking.roomPrice || 0
-
-                return (
-                  <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
-                    <td className="px-4 py-3 text-sm text-[#111827] font-medium">{date}</td>
-                    <td className="px-4 py-3 text-sm text-[#111827]">{billNo}</td>
-                    <td className="px-4 py-3 text-sm text-[#111827] font-bold">{booking.guestName}</td>
-                    <td className="px-4 py-3 text-sm text-[#64748B]">{company}</td>
-                    <td className="px-4 py-3 text-sm text-[#111827]">{gst}</td>
-                    <td className="px-4 py-3 text-sm text-[#111827]">
-                      {booking.payments?.length > 0
-                        ? <span className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.payments[0].status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                          {booking.payments[0].status}
-                        </span>
-                        : <span className="text-gray-400">-</span>}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-bold text-[#8E0E1C]">
-                      ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-        {reportData.bookings.length === 0 && (
+        {loading ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">📊</div>
-            <div className="text-lg font-semibold text-[#64748B]">No bookings found for this month</div>
+            <div className="text-lg font-semibold text-[#64748B]">Loading reports...</div>
           </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-[#CBD5E1]">
+                <thead className="bg-[#8E0E1C]">
+                  <tr>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">Date</th>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">Bill No</th>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">Name</th>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">Company</th>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">GSTIN</th>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">GST Amount</th>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">Payment</th>
+                    <th className="px-4 text-left text-xs font-bold text-white uppercase">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-[#CBD5E1]">
+                  {reportData?.bookings.map((booking: any) => {
+                    const invoice = booking.invoices?.[0]
+                    const date = booking.checkInDate ? new Date(booking.checkInDate).toLocaleDateString('en-IN') : '-'
+                    const billNo = booking.billNumber || invoice?.invoiceNumber || '-'
+                    const company = booking.companyName || invoice?.companyName || '-'
+                    const gstAmount = invoice?.gstAmount ? `₹${invoice.gstAmount.toLocaleString('en-IN')}` : '-'
+                    const total = invoice?.totalAmount || booking.roomPrice || 0
+                    const gstNumber = invoice?.guestGstNumber || booking.guestGstNumber || '-'
+
+                    return (
+                      <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
+                        <td className="px-4 py-3 text-sm text-[#111827] font-medium">{date}</td>
+                        <td className="px-4 py-3 text-sm text-[#111827]">{billNo}</td>
+                        <td className="px-4 py-3 text-sm text-[#111827] font-bold">{booking.guestName}</td>
+                        <td className="px-4 py-3 text-sm text-[#64748B]">{company}</td>
+                        <td className="px-4 py-3 text-sm text-[#111827] font-mono">{gstNumber}</td>
+                        <td className="px-4 py-3 text-sm text-[#111827]">{gstAmount}</td>
+                        <td className="px-4 py-3 text-sm text-[#111827]">
+                          {booking.payments?.length > 0
+                            ? <span className={`px-2 py-1 rounded-full text-xs font-semibold ${booking.payments[0].status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {booking.payments[0].status}
+                            </span>
+                            : <span className="text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-bold text-[#8E0E1C]">
+                          ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {reportData && reportData.pagination && reportData.pagination.totalPages > 1 && (
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-[#CBD5E1]">
+                <div className="text-sm text-[#64748B]">
+                  Showing page <span className="font-semibold text-[#111827]">{page}</span> of <span className="font-semibold text-[#111827]">{reportData.pagination.totalPages}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-4 py-2 text-sm font-medium text-[#111827] bg-white border border-[#CBD5E1] rounded-lg hover:bg-[#F8FAFC] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(reportData.pagination.totalPages, p + 1))}
+                    disabled={page >= reportData.pagination.totalPages}
+                    className="px-4 py-2 text-sm font-medium text-[#111827] bg-white border border-[#CBD5E1] rounded-lg hover:bg-[#F8FAFC] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {reportData?.bookings.length === 0 && (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">📊</div>
+                <div className="text-lg font-semibold text-[#64748B]">No bookings found for this month</div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

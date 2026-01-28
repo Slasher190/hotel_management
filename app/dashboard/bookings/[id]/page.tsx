@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useUserRole } from '@/lib/useUserRole'
 
 interface Booking {
   id: string
@@ -28,10 +29,14 @@ interface Booking {
     id: string
     quantity: number
     foodItem: {
+      id: string
       name: string
       price: number
       gstPercent: number
     }
+    invoice?: {
+      invoiceNumber: string
+    } | null
   }>
   invoices: Array<{
     id: string
@@ -52,6 +57,7 @@ export default function BookingDetailPage() {
   const params = useParams()
   const router = useRouter()
   const bookingId = params.id as string
+  const { isManager } = useUserRole()
   const [booking, setBooking] = useState<Booking | null>(null)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -145,7 +151,7 @@ export default function BookingDetailPage() {
         ...editData,
         checkoutDate: editData.checkoutDate || null,
       }
-      
+
       const response = await fetch(`/api/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: {
@@ -243,7 +249,7 @@ export default function BookingDetailPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-gray-900">Booking Details</h2>
         <div className="flex gap-2">
-          {!editing && (
+          {!editing && isManager && (
             <button
               onClick={() => setEditing(true)}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
@@ -260,57 +266,10 @@ export default function BookingDetailPage() {
               >
                 🍽️ Add Food
               </Link>
-              {booking.foodOrders.length > 0 && (
-                <Link
-                  href={`/dashboard/bookings/${booking.id}/food-bill`}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Food Bill
-                </Link>
-              )}
+
             </>
           )}
-          {invoice && (
-            <button
-              onClick={async () => {
-                try {
-                  const token = localStorage.getItem('token')
-                  // Use the invoice ID from the booking data
-                  const invoiceId = invoice.id
-                  if (!invoiceId) {
-                    toast.error('Invoice ID not found')
-                    return
-                  }
-                  
-                  // Download the invoice using the correct endpoint (does NOT checkout the guest)
-                  const response = await fetch(`/api/invoices/${invoiceId}/download`, {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  })
-                  if (response.ok) {
-                    const blob = await response.blob()
-                    const url = globalThis.URL.createObjectURL(blob)
-                    const a = document.createElement('a')
-                    a.href = url
-                    a.download = `invoice-${invoice.invoiceNumber}.pdf`
-                    document.body.appendChild(a)
-                    a.click()
-                    globalThis.URL.revokeObjectURL(url)
-                    a.remove()
-                    toast.success('Invoice downloaded successfully!')
-                  } else {
-                    toast.error('Failed to download invoice')
-                  }
-                } catch {
-                  toast.error('An error occurred while downloading invoice')
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              📥 Download Invoice
-            </button>
-          )}
+
           <Link
             href="/dashboard/bookings"
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
@@ -544,71 +503,28 @@ export default function BookingDetailPage() {
                 <span className="font-semibold text-gray-900">
                   {booking.checkoutDate
                     ? new Date(booking.checkoutDate).toLocaleString('en-IN', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
                     : 'Not checked out'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-900 font-medium">Status:</span>
                 <span
-                  className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    booking.status === 'ACTIVE'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
+                  className={`px-2 py-1 text-xs font-semibold rounded-full ${booking.status === 'ACTIVE'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                    }`}
                 >
                   {booking.status}
                 </span>
               </div>
             </div>
           </div>
-
-          {/* Payment Information */}
-          {payment && (
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
-                Payment Information
-                {payment.status === 'PENDING' && (
-                  <button
-                    onClick={() => {
-                      const newStatus = payment.status === 'PENDING' ? 'PAID' : 'PENDING'
-                      handleUpdatePayment(payment.id, newStatus, payment.amount)
-                    }}
-                    className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Mark as Paid
-                  </button>
-                )}
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-900 font-medium">Amount:</span>
-                  <span className="font-semibold text-gray-900">₹{payment.amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-900 font-medium">Mode:</span>
-                  <span className="font-semibold text-gray-900">{payment.mode}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-900 font-medium">Status:</span>
-                  <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      payment.status === 'PAID'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
-                    }`}
-                  >
-                    {payment.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -619,6 +535,7 @@ export default function BookingDetailPage() {
           <table className="min-w-full">
             <thead>
               <tr className="border-b">
+                <th className="text-left py-2 font-semibold text-gray-900">Bill No</th>
                 <th className="text-left py-2 font-semibold text-gray-900">Item</th>
                 <th className="text-right py-2 font-semibold text-gray-900">Price</th>
                 <th className="text-right py-2 font-semibold text-gray-900">Quantity</th>
@@ -627,48 +544,93 @@ export default function BookingDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {booking.foodOrders.map((order) => {
-                const itemTotal = order.foodItem.price * order.quantity
-                const gst = (itemTotal * order.foodItem.gstPercent) / 100
+              {Object.values(booking.foodOrders.reduce((acc, order) => {
+                // Group by composite key: FoodItemID + InvoiceNumber (or 'unbilled')
+                const invoiceNum = order.invoice?.invoiceNumber || 'Unbilled'
+                const key = `${order.foodItem.id}-${invoiceNum}`
+
+                const existing = acc[key]
+                if (existing) {
+                  existing.quantity += order.quantity
+                  existing.totalPrice += order.foodItem.price * order.quantity // Accumulated base price
+                } else {
+                  acc[key] = {
+                    id: order.id, // Use first order ID as key
+                    name: order.foodItem.name,
+                    price: order.foodItem.price,
+                    quantity: order.quantity,
+                    gstPercent: order.foodItem.gstPercent,
+                    totalPrice: order.foodItem.price * order.quantity,
+                    invoiceNumber: invoiceNum === 'Unbilled' ? '-' : invoiceNum
+                  }
+                }
+                return acc
+              }, {} as Record<string, {
+                id: string,
+                name: string,
+                price: number,
+                quantity: number,
+                gstPercent: number,
+                totalPrice: number,
+                invoiceNumber: string
+              }>)).map((item) => {
+                const itemTotal = item.totalPrice
+                const gst = (itemTotal * item.gstPercent) / 100
                 return (
-                  <tr key={order.id} className="border-b">
-                    <td className="py-2 text-gray-900 font-medium">{order.foodItem.name}</td>
-                    <td className="text-right py-2 text-gray-900 font-medium">₹{order.foodItem.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="text-right py-2 text-gray-900 font-medium">{order.quantity}</td>
-                    <td className="text-right py-2 text-gray-900 font-medium">{order.foodItem.gstPercent}%</td>
+                  <tr key={item.id} className="border-b">
+                    <td className="py-2 text-gray-900 text-sm font-medium">{item.invoiceNumber}</td>
+                    <td className="py-2 text-gray-900 font-medium">{item.name}</td>
+                    <td className="text-right py-2 text-gray-900 font-medium">₹{item.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right py-2 text-gray-900 font-medium">{item.quantity}</td>
+                    <td className="text-right py-2 text-gray-900 font-medium">{item.gstPercent}%</td>
                     <td className="text-right py-2 text-gray-900 font-semibold">₹{(itemTotal + gst).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 )
               })}
+              {(() => {
+                // Calculate grand total of all food items
+                const grandTotal = Object.values(booking.foodOrders.reduce((acc, order) => {
+                  const invoiceNum = order.invoice?.invoiceNumber || 'Unbilled'
+                  const key = `${order.foodItem.id}-${invoiceNum}`
+                  const existing = acc[key]
+                  if (existing) {
+                    existing.quantity += order.quantity
+                    existing.totalPrice += order.foodItem.price * order.quantity
+                  } else {
+                    acc[key] = {
+                      id: order.id,
+                      name: order.foodItem.name,
+                      price: order.foodItem.price,
+                      quantity: order.quantity,
+                      gstPercent: order.foodItem.gstPercent,
+                      totalPrice: order.foodItem.price * order.quantity,
+                      invoiceNumber: invoiceNum === 'Unbilled' ? '-' : invoiceNum
+                    }
+                  }
+                  return acc
+                }, {} as Record<string, {
+                  id: string,
+                  name: string,
+                  price: number,
+                  quantity: number,
+                  gstPercent: number,
+                  totalPrice: number,
+                  invoiceNumber: string
+                }>)).reduce((sum, item) => {
+                  const itemTotal = item.totalPrice
+                  const gst = (itemTotal * item.gstPercent) / 100
+                  return sum + itemTotal + gst
+                }, 0)
+
+                return (
+                  <tr className="border-t-2 border-gray-300 bg-gray-50">
+                    <td colSpan={5} className="py-3 text-right text-gray-900 font-bold text-base">Grand Total:</td>
+                    <td className="text-right py-3 text-gray-900 font-bold text-base">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  </tr>
+                )
+              })()}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {/* Invoice Information */}
-      {invoice && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Information</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-900 font-medium">Invoice Number:</span>
-              <span className="font-semibold text-gray-900">{invoice.invoiceNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-900 font-medium">Total Amount:</span>
-              <span className="font-semibold text-gray-900">₹{invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-900 font-medium">GST Enabled:</span>
-              <span className="font-semibold text-gray-900">{invoice.gstEnabled ? 'Yes' : 'No'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-900 font-medium">Invoice Date:</span>
-              <span className="font-semibold text-gray-900">
-                {new Date(invoice.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
         </div>
       )}
 

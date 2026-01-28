@@ -144,7 +144,7 @@ export default function CheckoutListPage() {
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                       <Link
-                        href={`/dashboard/checkout/${booking.id}`}
+                        href={`/dashboard/bookings/${booking.id}`}
                         className="px-4 py-2 sm:px-5 sm:py-2.5 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs sm:text-sm min-h-[44px] inline-flex items-center gap-2"
                       >
                         <span>Proceed to Checkout</span>

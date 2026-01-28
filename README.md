@@ -67,8 +67,12 @@ npm run db:seed
 
 This creates:
 - Default manager user: `manager@hotel.com` / `manager123`
-- Admin user: `admin@hotel.com` / `admin123`
-- Sample rooms and food items
+- Staff user: `staff@hotel.com` / `staff123`
+- Chef user: `chef@hotel.com` / `chef123`
+- System settings for password reset
+- Room types including ROOM and HALL categories
+- Sample rooms and food items organized by categories
+- Sample bookings with invoices and payments
 
 ### 6. Start Development Server
 
@@ -81,7 +85,8 @@ The application will be available at `http://localhost:3000`
 ## Default Credentials
 
 - **Manager**: `manager@hotel.com` / `manager123`
-- **Admin** (hidden): `admin@hotel.com` / `admin123`
+- **Staff**: `staff@hotel.com` / `staff123`
+- **Chef**: `chef@hotel.com` / `chef123`
 
 ## Project Structure
 

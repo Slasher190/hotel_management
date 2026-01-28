@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
+import KitchenBillPrint from '../../../components/KitchenBillPrint'
 
 interface Booking {
   id: string
@@ -60,6 +61,14 @@ export default function CheckoutPage() {
     totalAmount: number
     foodCharges: number
     createdAt: string
+    foodOrders?: Array<{
+      id: string
+      quantity: number
+      foodItem: {
+        name: string
+        price: number
+      }
+    }>
   }>>([])
 
   // New fields for complete bill
@@ -228,6 +237,45 @@ export default function CheckoutPage() {
       roundOff: calculatedRoundOff,
       total
     }
+  }
+
+  const getPrintableKitchenItems = () => {
+    const items: any[] = []
+
+    // Add current orders
+    if (booking?.foodOrders) {
+      booking.foodOrders.forEach(order => {
+        items.push({
+          id: order.id,
+          name: order.foodItem.name,
+          quantity: order.quantity,
+          amount: order.foodItem.price * order.quantity
+        })
+      })
+    }
+
+    // Add previous bills items
+    previousFoodBills.forEach(bill => {
+      if (bill.foodOrders && bill.foodOrders.length > 0) {
+        bill.foodOrders.forEach(order => {
+          items.push({
+            id: order.id,
+            name: `${order.foodItem.name} (${bill.invoiceNumber})`,
+            quantity: order.quantity,
+            amount: order.foodItem.price * order.quantity
+          })
+        })
+      } else {
+        items.push({
+          id: bill.id,
+          name: `Bill ${bill.invoiceNumber}`,
+          quantity: 1,
+          amount: bill.totalAmount
+        })
+      }
+    })
+
+    return items
   }
 
   // Update round-off when auto is enabled and totals change
@@ -708,101 +756,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Kitchen Bill Section */}
-      {
-        ((booking?.foodOrders && booking.foodOrders.length > 0) || previousFoodBills.length > 0) && (
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Kitchen Bill</h3>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="showCombinedFoodBill"
-                  checked={showCombinedFoodBill}
-                  onChange={(e) => setShowCombinedFoodBill(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="showCombinedFoodBill" className="text-sm font-medium text-gray-900 cursor-pointer">
-                  Include Combined Food Bill in Checkout
-                </label>
-              </div>
-
-              {previousFoodBills.length > 0 && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <div className="text-sm font-semibold text-gray-700 mb-2">Previous Food Bills:</div>
-                  <div className="space-y-1 text-sm">
-                    {previousFoodBills.map((bill) => (
-                      <div key={bill.id} className="flex justify-between text-gray-600">
-                        <span>{bill.invoiceNumber}</span>
-                        <span className="font-medium text-gray-900">
-                          ₹{bill.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {booking?.foodOrders && booking.foodOrders.length > 0 && (
-                <div className="bg-orange-50 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-medium text-gray-700">Current Food Orders:</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {booking.foodOrders?.length} item(s)
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    {booking.foodOrders?.map((order) => {
-                      const itemTotal = order.foodItem.price * order.quantity
-                      return (
-                        <div key={order.id} className="flex justify-between text-gray-600">
-                          <span>
-                            {order.foodItem.name} × {order.quantity}
-                          </span>
-                          <span className="font-medium text-gray-900">
-                            ₹{itemTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {showCombinedFoodBill && (
-                <div>
-                  <label htmlFor="complimentary" className="block text-sm font-medium text-gray-700 mb-2">
-                    Complimentary/Discount (₹)
-                  </label>
-                  <input
-                    id="complimentary"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={complimentary}
-                    onChange={(e) => setComplimentary(Number.parseFloat(e.target.value) || 0)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                    placeholder="Enter discount amount"
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="kitchenBillPaid"
-                  checked={kitchenBillPaid}
-                  onChange={(e) => setKitchenBillPaid(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="kitchenBillPaid" className="text-sm font-medium text-gray-900 cursor-pointer">
-                  Kitchen bill is paid (Optional - not required for checkout)
-                </label>
-              </div>
-            </div>
-          </div>
-        )
-      }
+      {/* Kitchen Bill Section Removed as per request */}
 
       {/* Total */}
       <div className="bg-indigo-50 rounded-xl shadow-md p-6">

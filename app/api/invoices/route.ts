@@ -75,6 +75,11 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+          foodOrders: {
+            include: {
+              foodItem: true,
+            },
+          },
         },
         orderBy: { [sortBy]: sortOrder },
         skip,

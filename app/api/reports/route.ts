@@ -11,9 +11,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const monthParam = request.nextUrl.searchParams.get('month')
-    const gstFilter = request.nextUrl.searchParams.get('gst') === 'true'
-    const paymentStatus = request.nextUrl.searchParams.get('paymentStatus')
+    const { searchParams } = request.nextUrl
+    const monthParam = searchParams.get('month')
+    const gstFilter = searchParams.get('gst') === 'true'
+    const paymentStatus = searchParams.get('paymentStatus') as any // Cast to any to avoid complex enum parsing in this snippet
+    const page = Number.parseInt(searchParams.get('page') || '1')
+    const limit = Number.parseInt(searchParams.get('limit') || '10')
+    const skip = (page - 1) * limit
 
     const month = monthParam ? new Date(monthParam + '-01') : new Date()
     const start = startOfMonth(month)
@@ -26,43 +30,85 @@ export async function GET(request: NextRequest) {
       },
     }
 
-    const bookings = await prisma.booking.findMany({
-      where,
-      include: {
-        room: {
-          include: {
-            roomType: true,
+    // Apply filters at DB level
+    if (gstFilter) {
+      where.invoices = {
+        some: {
+          gstEnabled: true,
+          invoiceType: { in: ['ROOM', 'MANUAL'] }
+        }
+      }
+    }
+
+    if (paymentStatus) {
+      where.payments = {
+        some: {
+          status: paymentStatus
+        }
+      }
+    }
+
+    // Execute queries in parallel
+    const [bookings, total, summaryData] = await Promise.all([
+      // 1. Paginated data for table
+      prisma.booking.findMany({
+        where,
+        include: {
+          room: {
+            include: {
+              roomType: true,
+            },
+          },
+          invoices: {
+            where: {
+              invoiceType: { in: ['ROOM', 'MANUAL'] },
+            },
+          },
+          payments: true,
+        },
+        orderBy: {
+          checkInDate: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+
+      // 2. Total count for pagination
+      prisma.booking.count({ where }),
+
+      // 3. Lightweight query for summary (fetching all matching records but only necessary fields)
+      prisma.booking.findMany({
+        where,
+        select: {
+          roomPrice: true,
+          invoices: {
+            where: {
+              invoiceType: { in: ['ROOM', 'MANUAL'] },
+            },
+            select: {
+              totalAmount: true,
+              gstEnabled: true,
+              gstAmount: true,
+            },
+          },
+          payments: {
+            select: {
+              amount: true,
+              status: true,
+            },
           },
         },
-        invoices: true,
-        payments: true,
-      },
-      orderBy: {
-        checkInDate: 'desc',
-      },
-    })
+      }),
+    ])
 
-    // Apply filters
-    let filteredBookings = bookings
-    if (gstFilter) {
-      filteredBookings = filteredBookings.filter((b) =>
-        b.invoices.some((inv) => inv.gstEnabled)
-      )
-    }
-    if (paymentStatus) {
-      filteredBookings = filteredBookings.filter((b) =>
-        b.payments.some((p) => p.status === paymentStatus)
-      )
-    }
-
-    // Calculate summary
-    const totalBookings = filteredBookings.length
+    // Calculate summary from summaryData
+    const totalBookings = total
     let totalRevenue = 0
     let gstRevenue = 0
     let paidAmount = 0
     let pendingAmount = 0
 
-    filteredBookings.forEach((booking) => {
+    summaryData.forEach((booking) => {
       const invoice = booking.invoices[0]
       const payment = booking.payments[0]
 
@@ -85,7 +131,13 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      bookings: filteredBookings,
+      bookings,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
       summary: {
         totalBookings,
         totalRevenue,

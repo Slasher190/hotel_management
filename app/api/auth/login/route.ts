@@ -14,11 +14,22 @@ export async function POST(request: NextRequest) {
       where: { email },
     })
 
+    console.log('Login attempt:', { email, password })
+    console.log('User found:', !!user)
+    if (user) {
+      console.log('Stored hash:', user.password)
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    }
+
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
     const isValid = await verifyPassword(password, user.password)
+    console.log('Password valid:', isValid)
 
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })

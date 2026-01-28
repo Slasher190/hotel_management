@@ -39,6 +39,7 @@ export default function DashboardLayout({
     { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾', managerOnly: true },
     { href: '/dashboard/bills/history', label: 'Bill History', icon: '📜', managerOnly: false },
     { href: '/dashboard/kitchen-bills', label: 'Kitchen Bills', icon: '🍳', managerOnly: false },
+    { href: '/dashboard/expenses', label: 'Expense Manager', icon: '💸', managerOnly: false },
     { href: '/dashboard/settings', label: 'Settings', icon: '⚙️', managerOnly: true },
   ]
 
@@ -59,9 +60,8 @@ export default function DashboardLayout({
       </button>
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-72 bg-white border-r border-[#CBD5E1] flex flex-col z-40 transition-transform duration-150 ease-out lg:translate-x-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <aside className={`fixed left-0 top-0 h-full w-72 bg-white border-r border-[#CBD5E1] flex flex-col z-40 transition-transform duration-150 ease-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         {/* Header */}
         <div className="p-6 border-b border-[#CBD5E1] shrink-0 bg-[#8E0E1C]">
           <div className="flex items-center gap-3">
@@ -76,7 +76,7 @@ export default function DashboardLayout({
             </div>
           </div>
         </div>
-        
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {navItems.map((item) => {
@@ -86,11 +86,10 @@ export default function DashboardLayout({
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 ${
-                  isActive
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 ${isActive
                     ? 'bg-[#8E0E1C] text-white'
                     : 'text-[#111827] hover:bg-[#F8FAFC]'
-                }`}
+                  }`}
               >
                 <span className="text-xl">{item.icon}</span>
                 <span className="font-medium text-sm">{item.label}</span>
@@ -98,7 +97,7 @@ export default function DashboardLayout({
             )
           })}
         </nav>
-        
+
         {/* Logout Button */}
         <div className="p-4 border-t border-[#CBD5E1] shrink-0 bg-white">
           <button

@@ -46,6 +46,7 @@ enum BusStatus {
 enum UserRole {
   MANAGER
   STAFF
+  CHEF
 }
 
 model User {
@@ -56,6 +57,8 @@ model User {
   role      UserRole @default(MANAGER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  expenses Expense[]
 
   @@map("users")
 }
@@ -261,8 +264,25 @@ model BusBooking {
   toDate    DateTime
   status    BusStatus @default(PENDING)
   notes     String?
+  bookingAmount Float    @default(0)
+  advanceAmount Float    @default(0)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   @@map("bus_bookings")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  staffId     String
+  recipient   String   // "To" person/entity
+  description String
+  amount      Float
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [staffId], references: [id])
+
+  @@map("expenses")
 }
