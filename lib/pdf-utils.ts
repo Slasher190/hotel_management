@@ -254,15 +254,13 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   const checkIn = billData.checkInDate ? new Date(billData.checkInDate) : null
   const checkOut = billData.checkoutDate ? new Date(billData.checkoutDate) : null
 
-  if (checkIn) {
-    doc.text(formatDateOnly(checkIn), col3X + 22, yPos, { align: 'center' })
-    doc.text(formatTimeOnly(checkIn), col3X + 22, yPos + 5, { align: 'center' })
-  }
+  // Check In Date
+  doc.text(formatDateOnly(checkIn), col3X + 22, yPos, { align: 'center' })
+  doc.text(formatTimeOnly(checkIn), col3X + 22, yPos + 5, { align: 'center' })
 
-  if (checkOut) {
-    doc.text(formatDateOnly(checkOut), col4X + 17, yPos, { align: 'center' })
-    doc.text(formatTimeOnly(checkOut), col4X + 17, yPos + 5, { align: 'center' })
-  }
+  // Check Out Date
+  doc.text(formatDateOnly(checkOut), col4X + 17, yPos, { align: 'center' })
+  doc.text(formatTimeOnly(checkOut), col4X + 17, yPos + 5, { align: 'center' })
 
   // Address Line (Bottom of name block)
   yPos += 10
