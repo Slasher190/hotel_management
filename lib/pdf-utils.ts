@@ -280,18 +280,21 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   // Vertical lines
   doc.line(margin, gstRowY, margin, gstRowY + gstRowHeight)
   doc.line(margin + 80, gstRowY, margin + 80, gstRowY + gstRowHeight) // Split GST/State
-  doc.line(col3X, gstRowY, col3X, gstRowY + gstRowHeight)
-  doc.line(col4X, gstRowY, col4X, gstRowY + gstRowHeight) // Split Adults/Child/Total ? No, split differently
-  // Sample: GST No | State Code || Adults | Children | Total Guests
-  // Let's use col3X and col4X splits for Pax?
-  // Sample uses smaller cols for pax.
-  const paxCol1 = col3X
-  const paxCol2 = col3X + 22
-  const paxCol3 = col3X + 44
+
+  // Calculate equal width for Pax columns
+  // Space from col3X (120) to colEnd (200) is 80 units
+  // 3 columns: Adults, Children, Total
+  const paxStart = col3X
+  const paxWidth = (colEnd - paxStart) / 3
+
+  const paxCol1 = paxStart
+  const paxCol2 = paxStart + paxWidth
+  const paxCol3 = paxStart + (paxWidth * 2)
 
   doc.line(paxCol1, gstRowY, paxCol1, gstRowY + gstRowHeight)
   doc.line(paxCol2, gstRowY, paxCol2, gstRowY + gstRowHeight)
-  doc.line(paxCol3, gstRowY, paxCol3, gstRowY + gstRowHeight) // End line?
+  doc.line(paxCol3, gstRowY, paxCol3, gstRowY + gstRowHeight)
+  doc.line(colEnd, gstRowY, colEnd, gstRowY + gstRowHeight)
 
   // Headers
   doc.setFont('times', 'bold')
@@ -299,16 +302,17 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   doc.text(`State Code  ${checkVal(billData.guestStateCode)}`, margin + 85, gstRowY + 7)
 
   doc.setFontSize(8)
-  doc.text('Adults', paxCol1 + 11, gstRowY + 4, { align: 'center' })
-  doc.text('Children', paxCol2 + 11, gstRowY + 4, { align: 'center' })
-  doc.text('Total Guests', colEnd - 11, gstRowY + 4, { align: 'center' })
+  // Center text in pax columns
+  doc.text('Adults', paxCol1 + (paxWidth / 2), gstRowY + 4, { align: 'center' })
+  doc.text('Children', paxCol2 + (paxWidth / 2), gstRowY + 4, { align: 'center' })
+  doc.text('Total Guests', paxCol3 + (paxWidth / 2), gstRowY + 4, { align: 'center' })
 
   // Values for Pax
   doc.line(paxCol1, gstRowY + 5, colEnd, gstRowY + 5)
   doc.setFont('times', 'normal')
-  doc.text(checkVal(billData.adults || 0), paxCol1 + 11, gstRowY + 10, { align: 'center' })
-  doc.text(checkVal(billData.children || 0), paxCol2 + 11, gstRowY + 10, { align: 'center' })
-  doc.text(checkVal(billData.totalGuests || 0), colEnd - 11, gstRowY + 10, { align: 'center' })
+  doc.text(checkVal(billData.adults || 0), paxCol1 + (paxWidth / 2), gstRowY + 10, { align: 'center' })
+  doc.text(checkVal(billData.children || 0), paxCol2 + (paxWidth / 2), gstRowY + 10, { align: 'center' })
+  doc.text(checkVal(billData.totalGuests || 0), paxCol3 + (paxWidth / 2), gstRowY + 10, { align: 'center' })
 
   doc.line(margin, gstRowY + gstRowHeight, pageWidth - margin, gstRowY + gstRowHeight)
 
@@ -443,36 +447,47 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   doc.text(`${checkVal(billData.paymentMode)} - @${Math.round(billData.totalAmount)}`, rightColStart + 20, sumY + 8)
 
   // Total Section at bottom of box
-  let bottomY = splitTop + sectionHeight - 25
-  doc.setFont('times', 'bold')
-
-  const total = billData.totalAmount - billData.roundOff + billData.advanceAmount
-  drawSumLine(doc, 'Total Bill Amount', total, rightColStart, rightColEnd, bottomY)
-  bottomY += 5
-
-  doc.setFont('times', 'normal')
-  drawSumLine(doc, 'Less: Advance', billData.advanceAmount, rightColStart, rightColEnd, bottomY)
-  bottomY += 5
-
-  drawSumLine(doc, 'Round Off (If Any)', billData.roundOff, rightColStart, rightColEnd, bottomY)
-  bottomY += 6
+  // We align from bottom up to be safe
+  const boxBottom = splitTop + sectionHeight
+  let currentBottomY = boxBottom - 6 // Start slightly above bottom border
 
   // Net Payable Highlight
   doc.setFontSize(11)
   doc.setFont('times', 'bold')
-  doc.setTextColor(190, 30, 45) // Red
 
-  doc.text('Net Payable Amount', rightColStart + 10, bottomY)
-
+  // Draw highlight lines first
+  const highlightTop = currentBottomY - 5
+  const highlightBottom = currentBottomY + 2
   doc.setLineWidth(0.5)
   doc.setDrawColor(0, 0, 0)
-  doc.line(rightColStart + 45, bottomY + 1, rightColEnd + 1, bottomY + 1)
-  doc.line(rightColStart + 45, bottomY - 5, rightColEnd + 1, bottomY - 5)
+  doc.line(rightColStart + 45, highlightTop, rightColEnd + 1, highlightTop) // Top line
+  doc.line(rightColStart + 45, highlightBottom, rightColEnd + 1, highlightBottom) // Bottom line
 
-  doc.text(formatCurrency(billData.totalAmount), rightColEnd, bottomY, { align: 'right' })
+  doc.setTextColor(190, 30, 45) // Red
+  doc.text('Net Payable Amount', rightColStart + 10, currentBottomY)
+  doc.text(formatCurrency(billData.totalAmount), rightColEnd, currentBottomY, { align: 'right' })
   doc.setTextColor(0, 0, 0)
 
-  yPos = splitTop + sectionHeight + 5
+  // Move up for next items
+  currentBottomY -= 8
+
+  doc.setFontSize(9)
+  doc.setFont('times', 'normal')
+
+  // Round Off
+  drawSumLine(doc, 'Round Off (If Any)', billData.roundOff, rightColStart, rightColEnd, currentBottomY)
+  currentBottomY -= 5
+
+  // Less Advance
+  drawSumLine(doc, 'Less: Advance', billData.advanceAmount, rightColStart, rightColEnd, currentBottomY)
+  currentBottomY -= 5
+
+  // Total Bill Amount
+  doc.setFont('times', 'bold')
+  const total = billData.totalAmount - billData.roundOff + billData.advanceAmount
+  drawSumLine(doc, 'Total Bill Amount', total, rightColStart, rightColEnd, currentBottomY)
+
+  yPos = boxBottom + 5
 
   // ============================================
   // 6. Footer
