@@ -409,83 +409,107 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   // --- RIGHT: Summary ---
   const rightColStart = splitX + 2
   const rightColEnd = colEnd - 2
+
+  // Layout Constants
+  const amountColWidth = 25
+  const labelEndX = rightColEnd - amountColWidth - 2 // Gap before amount column
+  const rowHeight = 6 // Increased height for better spacing
+
   let sumY = splitTop + 10
 
   doc.setFontSize(9)
 
   const roomBase = billData.roomCharges + (billData.tariff || 0) + (billData.additionalGuestCharges || 0) * (billData.additionalGuests || 0)
 
+  // Helper to draw safely
+  const drawSafeSumLine = (label: string, val: number, y: number) => {
+    doc.text(label, rightColStart, y)
+    doc.text(formatCurrency(val), rightColEnd, y, { align: 'right' })
+  }
+
+  // Helper to draw divider line that NEVER touches amounts
+  const drawSafeDivider = (y: number) => {
+    doc.line(rightColStart, y, labelEndX + 5, y) // Small extension past label, well short of amount
+  }
+
   // Room Charges
-  drawSumLine(doc, 'Room Charges Before Tax', roomBase, rightColStart, rightColEnd, sumY)
-  sumY += 5
+  drawSafeSumLine('Room Charges Before Tax', roomBase, sumY)
+  sumY += rowHeight
 
   // GST Room
   if (billData.showGst && billData.gstEnabled) {
     const gst = (roomBase * (billData.gstPercent || 0)) / 100
-    drawSumLine(doc, 'Add: GST On Room Charges', gst, rightColStart, rightColEnd, sumY)
-    sumY += 5
-    doc.line(rightColStart + 35, sumY - 1, rightColEnd, sumY - 1)
+    drawSafeSumLine('Add: GST On Room Charges', gst, sumY)
+    sumY += (rowHeight / 2) // Space for line
+    drawSafeDivider(sumY + 1)
+    sumY += (rowHeight / 2) + 1 // Complete row
   }
 
   // Food Charges
-  drawSumLine(doc, 'Food Charges', billData.foodCharges, rightColStart, rightColEnd, sumY)
-  sumY += 5
+  drawSafeSumLine('Food Charges', billData.foodCharges, sumY)
+  sumY += rowHeight
 
   // GST Food
   if (billData.showGst && billData.gstEnabled) {
     const gst = (billData.foodCharges * (billData.gstPercent || 0)) / 100
-    drawSumLine(doc, 'Add: GST On Food Charges', gst, rightColStart, rightColEnd, sumY)
-    sumY += 5
-    doc.line(rightColStart + 35, sumY - 1, rightColEnd, sumY - 1)
+    drawSafeSumLine('Add: GST On Food Charges', gst, sumY)
+    sumY += (rowHeight / 2)
+    drawSafeDivider(sumY + 1)
+    sumY += (rowHeight / 2) + 1
   }
 
   // Bill Cleared Through
-  sumY += 5
+  sumY += rowHeight
   doc.setFont('times', 'bold')
   doc.text('Bill Cleared', rightColStart + 20, sumY)
   doc.text('Through', rightColStart + 20, sumY + 4)
   doc.text(`${checkVal(billData.paymentMode)} - @${Math.round(billData.totalAmount)}`, rightColStart + 20, sumY + 8)
 
   // Total Section at bottom of box
-  // We align from bottom up to be safe
   const boxBottom = splitTop + sectionHeight
-  let currentBottomY = boxBottom - 6 // Start slightly above bottom border
+  let currentBottomY = boxBottom - 6
 
   // Net Payable Highlight
   doc.setFontSize(11)
   doc.setFont('times', 'bold')
 
-  // Draw highlight lines first
+  // Draw highlight lines - strictly for Net Payable
   const highlightTop = currentBottomY - 5
   const highlightBottom = currentBottomY + 2
+
   doc.setLineWidth(0.5)
   doc.setDrawColor(0, 0, 0)
-  doc.line(rightColStart + 45, highlightTop, rightColEnd + 1, highlightTop) // Top line
-  doc.line(rightColStart + 45, highlightBottom, rightColEnd + 1, highlightBottom) // Bottom line
+
+  // Highlighting lines can span full width for 'Net Payable' as strictly requested or keep consistent?
+  // User asked: "Divider lines do not enter the amount column" -> Applying to internal dividers.
+  // For Net Payable, it's a specific visual block. Let's make it look like a definitive total.
+  // We will span the whole block for this "Grand Total" effect but keep text safe.
+  doc.line(rightColStart + 20, highlightTop, rightColEnd, highlightTop)
+  doc.line(rightColStart + 20, highlightBottom, rightColEnd, highlightBottom)
 
   doc.setTextColor(190, 30, 45) // Red
-  doc.text('Net Payable Amount', rightColStart + 10, currentBottomY)
+  doc.text('Net Payable Amount', rightColStart + 20, currentBottomY)
   doc.text(formatCurrency(billData.totalAmount), rightColEnd, currentBottomY, { align: 'right' })
   doc.setTextColor(0, 0, 0)
 
-  // Move up for next items
-  currentBottomY -= 8
+  // Move up
+  currentBottomY -= (rowHeight + 4)
 
   doc.setFontSize(9)
   doc.setFont('times', 'normal')
 
   // Round Off
-  drawSumLine(doc, 'Round Off (If Any)', billData.roundOff, rightColStart, rightColEnd, currentBottomY)
-  currentBottomY -= 5
+  drawSafeSumLine('Round Off (If Any)', billData.roundOff, currentBottomY)
+  currentBottomY -= rowHeight
 
   // Less Advance
-  drawSumLine(doc, 'Less: Advance', billData.advanceAmount, rightColStart, rightColEnd, currentBottomY)
-  currentBottomY -= 5
+  drawSafeSumLine('Less: Advance', billData.advanceAmount, currentBottomY)
+  currentBottomY -= rowHeight
 
   // Total Bill Amount
   doc.setFont('times', 'bold')
   const total = billData.totalAmount - billData.roundOff + billData.advanceAmount
-  drawSumLine(doc, 'Total Bill Amount', total, rightColStart, rightColEnd, currentBottomY)
+  drawSafeSumLine('Total Bill Amount', total, currentBottomY)
 
   yPos = boxBottom + 5
 
