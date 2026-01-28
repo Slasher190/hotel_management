@@ -15,7 +15,7 @@ interface FoodItem {
   price: number
   gstPercent?: number
   total?: number
-  orderTime?: Date | string // Order time for kitchen bills
+  orderTime?: Date | string
 }
 
 interface BillData {
@@ -61,464 +61,384 @@ interface BillData {
   roundOff: number
   totalAmount: number
   paymentMode: string
-  showGst?: boolean // Option to show/hide GST section
-  foodItems?: FoodItem[] // Optional array of food items for itemized bills
-  purpose?: string | null // Purpose of stay
+  showGst?: boolean
+  foodItems?: FoodItem[]
+  purpose?: string | null
 }
 
-// Helper function to format currency with rupee symbol
-// Since jsPDF default fonts don't support ₹, we use "Rs." which is universally understood
-function formatCurrencyWithRupee(amount: number): string {
-  const formatted = amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  // Use "Rs." instead of ₹ symbol for reliable rendering in PDF
-  return `Rs. ${formatted}`
+// Helper to handle missing values with "NA"
+function checkVal(value: any): string {
+  if (value === null || value === undefined || value === '') {
+    return 'NA'
+  }
+  return String(value)
 }
 
-// Helper function to add rupee symbol to text in table cells
-function addRupeeToAmount(amount: number): string {
-  return formatCurrencyWithRupee(amount)
+function formatCurrency(amount: number): string {
+  // Simple check for valid number
+  if (amount === undefined || amount === null || isNaN(amount)) return '0.00'
+  return amount.toFixed(2)
 }
 
-/**
- * Generate traditional Indian hotel bill PDF with pixel-accurate layout
- * Matches traditional hotel bill design with A4 size (210mm × 297mm)
- */
 export function generateBillPDF(settings: HotelSettings, billData: BillData): jsPDF {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
-    compress: true,
   })
 
-  const showGst = billData.showGst !== false
   const pageWidth = 210
-  const margin = 8
+  const margin = 10
   const contentWidth = pageWidth - margin * 2
   let yPos = margin
 
-  // Set font to Times (serif) for traditional look
   doc.setFont('times', 'normal')
 
   // ============================================
-  // 1. HEADER SECTION
+  // 1. Header Section
   // ============================================
-  // Logo placeholder (top-left)
-  doc.setDrawColor(0, 0, 0)
-  doc.setLineWidth(0.5)
-  doc.rect(margin, yPos, 20, 20)
-  doc.setFontSize(7)
-  doc.text('LOGO', margin + 10, yPos + 12, { align: 'center' })
 
-  // Hotel name (centered, bold, uppercase)
-  doc.setFontSize(16)
+  // Hotel Name
+  doc.setFontSize(20)
   doc.setFont('times', 'bold')
-  doc.text(settings.name.toUpperCase(), pageWidth / 2, yPos + 8, { align: 'center' })
+  doc.text(settings.name.toUpperCase(), pageWidth / 2, yPos + 5, { align: 'center' })
 
   // Address
-  doc.setFontSize(9)
+  yPos += 12
+  doc.setFontSize(10)
   doc.setFont('times', 'normal')
-  doc.text(settings.address, pageWidth / 2, yPos + 12, { align: 'center' })
+  const addressLines = doc.splitTextToSize(settings.address || 'NA', contentWidth)
+  doc.text(addressLines, pageWidth / 2, yPos, { align: 'center' })
+  yPos += (addressLines.length * 4) + 1
 
-  // Phone
-  doc.setFontSize(8)
-  doc.text(`Phone: ${settings.phone}`, pageWidth / 2, yPos + 15, { align: 'center' })
-
-  // Email
-  if (settings.email) {
-    doc.text(`Email: ${settings.email}`, pageWidth / 2, yPos + 18, { align: 'center' })
-  }
-
-  // GSTIN (only if showGst is true)
-  if (settings.gstin && showGst) {
-    doc.text(`GSTIN: ${settings.gstin}`, pageWidth / 2, yPos + 21, { align: 'center' })
-  }
-
-  // Bottom border
-  doc.setLineWidth(0.5)
-  doc.line(margin, yPos + 25, pageWidth - margin, yPos + 25)
-  yPos += 28
-
-  // ============================================
-  // 2. META INFO ROW (Single line, 3 columns)
-  // ============================================
+  // Contact Info
   doc.setFontSize(9)
-  const metaLeft = margin
-  const metaCenter = pageWidth / 2
-  const metaRight = pageWidth - margin
+  const contactText = `Phone: ${checkVal(settings.phone)} | Email: ${checkVal(settings.email)}`
+  doc.text(contactText, pageWidth / 2, yPos, { align: 'center' })
+  yPos += 5
 
-  if (billData.visitorRegistrationNumber) {
-    doc.text(`Visitor's Register Sr. No.: ${billData.visitorRegistrationNumber}`, metaLeft, yPos)
-  }
+  const gstinText = `GSTIN: ${checkVal(settings.gstin)}`
+  doc.text(gstinText, pageWidth / 2, yPos, { align: 'center' })
+  yPos += 6
 
-  // Use manual bill number if available, otherwise system invoice number
-  const displayBillNo = billData.billNumber || billData.invoiceNumber
-  doc.text(`BILL NO. ${displayBillNo}`, metaCenter, yPos, { align: 'center' })
-
-  doc.text(`Bill Date: ${new Date(billData.billDate).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })}`, metaRight, yPos, { align: 'right' })
+  // Horizontal Line
+  doc.setLineWidth(0.5)
+  doc.line(margin, yPos, pageWidth - margin, yPos)
   yPos += 6
 
   // ============================================
-  // 3. ROOM DETAILS TABLE
+  // 2. Bill Metadata
   // ============================================
-  const rentPerDay = billData.days && billData.days > 0 ? billData.roomCharges / billData.days : billData.roomCharges
+  doc.setFontSize(10)
+  doc.setFont('times', 'bold')
 
-  autoTable(doc, {
-    startY: yPos,
-    head: [['Room No', 'PARTICULARS', 'RENT PER DAY', 'NO. OF DAYS']],
-    body: [[billData.roomNumber || '', billData.roomType || '', formatCurrencyWithRupee(rentPerDay), (billData.days || 0).toString()]],
-    theme: 'plain',
-    headStyles: {
-      fillColor: [255, 255, 255],
-      textColor: [0, 0, 0],
-      fontStyle: 'bold',
-      lineWidth: 0.5,
-    },
-    styles: {
-      fontSize: 9,
-      cellPadding: 2,
-      lineWidth: 0.5,
-      lineColor: [0, 0, 0],
-    },
-    columnStyles: {
-      0: { cellWidth: 30, halign: 'center' },
-      1: { cellWidth: 60, halign: 'left' },
-      2: { cellWidth: 40, halign: 'right' },
-      3: { cellWidth: 40, halign: 'center' },
-    },
-    margin: { left: margin, right: margin },
+  // Row 1: Reg No | Bill No | Date
+  const metaY = yPos
+  doc.text(`Visitor's Register Sr. No.: ${checkVal(billData.visitorRegistrationNumber)}`, margin, metaY)
+
+  const billNo = billData.billNumber || billData.invoiceNumber
+  doc.text(`Bill No.: ${checkVal(billNo)}`, pageWidth / 2, metaY, { align: 'center' })
+
+  const formattedDate = new Date(billData.billDate).toLocaleDateString('en-IN', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
   })
+  doc.text(`Bill Date: ${formattedDate}`, pageWidth - margin, metaY, { align: 'right' })
+  yPos += 8
 
-  yPos = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4
+  // Horizontal Line
+  doc.line(margin, yPos, pageWidth - margin, yPos)
+  yPos += 2
 
   // ============================================
-  // 4. GUEST DETAILS SECTION (Two-column grid)
+  // 3. Guest & Room Details Table (Custom Grid)
   // ============================================
-  const guestColWidth = (contentWidth - 2) / 2
-  const guestLeftX = margin
-  const guestRightX = margin + guestColWidth + 2
+  const startGridY = yPos
+  const midX = pageWidth / 2
+  const rightX = pageWidth - margin
+  const leftX = margin
 
-  // Draw border
-  doc.setLineWidth(0.5)
-  doc.rect(margin, yPos, contentWidth, 40)
-
-  // Vertical divider
-  doc.line(margin + guestColWidth + 1, yPos, margin + guestColWidth + 1, yPos + 40)
-
+  // We'll simulate a 2-column layout using text placement
   doc.setFontSize(9)
-  let guestY = yPos + 4
+  doc.setFont('times', 'normal')
 
-  // Left column
-  doc.text(`Guest Name: ${billData.guestName}`, guestLeftX + 2, guestY)
-  guestY += 4
-  if (billData.guestAddress) {
-    const addressLines = doc.splitTextToSize(`Address: ${billData.guestAddress}`, guestColWidth - 4)
-    doc.text(addressLines, guestLeftX + 2, guestY)
-    guestY += addressLines.length * 4
-  }
-  if (billData.guestState) {
-    doc.text(`State: ${billData.guestState}`, guestLeftX + 2, guestY)
-    guestY += 4
-  }
-  if (billData.guestNationality) {
-    doc.text(`Nationality: ${billData.guestNationality}`, guestLeftX + 2, guestY)
-    guestY += 4
-  }
-  if (billData.guestGstNumber && showGst) {
-    doc.text(`GST No.: ${billData.guestGstNumber}`, guestLeftX + 2, guestY)
-    guestY += 4
-  }
-  if (billData.guestMobile) {
-    doc.text(`Mobile No.: ${billData.guestMobile}`, guestLeftX + 2, guestY)
-    guestY += 4
-  }
-  if (billData.purpose) {
-    doc.text(`Purpose: ${billData.purpose}`, guestLeftX + 2, guestY)
-  }
+  const leftFields = [
+    { label: 'Name', value: billData.guestName },
+    { label: 'Address', value: billData.guestAddress },
+    { label: 'Nationality', value: billData.guestNationality },
+    { label: 'State (Code)', value: `${checkVal(billData.guestState)} (${checkVal(billData.guestStateCode)})` },
+    { label: 'Mobile No', value: billData.guestMobile },
+    { label: 'GST No', value: billData.guestGstNumber },
+    { label: 'Company', value: billData.companyName },
+    { label: 'Dept/Desig', value: `${checkVal(billData.department)} / ${checkVal(billData.designation)}` },
+  ]
 
-  // Right column
-  guestY = yPos + 4
-  if (billData.checkInDate) {
-    doc.text(`Check In Date & Time: ${new Date(billData.checkInDate).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`, guestRightX + 2, guestY)
-    guestY += 4
-  }
-  if (billData.checkoutDate) {
-    doc.text(`Check Out Date & Time: ${new Date(billData.checkoutDate).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })}`, guestRightX + 2, guestY)
-    guestY += 4
-  }
-  const adults = (billData.additionalGuests || 0) + 1
-  doc.text(`Adults: ${adults}`, guestRightX + 2, guestY)
-  guestY += 4
-  doc.text(`Children: 0`, guestRightX + 2, guestY)
-  guestY += 4
-  doc.text(`Total Guests: ${adults}`, guestRightX + 2, guestY)
+  const rightFields = [
+    { label: 'Room No', value: billData.roomNumber },
+    { label: 'Room Type', value: billData.roomType },
+    { label: 'Check-In', value: formatDate(billData.checkInDate) },
+    { label: 'Check-Out', value: formatDate(billData.checkoutDate) },
+    { label: 'Pax (A/C/T)', value: `${billData.adults || 0} / ${billData.children || 0} / ${billData.totalGuests || 0}` },
+    { label: 'Rate', value: formatCurrency(billData.rentPerDay || (billData.days && billData.days > 0 ? billData.roomCharges / billData.days : billData.roomCharges)) },
+    { label: 'Days', value: billData.days },
+    { label: 'Bus. Phone', value: billData.businessPhoneNumber },
+  ]
 
-  yPos += 42
-
-  // ============================================
-  // 5. COMPANY DETAILS TABLE
-  // ============================================
-  autoTable(doc, {
-    startY: yPos,
-    head: [['Company Name', 'Department', 'Designation']],
-    body: [[billData.companyName || '', billData.companyCode || '', '']],
-    theme: 'plain',
-    headStyles: {
-      fillColor: [255, 255, 255],
-      textColor: [0, 0, 0],
-      fontStyle: 'bold',
-      lineWidth: 0.5,
-    },
-    styles: {
-      fontSize: 9,
-      cellPadding: 2,
-      lineWidth: 0.5,
-      lineColor: [0, 0, 0],
-    },
-    margin: { left: margin, right: margin },
+  let leftY = startGridY + 5
+  leftFields.forEach(field => {
+    doc.setFont('times', 'bold')
+    doc.text(`${field.label}:`, leftX + 2, leftY)
+    doc.setFont('times', 'normal')
+    const val = checkVal(field.value)
+    // Wrap text if needed for address
+    if (field.label === 'Address' && val.length > 35) {
+      const lines = doc.splitTextToSize(val, 80)
+      doc.text(lines, leftX + 25, leftY)
+      leftY += (lines.length - 1) * 4
+    } else {
+      doc.text(val, leftX + 25, leftY)
+    }
+    leftY += 5
   })
 
-  yPos = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4
+  let rightY = startGridY + 5
+  rightFields.forEach(field => {
+    doc.setFont('times', 'bold')
+    doc.text(`${field.label}:`, midX + 5, rightY)
+    doc.setFont('times', 'normal')
+    doc.text(checkVal(field.value), midX + 35, rightY)
+    rightY += 5
+  })
+
+  const gridHeight = Math.max(leftY, rightY) - startGridY + 2
+
+  // Draw Box around Details
+  doc.rect(margin, startGridY, contentWidth, gridHeight)
+  doc.line(midX, startGridY, midX, startGridY + gridHeight) // Vertical divider
+
+  yPos = startGridY + gridHeight + 5
 
   // ============================================
-  // 6. BILLING ITEMS TABLE
+  // 4. Charges Table
   // ============================================
-  // ============================================
-  // 6 & 7. SPLIT SECTION: BILLING ITEMS (Left) & SUMMARY (Right)
-  // ============================================
-  const splitStartY = yPos
-  const leftColWidth = (contentWidth * 0.55) // 55% for items
-  const rightColWidth = contentWidth - leftColWidth
-  const rightColX = margin + leftColWidth
 
-  // Draw vertical line divider for the split section
-  // We'll extend this line later once we know the final height
+  // Combine room charges line and food items
+  const tableData: any[][] = []
 
-  // --- LEFT SIDE: BILLING ITEMS TABLE ---
-  const billingItemsData: (string | number)[][] = []
+  // Room Charge Row
+  const rate = billData.rentPerDay || (billData.days && billData.days > 0 ? billData.roomCharges / billData.days : billData.roomCharges)
+  tableData.push([
+    formatDateOnly(billData.checkInDate),
+    checkVal(billData.days),
+    `Room Charges (${checkVal(billData.roomType)})`,
+    formatCurrency(rate),
+    formatCurrency(billData.roomCharges)
+  ])
+
+  // Additional Guests
+  if (billData.additionalGuestCharges && billData.additionalGuestCharges > 0) {
+    tableData.push([
+      formatDateOnly(billData.checkInDate),
+      checkVal(billData.additionalGuests),
+      'Additional Guest Charges',
+      formatCurrency(billData.additionalGuestCharges / (billData.additionalGuests || 1)),
+      formatCurrency(billData.additionalGuestCharges)
+    ])
+  }
+
+  // Tariff (Manual adjustment)
+  if (billData.tariff) {
+    tableData.push([
+      '-',
+      '1',
+      'Tariff Adjustment',
+      formatCurrency(billData.tariff),
+      formatCurrency(billData.tariff)
+    ])
+  }
+
+  // Food Items
   if (billData.foodItems && billData.foodItems.length > 0) {
-    billData.foodItems.forEach((item) => {
-      const itemTotal = item.total || item.price * item.quantity
-      // Use order time or bill date
-      const orderDate = item.orderTime
-        ? new Date(item.orderTime).toLocaleString('en-IN', {
-          day: '2-digit',
-          month: '2-digit',
-        })
-        : ''
-
-      billingItemsData.push([
-        orderDate,
-        item.quantity.toString(),
+    billData.foodItems.forEach(item => {
+      tableData.push([
+        item.orderTime ? formatDateOnly(item.orderTime) : '-',
+        checkVal(item.quantity),
         item.name,
-        formatCurrencyWithRupee(item.price).replace('Rs. ', ''),
-        formatCurrencyWithRupee(itemTotal).replace('Rs. ', ''),
+        formatCurrency(item.price),
+        formatCurrency(item.total || item.price * item.quantity)
       ])
     })
-  } else {
-    // Empty rows if no items, to maintain structure
-    if (showGst) {
-      // Just a placeholder if wanted, or leave empty. 
-      // The image shows a full table structure.
-    }
   }
 
-  // AutoTable for Left Side
   autoTable(doc, {
-    startY: splitStartY,
-    head: [['Dt.', 'Qty', 'Product', 'Rate', 'Value']],
-    body: billingItemsData,
+    startY: yPos,
+    head: [['Date', 'Qty', 'Product', 'Rate', 'Value']],
+    body: tableData,
     theme: 'plain',
-    tableWidth: leftColWidth - 2,
-    margin: { left: margin },
+    styles: {
+      font: 'times',
+      fontSize: 9,
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1,
+    },
     headStyles: {
-      fillColor: [240, 240, 240], // Light gray header
+      fillColor: [240, 240, 240], // Light gray
       textColor: [0, 0, 0],
       fontStyle: 'bold',
-      lineWidth: 0.1,
-      lineColor: [0, 0, 0],
-      halign: 'center'
-    },
-    styles: {
-      fontSize: 8,
-      cellPadding: 1.5,
-      lineWidth: 0, // No inner borders for rows usually, or maybe light
-      lineColor: [200, 200, 200],
-      overflow: 'linebreak'
+      halign: 'center',
     },
     columnStyles: {
-      0: { cellWidth: 15, halign: 'left' },
-      1: { cellWidth: 10, halign: 'center' },
-      2: { halign: 'left' }, // Product Name takes remaining space
-      3: { cellWidth: 18, halign: 'right' },
-      4: { cellWidth: 20, halign: 'right' },
+      0: { cellWidth: 25 },
+      1: { cellWidth: 15, halign: 'center' },
+      2: {}, // Auto width
+      3: { cellWidth: 25, halign: 'right' },
+      4: { cellWidth: 30, halign: 'right' }
     },
+    margin: { left: margin, right: margin },
   })
 
-  // --- RIGHT SIDE: CHARGES SUMMARY ---
-  let summaryY = splitStartY + 4 // Start slightly below top line
-  const labelX = rightColX + 4
-  const valueX = pageWidth - margin - 2
+  yPos = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 5
+
+  // ============================================
+  // 5. Summary Section
+  // ============================================
+
+  // Ensure we don't page break awkwardly. If low on space, add page.
+  if (yPos > 240) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  const summaryLeftX = pageWidth / 2
+  const summaryRightValX = pageWidth - margin - 5
 
   doc.setFontSize(9)
   doc.setFont('times', 'normal')
 
-  // Calculate base charges
-  const baseRoomCharges = billData.roomCharges
-  const tariffCharges = billData.tariff || 0
-  const additionalGuestChargesTotal = (billData.additionalGuestCharges || 0) * (billData.additionalGuests || 0)
-  const roomChargesBeforeTax = baseRoomCharges + tariffCharges + additionalGuestChargesTotal
-
-  const roomGst = showGst && billData.gstEnabled ? (roomChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
-  const foodChargesBeforeTax = billData.foodCharges
-  const foodGst = showGst && billData.gstEnabled ? (foodChargesBeforeTax * (billData.gstPercent || 5)) / 100 : 0
+  const roomBase = billData.roomCharges + (billData.tariff || 0) + (billData.additionalGuestCharges || 0) * (billData.additionalGuests || 0)
 
   // Room Charges
-  doc.text('Room Charges Before Tax', labelX, summaryY)
-  doc.text(formatCurrencyWithRupee(roomChargesBeforeTax).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
-  summaryY += 5
+  drawSummaryRow(doc, 'Room Charges Before Tax', roomBase, summaryLeftX, yPos, summaryRightValX)
+  yPos += 5
 
-  // GST on Room
-  if (showGst && (billData.gstEnabled || roomGst > 0)) {
-    doc.text('Add: GST On Room Charges', labelX, summaryY)
-    doc.text(formatCurrencyWithRupee(roomGst).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
-    summaryY += 2 // Underline separation
-    doc.setLineWidth(0.1)
-    doc.line(labelX + 35, summaryY, valueX, summaryY)
-    summaryY += 4
+  // GST Room
+  // NOTE: Based on previous request, we removed GST toggle. 
+  // If backend purely uses what's passed, and pass is disabled, this will be 0.
+  // But if flags are passed as false, we just won't show it or show 0.
+  // Requirement says "Charges Summary Section" includes "Add GST on Room Charges".
+  // If standard is "NA" or "0.00", we should show it if the template strictly requires it.
+  // However, specifically for "Remove GST" task, we probably should hide it or show 0.
+  // Given previous task "Completely remove GST", I will show 0.00 or hide if logic dictates.
+  // But strictly matching the sample layout usually implies showing the line with 0.00.
+  // I'll show it as 0.00 to keep the layout consistent with a standard bill structure.
+
+  if (billData.gstEnabled && billData.showGst) {
+    const gstRoom = (roomBase * (billData.gstPercent || 0)) / 100
+    drawSummaryRow(doc, 'Add GST on Room Charges', gstRoom, summaryLeftX, yPos, summaryRightValX)
+    yPos += 5
   }
 
   // Food Charges
-  doc.text('Food Charges', labelX, summaryY)
-  doc.text(formatCurrencyWithRupee(foodChargesBeforeTax).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
-  summaryY += 5
+  drawSummaryRow(doc, 'Food Charges', billData.foodCharges, summaryLeftX, yPos, summaryRightValX)
+  yPos += 5
 
-  // GST on Food
-  if (showGst && (billData.gstEnabled || foodGst > 0)) {
-    doc.text('Add: GST On Food Charges', labelX, summaryY)
-    doc.text(formatCurrencyWithRupee(foodGst).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
-    summaryY += 5
+  if (billData.gstEnabled && billData.showGst) {
+    const gstFood = (billData.foodCharges * (billData.gstPercent || 0)) / 100
+    drawSummaryRow(doc, 'Add GST on Food Charges', gstFood, summaryLeftX, yPos, summaryRightValX)
+    yPos += 5
   }
 
-  // Bill Cleared Through
-  summaryY += 2
-  doc.setFont('times', 'bold')
-  doc.text('Bill Cleared', labelX + 20, summaryY)
-  doc.text('Through', labelX + 20, summaryY + 4)
-  doc.text(`${billData.paymentMode} - @${Math.round(billData.totalAmount)}`, labelX + 20, summaryY + 8)
-  doc.setFont('times', 'normal')
-  summaryY += 15
-
-  // Calculations Bottom Section
-  const bottomSummaryStartY = summaryY
+  // Separator
+  doc.line(summaryLeftX, yPos, pageWidth - margin, yPos)
+  yPos += 5
 
   // Total Bill Amount
   doc.setFont('times', 'bold')
-  doc.text('Total Bill Amount', labelX + 10, summaryY)
-  doc.text(formatCurrencyWithRupee(billData.totalAmount - billData.roundOff + billData.advanceAmount).replace('Rs. ', ''), valueX, summaryY, { align: 'right' }) // Back calculate subtotal roughly or use variable
-  // Actually simpler: Total before roundoff/advance = Total - RoundOff + Advance
-  const grossTotal = roomChargesBeforeTax + roomGst + foodChargesBeforeTax + foodGst
-  // Overwrite with accurate gross
-  doc.setTextColor(255, 255, 255) // Hack to erase? No, just overwrite area if needed. But let's just write grossTotal
-  // jsPDF doesn't erase. 
-  // Let's just use the strict sum
-  // doc.text(formatCurrencyWithRupee(grossTotal).replace('Rs. ', ''), valueX, summaryY, { align: 'right' }) 
-  summaryY += 6
+  const totalBill = billData.totalAmount - billData.roundOff + billData.advanceAmount // Reconstruct gross
+  drawSummaryRow(doc, 'Total Bill Amount', totalBill, summaryLeftX, yPos, summaryRightValX)
+  yPos += 5
 
-  // Less: Advance
+  // Advance
   doc.setFont('times', 'normal')
-  doc.text('Less: Advance', labelX + 10, summaryY)
-  doc.text(formatCurrencyWithRupee(billData.advanceAmount).replace('Rs. ', '0.00'), valueX, summaryY, { align: 'right' })
-  summaryY += 6
+  drawSummaryRow(doc, 'Less: Advance', billData.advanceAmount, summaryLeftX, yPos, summaryRightValX)
+  yPos += 5
 
   // Round Off
-  doc.text('Round Off (If Any)', labelX + 10, summaryY)
-  doc.text(billData.roundOff.toFixed(2), valueX, summaryY, { align: 'right' })
-  summaryY += 6
+  drawSummaryRow(doc, 'Round Off', billData.roundOff, summaryLeftX, yPos, summaryRightValX)
+  yPos += 5
 
-  // Net Payable Amount (Highlighted)
-  doc.setFontSize(10)
+  // Net Payable
+  yPos += 2
+  doc.setFontSize(11)
   doc.setFont('times', 'bold')
-  doc.setTextColor(142, 14, 28) // Dark Red for Emphasis
-  doc.text('Net Payble Amount', labelX + 10, summaryY)
 
-  // Draw Box/Underline for Net Amount like in image
-  doc.setDrawColor(0, 0, 0)
-  doc.setLineWidth(0.5)
-  doc.line(labelX + 40, summaryY + 1, valueX, summaryY + 1)
-  doc.line(labelX + 40, summaryY - 4, valueX, summaryY - 4) // Double line? Image has box or double line
+  // Highlight Box
+  doc.setFillColor(230, 230, 230)
+  doc.rect(summaryLeftX - 2, yPos - 5, (pageWidth - margin) - summaryLeftX + 2, 8, 'F')
 
-  doc.setFontSize(12)
-  doc.text(formatCurrencyWithRupee(billData.totalAmount).replace('Rs. ', ''), valueX, summaryY, { align: 'right' })
-  doc.setTextColor(0, 0, 0) // Reset color
+  doc.text('Net Payable Amount', summaryLeftX, yPos)
+  doc.text(formatCurrency(billData.totalAmount), summaryRightValX, yPos, { align: 'right' })
+  yPos += 15
 
-  summaryY += 4
-
-  // Determine height of the section
-  const tableHeight = ((doc as unknown) as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY - splitStartY
-  const summaryHeight = summaryY - splitStartY
-  const sectionHeight = Math.max(tableHeight, summaryHeight, 80) // Min height 80mm
-
-  // Draw Vertical Line to split Left and Right
-  doc.setLineWidth(0.5)
-  doc.line(rightColX, splitStartY, rightColX, splitStartY + sectionHeight)
-
-  // Draw Outer Border for this section
-  doc.rect(margin, splitStartY, contentWidth, sectionHeight)
-
-  yPos = splitStartY + sectionHeight + 4
-
-  // ============================================
-  // 8. FOOTER
-  // ============================================
-  const footerY = 297 - margin - 25
-
-  // Declaration text
-  doc.setFontSize(7)
+  // Payment Mode
+  doc.setFontSize(9)
   doc.setFont('times', 'italic')
-  const declarationText =
-    'I agree that I am responsible for the full payment of this bill in the event if not paid by the company, organisation or person indicated.'
-  const declarationLines = doc.splitTextToSize(declarationText, contentWidth)
-  doc.text(declarationLines, pageWidth / 2, footerY, { align: 'center' })
+  doc.text(`Bill Cleared Through: ${checkVal(billData.paymentMode)}`, margin, yPos - 25) // displayed on left opposite summary
 
-  // Signatures
-  const signatureY = footerY + 12
-  doc.setFont('times', 'normal')
-  doc.setLineWidth(0.5)
-  doc.line(margin, signatureY, margin + 80, signatureY) // Cashier's signature line
-  doc.line(pageWidth - margin - 80, signatureY, pageWidth - margin, signatureY) // Guest's signature line
+  // ============================================
+  // 6. Footer
+  // ============================================
+  // Fixed at bottom
+  const footerY = 280
 
   doc.setFontSize(8)
-  doc.text('Cashier\'s Signature', margin + 40, signatureY + 4, { align: 'center' })
-  doc.text('Guest\'s Signature', pageWidth - margin - 40, signatureY + 4, { align: 'center' })
+  doc.setFont('times', 'italic')
+  const terms = 'I agree that I am responsible for the full payment of this bill in the event if not paid by the company, organisation or person indicated.'
+  doc.text(terms, pageWidth / 2, footerY - 15, { align: 'center', maxWidth: contentWidth - 20 })
+
+  // Signatures
+  doc.setFont('times', 'normal')
+  doc.setLineWidth(0.5)
+
+  doc.line(margin + 10, footerY, margin + 60, footerY)
+  doc.text("Cashier's Signature", margin + 35, footerY + 5, { align: 'center' })
+
+  doc.line(pageWidth - margin - 60, footerY, pageWidth - margin - 10, footerY)
+  doc.text("Guest's Signature", pageWidth - margin - 35, footerY + 5, { align: 'center' })
 
   return doc
 }
 
-// Helper function to mask ID number
+function drawSummaryRow(doc: jsPDF, label: string, value: number, x: number, y: number, valX: number) {
+  doc.text(label, x, y)
+  doc.text(formatCurrency(value), valX, y, { align: 'right' })
+}
+
+function formatDate(date: any): string {
+  if (!date) return 'NA'
+  try {
+    return new Date(date).toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+  } catch (e) {
+    return 'NA'
+  }
+}
+
+function formatDateOnly(date: any): string {
+  if (!date) return 'NA'
+  try {
+    return new Date(date).toLocaleString('en-IN', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    })
+  } catch (e) {
+    return 'NA'
+  }
+}
+
 export function maskIdNumber(idNumber: string | null | undefined, idType?: string): string {
   if (!idNumber) return 'N/A'
-
-  // Requirement: "Last 4 digits of their ID"
   if (idNumber.length >= 4) {
     return `XXXX XXXX ${idNumber.substring(idNumber.length - 4)}`
   }
-
-  return idNumber // Return as is if too short
+  return idNumber
 }
