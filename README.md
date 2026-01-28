@@ -2,7 +2,7 @@
 
 A comprehensive internal hotel management system built with Next.js, PostgreSQL, and Prisma. Designed for efficient room booking, billing, and operations management
 
-## Features
+## Feature
 
 - **Room Management**: Manage AC and Non-AC rooms with real-time availability
 - **Booking Management**: Easy check-in process with manual checkout
