@@ -9,11 +9,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { bookingId, foodItemId, quantity } = await request.json()
+    const { bookingId, foodItemId, quantity, chefId } = await request.json()
 
     if (!bookingId || !foodItemId || !quantity) {
       return NextResponse.json(
         { error: 'Booking ID, food item ID, and quantity are required' },
+        { status: 400 }
+      )
+    }
+
+    if (!chefId) {
+      return NextResponse.json(
+        { error: 'Chef selection is required' },
         { status: 400 }
       )
     }
@@ -47,11 +54,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Food item is disabled' }, { status: 400 })
     }
 
+    // Validate Chef
+    const chef = await prisma.user.findUnique({
+      where: { id: chefId },
+    })
+
+    if (!chef) {
+      return NextResponse.json({ error: 'Chef not found' }, { status: 404 })
+    }
+
     const foodOrder = await prisma.foodOrder.create({
       data: {
         bookingId,
         foodItemId,
         quantity: parseInt(quantity),
+        chefId,
+        chefName: chef.name,
       },
     })
 

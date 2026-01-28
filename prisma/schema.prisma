@@ -59,6 +59,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   expenses Expense[]
+  chefOrders FoodOrder[] @relation("ChefOrders")
 
   @@map("users")
 }
@@ -172,6 +173,9 @@ model FoodOrder {
   quantity   Int
   invoiceId  String? // Track which invoice this order belongs to (null = not invoiced)
   invoice    Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  chefId     String?
+  chefName   String?
+  chef       User?    @relation("ChefOrders", fields: [chefId], references: [id])
   createdAt  DateTime @default(now())
 
   @@map("food_orders")
