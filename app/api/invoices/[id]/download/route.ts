@@ -106,9 +106,16 @@ export async function GET(
       }
     }
 
+    // Get payment mode
+    const payment = await prisma.payment.findFirst({
+      where: { bookingId: invoice.bookingId || undefined },
+      orderBy: { createdAt: 'desc' },
+    })
+
     const doc = generateBillPDF(settings, {
       invoiceNumber: invoice.invoiceNumber,
       billNumber: invoice.billNumber || null,
+      visitorRegistrationNumber: invoice.visitorRegistrationNumber || null,
       billDate: invoice.billDate ? new Date(invoice.billDate) : invoice.createdAt,
       guestName: invoice.guestName,
       guestAddress: invoice.guestAddress || null,
@@ -117,12 +124,23 @@ export async function GET(
       guestGstNumber: invoice.gstEnabled ? (invoice.guestGstNumber || null) : null,
       guestStateCode: invoice.guestStateCode || null,
       guestMobile: invoice.guestMobile || null,
+      idType: invoice.idType || null,
+      idNumber: invoice.idNumber || null,
       companyName: invoice.companyName || null,
       companyCode: invoice.companyCode || null,
-      roomNumber: invoice.booking?.room.roomNumber,
+      department: invoice.department || null,
+      designation: invoice.designation || null,
+      businessPhoneNumber: invoice.businessPhoneNumber || null,
+      roomNumber: invoice.booking?.room.roomNumber || invoice.roomNumber || undefined,
       roomType: invoice.booking?.room.roomType.name || invoice.roomType || undefined,
-      checkInDate: invoice.booking?.checkInDate,
-      checkoutDate: invoice.booking?.checkoutDate || undefined,
+      particulars: invoice.particulars || null,
+      rentPerDay: invoice.rentPerDay || 0,
+      numberOfDays: invoice.numberOfDays || 1,
+      checkInDate: invoice.booking?.checkInDate || invoice.checkInDate || undefined,
+      checkoutDate: invoice.booking?.checkoutDate || invoice.checkOutDate || undefined,
+      adults: invoice.adults || 1,
+      children: invoice.children || 0,
+      totalGuests: invoice.totalGuests || 1,
       days,
       roomCharges: invoice.roomCharges,
       tariff: invoice.tariff,
@@ -130,13 +148,14 @@ export async function GET(
       additionalGuestCharges: invoice.additionalGuestCharges,
       additionalGuests: invoice.booking?.additionalGuests || 0,
       gstEnabled: invoice.gstEnabled || false,
-      gstPercent: 5, // Default GST percent - could be stored in invoice if needed
+      gstPercent: 5, // Default GST percent if not stored
       gstAmount: invoice.gstAmount || 0,
       advanceAmount: invoice.advanceAmount || 0,
       roundOff: invoice.roundOff || 0,
       totalAmount: invoice.totalAmount,
-      paymentMode: 'CASH', // Payment mode not stored in invoice - could be added if needed
+      paymentMode: payment?.mode || 'CASH',
       showGst: invoice.gstEnabled || false,
+      purpose: invoice.purpose || null,
       foodItems, // Include food items for itemized kitchen bills
     })
 

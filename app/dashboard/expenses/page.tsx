@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
 import Pagination from '@/app/components/Pagination'
 import ExpenseBillPrint from '@/app/components/ExpenseBillPrint'
+import { useUserRole } from '@/lib/useUserRole'
 
 import { getLocalDateISOString } from '@/lib/utils'
 
@@ -29,6 +30,7 @@ interface Expense {
 }
 
 export default function ExpensesPage() {
+    const { isStaff } = useUserRole()
     // Expense manager is open to all users
     const [expenses, setExpenses] = useState<Expense[]>([])
     const [staffList, setStaffList] = useState<Staff[]>([])
@@ -278,7 +280,7 @@ export default function ExpensesPage() {
                                         </div>
                                         <div>
                                             <label className="block text-xs font-semibold text-[#111827] mb-1">
-                                                🧑‍💼 Staff Name <span className="text-red-600">*</span>
+                                                🧑‍💼 {isStaff ? 'Name' : <>Staff Name <span className="text-red-600">*</span></>}
                                             </label>
                                             <select
                                                 required

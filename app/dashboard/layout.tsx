@@ -36,7 +36,7 @@ export default function DashboardLayout({
     { href: '/dashboard/payments', label: 'Payments', icon: '💳', managerOnly: false },
     { href: '/dashboard/tours', label: 'Tours & Travel', icon: '🚌', managerOnly: false },
     { href: '/dashboard/reports', label: 'Reports', icon: '📈', managerOnly: false },
-    { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾', managerOnly: true },
+    { href: '/dashboard/bills/generate', label: 'Generate Bill', icon: '🧾', managerOnly: false },
     { href: '/dashboard/bills/history', label: 'Bill History', icon: '📜', managerOnly: false },
     { href: '/dashboard/kitchen-bills', label: 'Kitchen Bills', icon: '🍳', managerOnly: false },
     { href: '/dashboard/expenses', label: 'Expense Manager', icon: '💸', managerOnly: false },
@@ -87,8 +87,8 @@ export default function DashboardLayout({
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-150 ${isActive
-                    ? 'bg-[#8E0E1C] text-white'
-                    : 'text-[#111827] hover:bg-[#F8FAFC]'
+                  ? 'bg-[#8E0E1C] text-white'
+                  : 'text-[#111827] hover:bg-[#F8FAFC]'
                   }`}
               >
                 <span className="text-xl">{item.icon}</span>

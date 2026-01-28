@@ -44,10 +44,7 @@ export default function CheckoutPage() {
   const [baseAmount, setBaseAmount] = useState(0)
   const [tariff, setTariff] = useState(0)
   const [additionalGuestCharges, setAdditionalGuestCharges] = useState(0)
-  const [showGst, setShowGst] = useState(true) // Default to show GST
-  const [gstEnabled, setGstEnabled] = useState(false)
-  const [gstPercent, setGstPercent] = useState(5)
-  const [gstNumber, setGstNumber] = useState('')
+  // GST removed
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'ONLINE'>('CASH')
   const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PENDING'>('PENDING')
   const [kitchenBillPaid, setKitchenBillPaid] = useState(false)
@@ -121,7 +118,6 @@ export default function CheckoutPage() {
             setCompanyName(data.companyName || '')
             setDepartment(data.department || '')
             setDesignation(data.designation || '')
-            setGstNumber(data.guestGstNumber || '')
 
             // Fetch previous food bills for this booking
             const billsResponse = await fetch(`/api/invoices?type=FOOD&bookingId=${bookingId}`, {
@@ -208,7 +204,7 @@ export default function CheckoutPage() {
     }
 
     const baseTotal = baseAmount + tariff + additionalGuestsTotal + (showCombinedFoodBill ? combinedFoodTotal : 0)
-    const gstAmount = (gstEnabled && showGst) ? (baseTotal * gstPercent) / 100 : 0
+    const gstAmount = 0
     const subtotal = baseTotal + gstAmount
 
     // Calculate round-off
@@ -232,7 +228,7 @@ export default function CheckoutPage() {
       combinedFoodTotal,
       complimentary,
       gstAmount,
-      gstPercent,
+      gstPercent: 0,
       subtotal,
       roundOff: calculatedRoundOff,
       total
@@ -285,7 +281,8 @@ export default function CheckoutPage() {
       setRoundOff(totals.roundOff)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseAmount, tariff, additionalGuestCharges, gstEnabled, gstPercent, showCombinedFoodBill, complimentary, autoRoundOff])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseAmount, tariff, additionalGuestCharges, showCombinedFoodBill, complimentary, autoRoundOff])
 
   const handleCheckout = async () => {
     if (!booking) return
@@ -305,11 +302,12 @@ export default function CheckoutPage() {
           baseAmount: totals.baseAmount,
           tariff: totals.tariff,
           additionalGuestCharges,
-          gstEnabled,
-          showGst,
-          gstPercent: gstEnabled ? gstPercent : 0,
-          gstNumber: gstEnabled ? gstNumber : null,
+          gstEnabled: false,
+          showGst: false,
+          gstPercent: 0,
+          gstNumber: null,
           paymentStatus,
+          paymentMode,
           kitchenBillPaid,
           showCombinedFoodBill,
           complimentary: showCombinedFoodBill ? complimentary : 0,
@@ -628,67 +626,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="showGst"
-              checked={showGst}
-              onChange={(e) => setShowGst(e.target.checked)}
-              className="mr-2"
-            />
-            <label htmlFor="showGst" className="text-sm font-medium text-gray-900 cursor-pointer">
-              Show GST on Bill
-            </label>
-          </div>
-        </div>
-
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="gstEnabled"
-            checked={gstEnabled}
-            onChange={(e) => setGstEnabled(e.target.checked)}
-            className="mr-2"
-          />
-          <label htmlFor="gstEnabled" className="text-sm font-medium text-gray-900 cursor-pointer">
-            Include GST (5%)
-          </label>
-        </div>
-
-        {gstEnabled && (
-          <>
-            <div>
-              <label htmlFor="gstPercent" className="block text-sm font-medium text-gray-700 mb-2">
-                GST Percentage (%)
-              </label>
-              <input
-                id="gstPercent"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={gstPercent}
-                onChange={(e) => setGstPercent(Number.parseFloat(e.target.value) || 5)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                placeholder="5"
-              />
-            </div>
-            <div>
-              <label htmlFor="gstNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                GST Number
-              </label>
-              <input
-                id="gstNumber"
-                type="text"
-                value={gstNumber}
-                onChange={(e) => setGstNumber(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder:text-gray-500"
-                placeholder="Enter GST number"
-              />
-            </div>
-          </>
-        )}
+        {/* GST Section Removed */}
 
         <div>
           <label htmlFor="paymentMode" className="block text-sm font-medium text-gray-700 mb-2">
@@ -791,12 +729,7 @@ export default function CheckoutPage() {
               <span className="font-medium text-red-600">- ₹{totals.complimentary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
-          {(gstEnabled && showGst) && (
-            <div className="flex justify-between">
-              <span className="text-gray-700">GST ({gstPercent}%):</span>
-              <span className="font-medium">₹{totals.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
+
           {totals.roundOff !== 0 && (
             <div className="flex justify-between">
               <span className="text-gray-700">Round-off:</span>
