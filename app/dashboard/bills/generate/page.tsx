@@ -4,6 +4,8 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
+import { getLocalDateISOString } from '@/lib/utils'
+
 interface Room {
   id: string
   roomNumber: string
@@ -19,7 +21,7 @@ export default function BillGeneratorPage() {
     bookingId: '',
     visitorRegistrationNumber: '', // Auto-generated
     billNumber: '',
-    billDate: new Date().toISOString().split('T')[0],
+    billDate: getLocalDateISOString(),
     guestName: '',
     guestAddress: '',
     guestState: '',
@@ -38,8 +40,8 @@ export default function BillGeneratorPage() {
     particulars: '', // Selection from rooms
     rentPerDay: '',
     numberOfDays: '1',
-    checkInDate: new Date().toISOString().split('T')[0],
-    checkOutDate: new Date().toISOString().split('T')[0],
+    checkInDate: getLocalDateISOString(),
+    checkOutDate: getLocalDateISOString(),
     adults: '1',
     children: '0',
     totalGuests: '1', // Calculated field

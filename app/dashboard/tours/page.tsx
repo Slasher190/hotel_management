@@ -6,6 +6,8 @@ import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
 import Pagination from '@/app/components/Pagination'
 
+import { getLocalDateISOString } from '@/lib/utils'
+
 interface BusBooking {
   id: string
   busNumber: string
@@ -23,7 +25,7 @@ function ToursContent() {
   const [bookings, setBookings] = useState<BusBooking[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(
-    searchParams.get('date') || new Date().toISOString().split('T')[0]
+    searchParams.get('date') || getLocalDateISOString()
   )
   const [showAll, setShowAll] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
