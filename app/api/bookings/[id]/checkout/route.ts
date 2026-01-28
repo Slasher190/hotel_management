@@ -302,6 +302,9 @@ export async function POST(
     })
   } catch (error) {
     console.error('Error during checkout:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : 'Internal server error',
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 })
   }
 }

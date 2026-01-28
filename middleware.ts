@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
+  const token = request.cookies.get('token')?.value ||
+    request.headers.get('authorization')?.replace('Bearer ', '')
 
   // Public routes
   const publicRoutes = ['/', '/login', '/api/auth/login']
-  const isPublicRoute = publicRoutes.some(route => 
+  const isPublicRoute = publicRoutes.some(route =>
     request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith('/api/auth/login')
   )
 

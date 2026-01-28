@@ -307,6 +307,7 @@ export default function CheckoutPage() {
           gstPercent: 0,
           gstNumber: null,
           paymentStatus,
+          paymentMode,
           kitchenBillPaid,
           showCombinedFoodBill,
           complimentary: showCombinedFoodBill ? complimentary : 0,
