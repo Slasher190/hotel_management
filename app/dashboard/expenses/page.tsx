@@ -45,7 +45,8 @@ export default function ExpensesPage() {
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
-    const itemsPerPage = 10
+    const [itemsPerPage] = useState(10)
+    const [totalItems, setTotalItems] = useState(0)
 
     const [formData, setFormData] = useState({
         staffId: '',
@@ -74,6 +75,7 @@ export default function ExpensesPage() {
             if (expensesRes.ok) {
                 setExpenses(expensesData.expenses || [])
                 setTotalPages(expensesData.pagination?.pages || 1)
+                setTotalItems(expensesData.pagination?.total || 0)
             }
             if (staffRes.ok) {
                 const staffOnly = (staffData as Staff[]).filter(s => s.role === 'STAFF')
@@ -159,9 +161,24 @@ export default function ExpensesPage() {
         }
     }
 
-    const handlePrint = (expense: Expense) => {
-        setPrintExpense(expense)
-        // Check if we need to give time for state update
+    const handlePrint = (expense: Expense, index: number) => {
+        // Calculate serial number: Total - (Offset + Index)
+        // This ensures the newest item (Top of Page 1) has the highest number (e.g. 100),
+        // and the oldest item (Bottom of Last Page) has 1.
+        // Offset = (currentPage - 1) * itemsPerPage
+
+        const offset = (currentPage - 1) * itemsPerPage
+        // Logic: If Total is 100. Page 1, Item 0. 100 - (0 + 0) = 100.
+        // Page 1, Item 1. 100 - (0 + 1) = 99.
+        // We use Math.max(1, ...) to ensure it never goes below 1 for any reason.
+        const serialNumber = Math.max(1, totalItems - (offset + index))
+
+        const printData = {
+            ...expense,
+            serialNumber: `EXP-${serialNumber.toString().padStart(4, '0')}`
+        }
+
+        setPrintExpense(printData as any) // Type assertion
         setTimeout(() => {
             window.print()
         }, 100)
@@ -174,7 +191,7 @@ export default function ExpensesPage() {
             {/* Thermal Print Component */}
             {printExpense && (
                 <ThermalSlip
-                    lotNumber={`EXP-${printExpense.id.slice(-6).toUpperCase()}`}
+                    lotNumber={(printExpense as any).serialNumber || `EXP-${printExpense.id.slice(-6).toUpperCase()}`}
                     dateTime={new Date(printExpense.date).toLocaleDateString('en-IN', {
                         day: '2-digit',
                         month: 'short',
@@ -191,6 +208,7 @@ export default function ExpensesPage() {
                     }]}
                     subtotal={printExpense.amount}
                     total={printExpense.amount}
+                    title="Expense Bill"
                 />
             )}
 
@@ -232,7 +250,7 @@ export default function ExpensesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#CBD5E1] bg-white">
-                            {expenses.map((expense) => (
+                            {expenses.map((expense, index) => (
                                 <tr key={expense.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 text-sm text-[#111827]">
                                         {new Date(expense.date).toLocaleDateString('en-IN')}
@@ -245,7 +263,7 @@ export default function ExpensesPage() {
                                     </td>
                                     <td className="px-6 py-4 text-right space-x-2">
                                         <button
-                                            onClick={() => handlePrint(expense)}
+                                            onClick={() => handlePrint(expense, index)}
                                             className="text-gray-600 hover:text-gray-900"
                                             title="Print"
                                         >
