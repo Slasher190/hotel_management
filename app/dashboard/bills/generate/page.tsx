@@ -6,13 +6,23 @@ import toast from 'react-hot-toast'
 
 import { getLocalDateISOString } from '@/lib/utils'
 
+// Helper to get local date time string for datetime-local input
+const getLocalDateTimeString = () => {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 16)
+}
+
+interface RoomType {
+  id: string
+  name: string
+  price: number
+}
+
 interface Room {
   id: string
   roomNumber: string
-  roomType: {
-    name: string
-    price: number
-  }
+  roomType: RoomType
 }
 
 export default function BillGeneratorPage() {
@@ -36,12 +46,13 @@ export default function BillGeneratorPage() {
     designation: '',
     businessPhoneNumber: '',
     purpose: '', // Mandatory field
+    roomTypeId: '', // Added for filtering
     roomNumber: '', // Auto-filled from particulars selection
     particulars: '', // Selection from rooms
     rentPerDay: '',
     numberOfDays: '1',
-    checkInDate: getLocalDateISOString(),
-    checkOutDate: getLocalDateISOString(),
+    checkInDate: getLocalDateTimeString(),
+    checkOutDate: getLocalDateTimeString(),
     adults: '1',
     children: '0',
     totalGuests: '1', // Calculated field
@@ -62,9 +73,10 @@ export default function BillGeneratorPage() {
   })
   const [loading, setLoading] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [loadingRooms, setLoadingRooms] = useState(true)
 
-  // Fetch rooms for particulars selection
+  // Fetch rooms and room types
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -85,8 +97,41 @@ export default function BillGeneratorPage() {
       }
     }
 
+    const fetchRoomTypes = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/room-types', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setRoomTypes(data)
+        }
+      } catch (error) {
+        console.error('Error fetching room types:', error)
+      }
+    }
+
     fetchRooms()
+    fetchRoomTypes()
   }, [])
+
+  // Handle Room Type Change (Logic from bookings/new)
+  useEffect(() => {
+    if (formData.roomTypeId) {
+      const selectedType = roomTypes.find(rt => rt.id === formData.roomTypeId)
+      if (selectedType) {
+        setFormData(prev => ({
+          ...prev,
+          rentPerDay: selectedType.price?.toString() || '',
+          particulars: '', // Reset room selection
+          roomNumber: ''
+        }))
+      }
+    }
+  }, [formData.roomTypeId, roomTypes])
 
   // Auto-generate visitor registration number
   useEffect(() => {
@@ -132,6 +177,28 @@ export default function BillGeneratorPage() {
     }
   }
 
+  // Auto-calculate Number of Days
+  useEffect(() => {
+    if (formData.checkInDate && formData.checkOutDate) {
+      const checkIn = new Date(formData.checkInDate)
+      const checkOut = new Date(formData.checkOutDate)
+
+      if (!isNaN(checkIn.getTime()) && !isNaN(checkOut.getTime())) {
+        const diffTime = checkOut.getTime() - checkIn.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        // Ensure at least 1 day, even for same day or negative
+        const days = Math.max(1, diffDays)
+
+        setFormData(prev => {
+          if (prev.numberOfDays !== days.toString()) {
+            return { ...prev, numberOfDays: days.toString() }
+          }
+          return prev
+        })
+      }
+    }
+  }, [formData.checkInDate, formData.checkOutDate])
+
   const calculations = useMemo(() => {
     const roomCharges = Number.parseFloat(formData.roomCharges) || 0
     const tariff = Number.parseFloat(formData.tariff) || 0
@@ -170,10 +237,23 @@ export default function BillGeneratorPage() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validation: Check-out must be after Check-in
+    if (new Date(formData.checkOutDate) <= new Date(formData.checkInDate)) {
+      toast.error('Check-out time must be after Check-in time')
+      return
+    }
+
     setLoading(true)
 
     try {
       const token = localStorage.getItem('token')
+
+      // Get room type name from selected roomTypeId
+      const selectedRoomType = roomTypes.find(rt => rt.id === formData.roomTypeId)
+      const roomTypeName = selectedRoomType ? selectedRoomType.name : ''
+      const particularsText = roomTypeName // Use Room Type Name as Particulars
+
       const response = await fetch('/api/bills/generate', {
         method: 'POST',
         headers: {
@@ -182,6 +262,8 @@ export default function BillGeneratorPage() {
         },
         body: JSON.stringify({
           ...formData,
+          roomType: roomTypeName, // Send room type name
+          particulars: particularsText, // Send room type name as particulars
           roomCharges: calculations.roomCharges,
           tariff: calculations.tariff,
           foodCharges: calculations.foodCharges,
@@ -556,20 +638,37 @@ export default function BillGeneratorPage() {
               <div className="p-6 sm:p-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-[#111827] mb-3">🏠 Particulars (Room Selection)</label>
-                    <select
-                      value={formData.particulars}
-                      onChange={(e) => handleParticularsChange(e.target.value)}
-                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                      disabled={loadingRooms}
-                    >
-                      <option value="">Select a room</option>
-                      {rooms.map((room) => (
-                        <option key={room.id} value={room.id}>
-                          {room.roomNumber} - {room.roomType.name} (Rent: ₹{room.roomType.price})
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">Select Room (Manual)</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.roomTypeId}
+                        onChange={(e) => setFormData({ ...formData, roomTypeId: e.target.value })}
+                        className="w-1/2 px-2 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] font-medium bg-white"
+                        disabled={loadingRooms}
+                      >
+                        <option value="">Type</option>
+                        {roomTypes.map((rt) => (
+                          <option key={rt.id} value={rt.id}>
+                            {rt.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.particulars}
+                        onChange={(e) => handleParticularsChange(e.target.value)}
+                        className="w-1/2 px-2 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] font-medium bg-white"
+                        disabled={!formData.roomTypeId || loadingRooms}
+                      >
+                        <option value="">No.</option>
+                        {rooms
+                          .filter(r => !formData.roomTypeId || (r.roomType as any)?.id === formData.roomTypeId || r.roomType?.name === roomTypes.find(rt => rt.id === formData.roomTypeId)?.name)
+                          .map((room) => (
+                            <option key={room.id} value={room.id}>
+                              {room.roomNumber} (₹{room.roomType.price})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div>
@@ -602,14 +701,14 @@ export default function BillGeneratorPage() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="hidden">
                     <label className="block text-sm font-semibold text-[#111827] mb-3">📅 Number of Days</label>
                     <input
                       type="number"
                       min="1"
                       value={formData.numberOfDays}
-                      onChange={(e) => setFormData({ ...formData, numberOfDays: e.target.value })}
-                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      readOnly
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] bg-gray-100 font-medium"
                       placeholder="1"
                     />
                   </div>
@@ -617,7 +716,7 @@ export default function BillGeneratorPage() {
                   <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">📥 Check In Date</label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       value={formData.checkInDate}
                       onChange={(e) => setFormData({ ...formData, checkInDate: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
@@ -627,7 +726,7 @@ export default function BillGeneratorPage() {
                   <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">📤 Check Out Date</label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       value={formData.checkOutDate}
                       onChange={(e) => setFormData({ ...formData, checkOutDate: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
@@ -713,7 +812,7 @@ export default function BillGeneratorPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-[#111827] mb-3">👥 Additional Guests</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">👥 Additional Guests / Blanket Charges</label>
                     <input
                       type="number"
                       min="0"

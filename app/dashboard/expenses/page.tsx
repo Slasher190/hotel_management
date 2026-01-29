@@ -269,13 +269,15 @@ export default function ExpensesPage() {
                                         >
                                             🖨️
                                         </button>
-                                        <button
-                                            onClick={() => handleDelete(expense.id)}
-                                            className="text-red-600 hover:text-red-900"
-                                            title="Delete"
-                                        >
-                                            🗑️
-                                        </button>
+                                        {!isStaff && (
+                                            <button
+                                                onClick={() => handleDelete(expense.id)}
+                                                className="text-red-600 hover:text-red-900"
+                                                title="Delete"
+                                            >
+                                                🗑️
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
