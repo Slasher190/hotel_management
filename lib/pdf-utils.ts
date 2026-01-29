@@ -134,9 +134,11 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   doc.text(contactText, centerX, yPos, { align: 'center' })
   yPos += 5
 
-  const gstinText = `GSTIN : ${checkVal(settings.gstin)}`
-  doc.text(gstinText, centerX, yPos, { align: 'center' })
-  yPos += 7
+  if (billData.gstAmount > 0) {
+    const gstinText = `GSTIN : ${checkVal(settings.gstin)}`
+    doc.text(gstinText, centerX, yPos, { align: 'center' })
+    yPos += 7
+  }
 
   // Border below header
   doc.setDrawColor(0, 0, 0)
@@ -433,7 +435,7 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   }
 
   // Room Charges
-  drawSafeSumLine('Room Charges Before Tax', roomBase, sumY)
+  drawSafeSumLine('Room Charges ', roomBase, sumY)
   sumY += rowHeight
 
   // GST Room

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { useUserRole } from '@/lib/useUserRole'
 
 import { getLocalDateISOString, getLocalDateTimeISOString } from '@/lib/utils'
 
@@ -26,6 +27,7 @@ interface RoomType {
 
 export default function NewBookingPage() {
   const router = useRouter()
+  const { isManager } = useUserRole()
   const [rooms, setRooms] = useState<Room[]>([])
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [formData, setFormData] = useState({
@@ -468,7 +470,8 @@ export default function NewBookingPage() {
                     type="number"
                     value={formData.roomPrice}
                     onChange={(e) => setFormData({ ...formData, roomPrice: e.target.value })}
-                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                    readOnly={!isManager}
+                    className={`w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] ${!isManager ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
                   />
                 </div>
               </div>
@@ -490,23 +493,12 @@ export default function NewBookingPage() {
                     type="number"
                     value={formData.discount}
                     onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
+                    readOnly={!isManager}
+                    className={`w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] ${!isManager ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''}`}
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#111827] mb-2">Advance Amount</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
-                  <input
-                    type="number"
-                    value={(formData as any).advanceAmount || ''}
-                    onChange={(e) => setFormData({ ...formData, advanceAmount: e.target.value } as any)}
-                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-[#111827] mb-2">Extra Guest Charge</label>
                 <div className="relative">

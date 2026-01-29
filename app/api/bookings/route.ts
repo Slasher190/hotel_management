@@ -111,9 +111,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = requireManager(request)
+    const user = requireStaffOrManager(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
+      return NextResponse.json({ error: 'Unauthorized - Staff or Manager access required' }, { status: 403 })
     }
 
     const {

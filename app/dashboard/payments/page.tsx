@@ -162,7 +162,7 @@ function PaymentsContent() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+      {/* <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div className="flex-1 w-full">
             <label htmlFor="search" className="block text-sm font-semibold text-[#111827] mb-2">🔍 Search</label>
@@ -289,14 +289,14 @@ function PaymentsContent() {
             </div>
           </div>
         )}
-      </div>
+      </div> */}
 
       <div className="flex gap-2 sm:gap-3 flex-wrap">
         <Link
           href="/dashboard/payments"
           className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === null
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+            ? 'bg-[#8E0E1C] text-white'
+            : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
             }`}
         >
           📋 All
@@ -304,8 +304,8 @@ function PaymentsContent() {
         <Link
           href="/dashboard/payments?status=PENDING"
           className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === 'PENDING'
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+            ? 'bg-[#8E0E1C] text-white'
+            : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
             }`}
         >
           ⏳ Pending
@@ -313,8 +313,8 @@ function PaymentsContent() {
         <Link
           href="/dashboard/payments?status=PAID"
           className={`px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-bold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === 'PAID'
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+            ? 'bg-[#8E0E1C] text-white'
+            : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
             }`}
         >
           ✅ Paid
@@ -374,8 +374,8 @@ function PaymentsContent() {
                     <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                       <span
                         className={`px-2 py-1 text-xs font-bold rounded-full ${payment.status === 'PAID'
-                            ? 'bg-[#64748B] text-white'
-                            : 'bg-[#8E0E1C] text-white'
+                          ? 'bg-[#64748B] text-white'
+                          : 'bg-[#8E0E1C] text-white'
                           }`}
                       >
                         {payment.status}

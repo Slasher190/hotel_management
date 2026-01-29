@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireManager } from '@/lib/role-auth'
+import { requireManager, requireStaffOrManager } from '@/lib/role-auth'
 import { generateBillPDF } from '@/lib/pdf-utils'
 
 export async function POST(
@@ -8,10 +8,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = requireManager(request)
+    const user = requireStaffOrManager(request)
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
+      return NextResponse.json({ error: 'Unauthorized - Staff or Manager access required' }, { status: 403 })
     }
+
+    const { role } = user
+    const isManager = role === 'MANAGER'
 
     const { id } = await params
     const {
@@ -65,7 +68,8 @@ export async function POST(
     const checkoutDateTime = checkoutDate ? new Date(checkoutDate) : new Date()
 
     // Calculate totals using editable baseAmount and tariff
-    const roomCharges = Number.parseFloat(baseAmount) || booking.roomPrice
+    // If user is Staff, use the original booking room price to prevent tampering
+    const roomCharges = isManager ? (Number.parseFloat(baseAmount) || booking.roomPrice) : booking.roomPrice
     const tariffAmount = Number.parseFloat(tariff) || 0
     const additionalGuestChargesValue = Number.parseFloat(additionalGuestCharges) || booking.additionalGuestCharges || 0
     const additionalGuestsTotal = booking.additionalGuests > 0

@@ -176,13 +176,7 @@ export default function AddFoodPage() {
         // Let's check if there are users with role 'CHEF'. If not, functionality might be blocked.
         // For safety, I will include 'CHEF' and maybe 'MANAGER' if they act as chef?
         // Starting with strict 'CHEF'.
-        const chefList = data.filter(u => u.role === 'CHEF' || u.role === 'MANAGER') // Allow Manager for testing/flexibility?
-        // Prompt said "Options: List of all available Chefs". 
-        // I will stick to 'CHEF' role but fallback to all if needed? No, strict is better.
-        // Wait, the Schema has 'CHEF' role.
-        // Let's use data.filter(u => u.role === 'CHEF').
-        // But if I am testing and I only have a Manager account, I might need to assign myself?
-        // I'll show 'CHEF' and 'MANAGER' to be safe for dev environments where roles are loose.
+        const chefList = data.filter(u => u.role === 'CHEF')
         setChefs(chefList)
       }
     } catch {

@@ -813,10 +813,10 @@ export default function BillGeneratorPage() {
                         className="w-5 h-5 text-[#8E0E1C] border-[#CBD5E1] rounded focus:ring-[#8E0E1C] cursor-pointer"
                       />
                       <label htmlFor="showGst" className="ml-3 text-sm font-semibold text-[#111827] cursor-pointer">
-                        🧾 Show GST on Bill (Default: Unchecked)
+                        🧾 Show GST on Bill (Default: Checked)
                       </label>
                     </div>
-                    <div className="flex items-center p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]">
+                    {/* <div className="flex items-center p-4 bg-[#F8FAFC] rounded-lg border border-[#CBD5E1]">
                       <input
                         type="checkbox"
                         id="gstEnabled"
@@ -827,7 +827,7 @@ export default function BillGeneratorPage() {
                       <label htmlFor="gstEnabled" className="ml-3 text-sm font-semibold text-[#111827] cursor-pointer">
                         ➕ Include GST in Calculation
                       </label>
-                    </div>
+                    </div> */}
                   </div>
 
                   {formData.showGst && (
@@ -845,7 +845,7 @@ export default function BillGeneratorPage() {
                           placeholder="5"
                         />
                       </div>
-                      <div>
+                      {/* <div>
                         <label className="block text-sm font-semibold text-[#111827] mb-3">🆔 GST Number</label>
                         <input
                           type="text"
@@ -854,7 +854,7 @@ export default function BillGeneratorPage() {
                           className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
                           placeholder="Enter GST number"
                         />
-                      </div>
+                      </div> */}
                     </div>
                   )}
                 </div>

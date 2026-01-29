@@ -49,7 +49,7 @@ export default function PoliceVerificationPage() {
       setLoading(true)
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
-        status: 'ACTIVE',
+
         showAll: 'true',
         dateFrom: date,
         dateTo: date, // Single date range
