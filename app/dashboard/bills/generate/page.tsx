@@ -713,7 +713,7 @@ export default function BillGeneratorPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-[#111827] mb-3">👥 Additional Guests</label>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">👥 Additional Guests / Blanket Charges</label>
                     <input
                       type="number"
                       min="0"
