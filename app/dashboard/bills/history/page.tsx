@@ -444,7 +444,7 @@ function BillsHistoryContent() {
 
         {/* Filter Tabs */}
         <div className="flex gap-2 sm:gap-3 flex-wrap border-b border-[#CBD5E1] pb-2">
-          <button
+          {/* <button
             onClick={() => {
               setFilterType('all')
               setPage(1)
@@ -455,7 +455,7 @@ function BillsHistoryContent() {
               }`}
           >
             📋 All Bills
-          </button>
+          </button> */}
           <button
             onClick={() => {
               setFilterType('manual')
