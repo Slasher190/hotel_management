@@ -498,19 +498,7 @@ export default function NewBookingPage() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-[#111827] mb-2">Advance Amount</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
-                  <input
-                    type="number"
-                    value={(formData as any).advanceAmount || ''}
-                    onChange={(e) => setFormData({ ...formData, advanceAmount: e.target.value } as any)}
-                    className="w-full pl-8 pr-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C]"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-[#111827] mb-2">Extra Guest Charge</label>
                 <div className="relative">

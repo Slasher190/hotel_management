@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import KitchenBillPrint from '../../../components/KitchenBillPrint'
+import { useUserRole } from '@/lib/useUserRole'
 
 interface Booking {
   id: string
@@ -39,6 +40,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const params = useParams()
   const bookingId = params?.id as string
+  const { isManager } = useUserRole()
 
   const [booking, setBooking] = useState<Booking | null>(null)
   const [baseAmount, setBaseAmount] = useState(0)
@@ -590,7 +592,8 @@ export default function CheckoutPage() {
             step="0.01"
             value={baseAmount}
             onChange={(e) => setBaseAmount(Number.parseFloat(e.target.value) || 0)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            readOnly={!isManager}
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 placeholder:text-gray-500 ${!isManager ? 'bg-gray-100 cursor-not-allowed' : ''}`}
             placeholder="Enter room charges"
           />
         </div>
