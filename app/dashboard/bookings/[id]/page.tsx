@@ -9,6 +9,7 @@ import { useUserRole } from '@/lib/useUserRole'
 interface Booking {
   id: string
   guestName: string
+  guestMobile: string | null
   idType: string
   idNumber: string | null
   additionalGuests: number
@@ -439,6 +440,10 @@ export default function BookingDetailPage() {
               <div className="flex justify-between">
                 <span className="text-gray-900 font-medium">Name:</span>
                 <span className="font-semibold text-gray-900">{booking.guestName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-900 font-medium">Phone Number:</span>
+                <span className="font-semibold text-gray-900">{booking.guestMobile || 'NA'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-900 font-medium">ID Type:</span>
