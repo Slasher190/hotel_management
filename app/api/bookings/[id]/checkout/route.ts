@@ -235,9 +235,11 @@ export async function POST(
     }
 
     // Calculate days
-    const days = Math.ceil(
+    // Calculate days - enforce minimum 1 day
+    const daysRaw = Math.ceil(
       (checkoutDateTime.getTime() - new Date(booking.checkInDate).getTime()) / (1000 * 60 * 60 * 24)
     )
+    const days = Math.max(1, daysRaw)
 
     // Generate PDF using utility function - use invoice data for all fields
     const doc = generateBillPDF(settings, {

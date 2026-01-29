@@ -205,12 +205,15 @@ export function generateBillPDF(settings: HotelSettings, billData: BillData): js
   const valY = tableTopY + 14
   doc.setFont('times', 'normal')
 
-  const roomRate = billData.rentPerDay || (billData.days && billData.days > 0 ? billData.roomCharges / billData.days : billData.roomCharges)
+  // Enforce minimum 1 day for display and calculations
+  const displayDays = Math.max(1, billData.days || (billData.numberOfDays || 1))
+
+  const roomRate = billData.rentPerDay || (billData.roomCharges / displayDays)
 
   doc.text(checkVal(billData.roomNumber), col1X + 17, valY, { align: 'center' })
   doc.text(checkVal(billData.roomType), col2X + 37, valY, { align: 'center' })
   doc.text(formatCurrency(roomRate), col3X + 22, valY, { align: 'center' }) // Sample aligns center/right
-  doc.text(checkVal(billData.days), col4X + 17, valY, { align: 'center' })
+  doc.text(checkVal(displayDays), col4X + 17, valY, { align: 'center' })
 
   doc.line(margin, tableTopY + 20, pageWidth - margin, tableTopY + 20)
 
