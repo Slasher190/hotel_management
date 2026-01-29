@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
 import Pagination from '@/app/components/Pagination'
 import ThermalSlip from '@/app/components/ThermalSlip'
+import { useUserRole } from '@/lib/useUserRole'
 
 import { getLocalDateISOString } from '@/lib/utils'
 
@@ -21,6 +22,7 @@ interface BusBooking {
 }
 
 function ToursContent() {
+  const { isStaff } = useUserRole()
   const searchParams = useSearchParams()
   // Tours manager is open to all users
   const [bookings, setBookings] = useState<BusBooking[]>([])
@@ -392,12 +394,14 @@ function ToursContent() {
                       >
                         {booking.status === 'BOOKED' ? '⏳ Mark Pending' : '✅ Mark Booked'}
                       </button>
-                      <button
-                        onClick={() => handleDelete(booking.id, booking.busNumber)}
-                        className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity duration-150 min-h-[44px]"
-                      >
-                        🗑️ Delete
-                      </button>
+                      {!isStaff && (
+                        <button
+                          onClick={() => handleDelete(booking.id, booking.busNumber)}
+                          className="px-3 py-2 bg-[#8E0E1C] text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity duration-150 min-h-[44px]"
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
