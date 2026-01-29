@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import toast from 'react-hot-toast'
-import { maskIdNumber } from '@/lib/pdf-utils'
 
-import { getLocalDateISOString } from '@/lib/utils'
+import { getLocalDateISOString, maskIdNumber } from '@/lib/utils'
 
 interface Booking {
   id: string

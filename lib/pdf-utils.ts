@@ -560,11 +560,3 @@ function formatTimeOnly(date: any): string {
     })
   } catch (e) { return '' }
 }
-
-export function maskIdNumber(idNumber: string | null | undefined, idType?: string): string {
-  if (!idNumber) return 'N/A'
-  if (idNumber.length >= 4) {
-    return `XXXX XXXX ${idNumber.substring(idNumber.length - 4)}`
-  }
-  return idNumber
-}

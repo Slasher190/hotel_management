@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
-import { maskIdNumber } from '@/lib/pdf-utils'
+import { maskIdNumber } from '@/lib/utils'
 import { Prisma } from '@prisma/client'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -47,10 +47,10 @@ export async function GET(request: NextRequest) {
     if (format === 'pdf') {
       // Generate PDF
       const doc = new jsPDF()
-      
+
       doc.setFontSize(16)
       doc.text('Police Verification Record', 105, 20, { align: 'center' })
-      
+
       doc.setFontSize(10)
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' })
 
