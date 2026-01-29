@@ -49,7 +49,7 @@ export default function CheckoutPage() {
   const [gstEnabled, setGstEnabled] = useState(false)
   const [gstPercent, setGstPercent] = useState(12)
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'ONLINE'>('CASH')
-  const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PENDING'>('PENDING')
+  const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PENDING'>('PAID')
   const [kitchenBillPaid, setKitchenBillPaid] = useState(false)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
