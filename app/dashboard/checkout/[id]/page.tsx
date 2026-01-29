@@ -44,7 +44,8 @@ export default function CheckoutPage() {
   const [baseAmount, setBaseAmount] = useState(0)
   const [tariff, setTariff] = useState(0)
   const [additionalGuestCharges, setAdditionalGuestCharges] = useState(0)
-  // GST removed
+  const [gstEnabled, setGstEnabled] = useState(false)
+  const [gstPercent, setGstPercent] = useState(12)
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'ONLINE'>('CASH')
   const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'PENDING'>('PENDING')
   const [kitchenBillPaid, setKitchenBillPaid] = useState(false)
@@ -203,8 +204,9 @@ export default function CheckoutPage() {
       combinedFoodTotal = previousBillsTotal + currentFoodTotal - complimentary
     }
 
+
     const baseTotal = baseAmount + tariff + additionalGuestsTotal + (showCombinedFoodBill ? combinedFoodTotal : 0)
-    const gstAmount = 0
+    const gstAmount = gstEnabled ? (baseTotal * gstPercent) / 100 : 0
     const subtotal = baseTotal + gstAmount
 
     // Calculate round-off
@@ -228,7 +230,7 @@ export default function CheckoutPage() {
       combinedFoodTotal,
       complimentary,
       gstAmount,
-      gstPercent: 0,
+      gstPercent: gstEnabled ? gstPercent : 0,
       subtotal,
       roundOff: calculatedRoundOff,
       total
@@ -282,7 +284,7 @@ export default function CheckoutPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseAmount, tariff, additionalGuestCharges, showCombinedFoodBill, complimentary, autoRoundOff])
+  }, [baseAmount, tariff, additionalGuestCharges, showCombinedFoodBill, complimentary, autoRoundOff, gstEnabled, gstPercent])
 
   const handleCheckout = async () => {
     if (!booking) return
@@ -302,9 +304,9 @@ export default function CheckoutPage() {
           baseAmount: totals.baseAmount,
           tariff: totals.tariff,
           additionalGuestCharges,
-          gstEnabled: false,
-          showGst: false,
-          gstPercent: 0,
+          gstEnabled,
+          showGst: gstEnabled,
+          gstPercent: gstEnabled ? gstPercent : 0,
           gstNumber: null,
           paymentStatus,
           paymentMode,
@@ -626,7 +628,41 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* GST Section Removed */}
+        {/* GST Section */}
+        <div className="border-t pt-4 pb-2">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="gstEnabled"
+                checked={gstEnabled}
+                onChange={(e) => setGstEnabled(e.target.checked)}
+                className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="gstEnabled" className="text-sm font-medium text-gray-900 cursor-pointer">
+                Include GST on Total
+              </label>
+            </div>
+          </div>
+
+          {gstEnabled && (
+            <div>
+              <label htmlFor="gstPercent" className="block text-sm font-medium text-gray-700 mb-2">
+                GST Percentage (%)
+              </label>
+              <input
+                id="gstPercent"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={gstPercent}
+                onChange={(e) => setGstPercent(Number.parseFloat(e.target.value) || 0)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900"
+              />
+            </div>
+          )}
+        </div>
 
         <div>
           <label htmlFor="paymentMode" className="block text-sm font-medium text-gray-700 mb-2">
@@ -727,6 +763,12 @@ export default function CheckoutPage() {
             <div className="flex justify-between">
               <span className="text-gray-700">Complimentary/Discount:</span>
               <span className="font-medium text-red-600">- ₹{totals.complimentary.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {totals.gstAmount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-gray-700">GST ({totals.gstPercent}%):</span>
+              <span className="font-medium">₹{totals.gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
 
