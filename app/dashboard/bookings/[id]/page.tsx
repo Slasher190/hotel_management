@@ -19,6 +19,10 @@ interface Booking {
   status: string
   checkInDate: string
   checkoutDate: string | null
+  createdAt: string
+  adults: number
+  children: number
+  visitorRegistrationNumber: number | null
   room: {
     roomNumber: string
     roomType: {
@@ -457,35 +461,44 @@ export default function BookingDetailPage() {
             </div>
           </div>
 
-          {/* Room Information */}
+          {/* Booking Information - Unified Card */}
           <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Room Information</h3>
-            <div className="space-y-2 text-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Information</h3>
+            <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-900 font-medium">Room Number:</span>
-                <span className="font-semibold text-gray-900">{booking.room.roomNumber}</span>
+                <span className="text-gray-900 font-medium">Booking ID:</span>
+                <span className="font-semibold text-gray-900">{booking.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-900 font-medium">Room Type:</span>
-                <span className="font-semibold text-gray-900">{booking.room.roomType.name}</span>
+                <span className="text-gray-900 font-medium">Registration No:</span>
+                <span className="font-semibold text-gray-900">{booking.visitorRegistrationNumber || 'NA'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-900 font-medium">Room Price:</span>
-                <span className="font-semibold text-gray-900">₹{booking.roomPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-gray-900 font-medium">Booking Date:</span>
+                <span className="font-semibold text-gray-900">
+                  {new Date(booking.createdAt).toLocaleString('en-IN', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
               </div>
-              {booking.tariff && booking.tariff > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-900 font-medium">Tariff:</span>
-                  <span className="font-semibold text-gray-900">₹{booking.tariff.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-              )}
-            </div>
-          </div>
+              <div className="border-t border-gray-100 my-2"></div>
 
-          {/* Booking Dates */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Dates</h3>
-            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-900 font-medium">Status:</span>
+                <span
+                  className={`px-2 py-1 text-xs font-semibold rounded-full ${booking.status === 'ACTIVE'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                    }`}
+                >
+                  {booking.status}
+                </span>
+              </div>
+
               <div className="flex justify-between">
                 <span className="text-gray-900 font-medium">Check-In:</span>
                 <span className="font-semibold text-gray-900">
@@ -499,7 +512,7 @@ export default function BookingDetailPage() {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-900 font-medium">Checkout:</span>
+                <span className="text-gray-900 font-medium">Check-out:</span>
                 <span className="font-semibold text-gray-900">
                   {booking.checkoutDate
                     ? new Date(booking.checkoutDate).toLocaleString('en-IN', {
@@ -512,17 +525,55 @@ export default function BookingDetailPage() {
                     : 'Not checked out'}
                 </span>
               </div>
+
               <div className="flex justify-between">
-                <span className="text-gray-900 font-medium">Status:</span>
-                <span
-                  className={`px-2 py-1 text-xs font-semibold rounded-full ${booking.status === 'ACTIVE'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                    }`}
-                >
-                  {booking.status}
+                <span className="text-gray-900 font-medium">No. of Days:</span>
+                <span className="font-bold text-indigo-600">
+                  {(() => {
+                    const checkIn = new Date(booking.checkInDate)
+                    const checkOut = booking.checkoutDate ? new Date(booking.checkoutDate) : new Date()
+                    const diffTime = checkOut.getTime() - checkIn.getTime()
+                    const days = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
+                    return `${days} Day${days > 1 ? 's' : ''}`
+                  })()}
                 </span>
               </div>
+
+              <div className="border-t border-gray-100 my-2"></div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-900 font-medium">Room Details:</span>
+                <span className="font-semibold text-gray-900">
+                  {booking.room.roomNumber} ({booking.room.roomType.name})
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-900 font-medium">Guests:</span>
+                <span className="font-semibold text-gray-900">
+                  {booking.adults} Adults, {booking.children} Children
+                  {booking.additionalGuests > 0 && ` (+${booking.additionalGuests} Extra)`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-900 font-medium">Total Guests:</span>
+                <span className="font-semibold text-gray-900">
+                  {booking.adults + booking.children + booking.additionalGuests}
+                </span>
+              </div>
+
+              <div className="border-t border-gray-100 my-2"></div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-900 font-medium">Room Price:</span>
+                <span className="font-semibold text-gray-900">₹{booking.roomPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              {(booking.tariff || 0) !== 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-900 font-medium">Tariff:</span>
+                  <span className="font-semibold text-gray-900">₹{(booking.tariff || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
