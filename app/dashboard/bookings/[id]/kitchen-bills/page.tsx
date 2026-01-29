@@ -309,14 +309,14 @@ export default function KitchenBillsPage() {
                 <button
                   onClick={handleFinalizeBill}
                   disabled={finalizing || bills.length === 0}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold disabled:opacity-50"
+                  className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50 flex items-center gap-2"
                 >
                   {finalizing ? 'Saving...' : '💾 Save & Finalize'}
                 </button>
               )}
               <button
                 onClick={handlePrintMasterBill}
-                className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold"
+                className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50 flex items-center gap-2"
               >
                 <span>🖨️</span> Print Final Bill
               </button>
