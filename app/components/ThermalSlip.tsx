@@ -11,26 +11,32 @@ interface ThermalSlipProps {
     lotNumber: string
     dateTime: string
     roomNumber?: string
+    roomLabel?: string
     guestName: string
     guestLabel?: string
     attendantName?: string
     items: ThermalSlipItem[]
     subtotal: number
     discount?: number
+    discountLabel?: string
     total: number
+    title?: string
 }
 
 export default function ThermalSlip({
     lotNumber,
     dateTime,
     roomNumber,
+    roomLabel = 'ROOM NO.',
     guestName,
     guestLabel = 'GUEST',
     attendantName = 'Staff',
     items,
     subtotal,
     discount = 0,
+    discountLabel = 'Complimentary / Discount',
     total,
+    title = 'Kitchen Bill',
 }: ThermalSlipProps) {
     return (
         <div id="thermal-slip" className="hidden print:block fixed inset-0 bg-white z-[9999] p-0">
@@ -40,7 +46,7 @@ export default function ThermalSlip({
                 {/* Header */}
                 <div className="text-center mb-3 border-b border-dashed border-gray-400 pb-2">
                     <div className="font-bold text-sm uppercase">HOTEL SAMRAT INN</div>
-                    <div className="text-[10px] mt-1">Kitchen Bill</div>
+                    <div className="text-[10px] mt-1">{title}</div>
                 </div>
 
                 {/* Bill Info */}
@@ -55,7 +61,7 @@ export default function ThermalSlip({
                     </div>
                     {roomNumber && (
                         <div className="flex justify-between">
-                            <span>ROOM NO.</span>
+                            <span>{roomLabel}</span>
                             <span className="font-bold">{roomNumber}</span>
                         </div>
                     )}
@@ -109,7 +115,7 @@ export default function ThermalSlip({
                     </div>
                     {discount > 0 && (
                         <div className="flex justify-between">
-                            <span>Complimentary / Discount</span>
+                            <span>{discountLabel}</span>
                             <span>-₹{discount.toFixed(2)}</span>
                         </div>
                     )}

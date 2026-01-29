@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
 import Pagination from '@/app/components/Pagination'
+import ThermalSlip from '@/app/components/ThermalSlip'
 
 import { getLocalDateISOString } from '@/lib/utils'
 
@@ -43,6 +44,7 @@ function ToursContent() {
     bookingAmount: '',
     advanceAmount: '',
   })
+  const [printableBooking, setPrintableBooking] = useState<BusBooking | null>(null)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -198,91 +200,12 @@ function ToursContent() {
     currentPage * itemsPerPage
   )
 
+
   const handlePrint = (booking: BusBooking) => {
-    const balance = (booking.bookingAmount || 0) - (booking.advanceAmount || 0)
-
-    const printWindow = window.open('', '', 'width=400,height=600')
-    if (!printWindow) return
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Bus Booking Slip</title>
-          <style>
-            body { font-family: monospace; padding: 20px; text-align: center; }
-            .header { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-            .divider { border-top: 1px dashed black; margin: 10px 0; }
-            .row { display: flex; justify-content: space-between; margin: 5px 0; }
-            .label { text-align: left; }
-            .value { text-align: right; font-weight: bold; }
-            .total { font-size: 16px; font-weight: bold; margin-top: 10px; }
-            .footer { margin-top: 20px; font-size: 12px; }
-            @media print {
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">BUS BOOKING SLIP</div>
-          <div>${new Date().toLocaleDateString('en-IN')}</div>
-          
-          <div class="divider"></div>
-          
-          <div class="row">
-            <span class="label">Bus Number:</span>
-            <span class="value">${booking.busNumber}</span>
-          </div>
-          <div class="row">
-            <span class="label">From Date:</span>
-            <span class="value">${new Date(booking.fromDate).toLocaleDateString('en-IN')}</span>
-          </div>
-          <div class="row">
-            <span class="label">To Date:</span>
-            <span class="value">${new Date(booking.toDate).toLocaleDateString('en-IN')}</span>
-          </div>
-          <div class="row">
-            <span class="label">Status:</span>
-            <span class="value">${booking.status}</span>
-          </div>
-          
-          <div class="divider"></div>
-          
-          <div class="row">
-            <span class="label">Booking Amount:</span>
-            <span class="value">₹${(booking.bookingAmount || 0).toLocaleString('en-IN')}</span>
-          </div>
-          <div class="row">
-            <span class="label">Advance Paid:</span>
-            <span class="value">₹${(booking.advanceAmount || 0).toLocaleString('en-IN')}</span>
-          </div>
-          
-          <div class="divider"></div>
-          
-          <div class="row total">
-            <span class="label">Balance Due:</span>
-            <span class="value">₹${balance.toLocaleString('en-IN')}</span>
-          </div>
-          
-          ${booking.notes ? `
-          <div class="divider"></div>
-          <div style="text-align: left; margin-top: 5px;">
-            <strong>Notes:</strong><br/>
-            ${booking.notes}
-          </div>
-          ` : ''}
-          
-          <div class="footer">
-            <br/>
-            Thank you for booking with us!
-          </div>
-          
-          <script>
-            window.onload = function() { window.print(); }
-          </script>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
+    setPrintableBooking(booking)
+    setTimeout(() => {
+      window.print()
+    }, 100)
   }
 
 
@@ -298,6 +221,28 @@ function ToursContent() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      {printableBooking && (
+        <ThermalSlip
+          title="Bus Booking Slip"
+          lotNumber={`BUS-${printableBooking.id.slice(-6).toUpperCase()}`}
+          dateTime={new Date().toLocaleString('en-IN')}
+          roomLabel="BUS NO."
+          roomNumber={printableBooking.busNumber}
+          guestName="Booked"
+          guestLabel="STATUS"
+          attendantName="Manager"
+          items={[{
+            id: printableBooking.id,
+            name: `Bus Booking (${new Date(printableBooking.fromDate).toLocaleDateString()} to ${new Date(printableBooking.toDate).toLocaleDateString()})`,
+            quantity: 1,
+            amount: printableBooking.bookingAmount || 0
+          }]}
+          subtotal={printableBooking.bookingAmount || 0}
+          discountLabel="Advance Paid"
+          discount={printableBooking.advanceAmount || 0}
+          total={(printableBooking.bookingAmount || 0) - (printableBooking.advanceAmount || 0)}
+        />
+      )}
       <Modal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, bookingId: null, busNumber: '' })}
@@ -424,6 +369,13 @@ function ToursContent() {
                   </td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
                     <div className="flex justify-end gap-2 flex-wrap">
+                      <button
+                        onClick={() => handlePrint(booking)}
+                        className="px-3 py-2 bg-gray-600 text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity duration-150 min-h-[44px]"
+                        title="Print Bill"
+                      >
+                        🖨️ Print
+                      </button>
 
 
                       <button
