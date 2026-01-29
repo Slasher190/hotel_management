@@ -6,13 +6,16 @@ import toast from 'react-hot-toast'
 
 import { getLocalDateISOString } from '@/lib/utils'
 
+interface RoomType {
+  id: string
+  name: string
+  price: number
+}
+
 interface Room {
   id: string
   roomNumber: string
-  roomType: {
-    name: string
-    price: number
-  }
+  roomType: RoomType
 }
 
 export default function BillGeneratorPage() {
@@ -36,6 +39,7 @@ export default function BillGeneratorPage() {
     designation: '',
     businessPhoneNumber: '',
     purpose: '', // Mandatory field
+    roomTypeId: '', // Added for filtering
     roomNumber: '', // Auto-filled from particulars selection
     particulars: '', // Selection from rooms
     rentPerDay: '',
@@ -62,9 +66,10 @@ export default function BillGeneratorPage() {
   })
   const [loading, setLoading] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([])
   const [loadingRooms, setLoadingRooms] = useState(true)
 
-  // Fetch rooms for particulars selection
+  // Fetch rooms and room types
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -85,8 +90,41 @@ export default function BillGeneratorPage() {
       }
     }
 
+    const fetchRoomTypes = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('/api/room-types', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setRoomTypes(data)
+        }
+      } catch (error) {
+        console.error('Error fetching room types:', error)
+      }
+    }
+
     fetchRooms()
+    fetchRoomTypes()
   }, [])
+
+  // Handle Room Type Change (Logic from bookings/new)
+  useEffect(() => {
+    if (formData.roomTypeId) {
+      const selectedType = roomTypes.find(rt => rt.id === formData.roomTypeId)
+      if (selectedType) {
+        setFormData(prev => ({
+          ...prev,
+          rentPerDay: selectedType.price?.toString() || '',
+          particulars: '', // Reset room selection
+          roomNumber: ''
+        }))
+      }
+    }
+  }, [formData.roomTypeId, roomTypes])
 
   // Auto-generate visitor registration number
   useEffect(() => {
@@ -556,20 +594,37 @@ export default function BillGeneratorPage() {
               <div className="p-6 sm:p-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-[#111827] mb-3">🏠 Particulars (Room Selection)</label>
-                    <select
-                      value={formData.particulars}
-                      onChange={(e) => handleParticularsChange(e.target.value)}
-                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-                      disabled={loadingRooms}
-                    >
-                      <option value="">Select a room</option>
-                      {rooms.map((room) => (
-                        <option key={room.id} value={room.id}>
-                          {room.roomNumber} - {room.roomType.name} (Rent: ₹{room.roomType.price})
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-sm font-semibold text-[#111827] mb-3">Select Room (Manual)</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.roomTypeId}
+                        onChange={(e) => setFormData({ ...formData, roomTypeId: e.target.value })}
+                        className="w-1/2 px-2 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] font-medium bg-white"
+                        disabled={loadingRooms}
+                      >
+                        <option value="">Type</option>
+                        {roomTypes.map((rt) => (
+                          <option key={rt.id} value={rt.id}>
+                            {rt.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={formData.particulars}
+                        onChange={(e) => handleParticularsChange(e.target.value)}
+                        className="w-1/2 px-2 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] font-medium bg-white"
+                        disabled={!formData.roomTypeId || loadingRooms}
+                      >
+                        <option value="">No.</option>
+                        {rooms
+                          .filter(r => !formData.roomTypeId || (r.roomType as any)?.id === formData.roomTypeId || r.roomType?.name === roomTypes.find(rt => rt.id === formData.roomTypeId)?.name)
+                          .map((room) => (
+                            <option key={room.id} value={room.id}>
+                              {room.roomNumber} (₹{room.roomType.price})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div>
