@@ -6,6 +6,13 @@ import toast from 'react-hot-toast'
 
 import { getLocalDateISOString } from '@/lib/utils'
 
+// Helper to get local date time string for datetime-local input
+const getLocalDateTimeString = () => {
+  const now = new Date()
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+  return now.toISOString().slice(0, 16)
+}
+
 interface RoomType {
   id: string
   name: string
@@ -44,8 +51,8 @@ export default function BillGeneratorPage() {
     particulars: '', // Selection from rooms
     rentPerDay: '',
     numberOfDays: '1',
-    checkInDate: getLocalDateISOString(),
-    checkOutDate: getLocalDateISOString(),
+    checkInDate: getLocalDateTimeString(),
+    checkOutDate: getLocalDateTimeString(),
     adults: '1',
     children: '0',
     totalGuests: '1', // Calculated field
@@ -170,6 +177,28 @@ export default function BillGeneratorPage() {
     }
   }
 
+  // Auto-calculate Number of Days
+  useEffect(() => {
+    if (formData.checkInDate && formData.checkOutDate) {
+      const checkIn = new Date(formData.checkInDate)
+      const checkOut = new Date(formData.checkOutDate)
+
+      if (!isNaN(checkIn.getTime()) && !isNaN(checkOut.getTime())) {
+        const diffTime = checkOut.getTime() - checkIn.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        // Ensure at least 1 day, even for same day or negative
+        const days = Math.max(1, diffDays)
+
+        setFormData(prev => {
+          if (prev.numberOfDays !== days.toString()) {
+            return { ...prev, numberOfDays: days.toString() }
+          }
+          return prev
+        })
+      }
+    }
+  }, [formData.checkInDate, formData.checkOutDate])
+
   const calculations = useMemo(() => {
     const roomCharges = Number.parseFloat(formData.roomCharges) || 0
     const tariff = Number.parseFloat(formData.tariff) || 0
@@ -208,6 +237,13 @@ export default function BillGeneratorPage() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validation: Check-out must be after Check-in
+    if (new Date(formData.checkOutDate) <= new Date(formData.checkInDate)) {
+      toast.error('Check-out time must be after Check-in time')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -665,14 +701,14 @@ export default function BillGeneratorPage() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="hidden">
                     <label className="block text-sm font-semibold text-[#111827] mb-3">📅 Number of Days</label>
                     <input
                       type="number"
                       min="1"
                       value={formData.numberOfDays}
-                      onChange={(e) => setFormData({ ...formData, numberOfDays: e.target.value })}
-                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                      readOnly
+                      className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] bg-gray-100 font-medium"
                       placeholder="1"
                     />
                   </div>
@@ -680,7 +716,7 @@ export default function BillGeneratorPage() {
                   <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">📥 Check In Date</label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       value={formData.checkInDate}
                       onChange={(e) => setFormData({ ...formData, checkInDate: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
@@ -690,7 +726,7 @@ export default function BillGeneratorPage() {
                   <div>
                     <label className="block text-sm font-semibold text-[#111827] mb-3">📤 Check Out Date</label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       value={formData.checkOutDate}
                       onChange={(e) => setFormData({ ...formData, checkOutDate: e.target.value })}
                       className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
