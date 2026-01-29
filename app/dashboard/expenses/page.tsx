@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import Modal from '@/app/components/Modal'
 import Pagination from '@/app/components/Pagination'
-import ExpenseBillPrint from '@/app/components/ExpenseBillPrint'
+import ThermalSlip from '@/app/components/ThermalSlip'
 import { useUserRole } from '@/lib/useUserRole'
 
 import { getLocalDateISOString } from '@/lib/utils'
@@ -168,7 +168,28 @@ export default function ExpensesPage() {
 
     return (
         <div className="space-y-6">
-            <ExpenseBillPrint expense={printExpense} />
+            {/* Thermal Print Component */}
+            {printExpense && (
+                <ThermalSlip
+                    lotNumber={`EXP-${printExpense.id.slice(-6).toUpperCase()}`}
+                    dateTime={new Date(printExpense.date).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                    })}
+                    guestLabel="PAID TO"
+                    guestName={printExpense.recipient}
+                    attendantName={printExpense.user.name}
+                    items={[{
+                        id: printExpense.id,
+                        name: printExpense.description,
+                        quantity: 1,
+                        amount: printExpense.amount
+                    }]}
+                    subtotal={printExpense.amount}
+                    total={printExpense.amount}
+                />
+            )}
 
             <div className="print:hidden space-y-6">
                 <Modal

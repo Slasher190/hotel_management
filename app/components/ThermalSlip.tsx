@@ -10,8 +10,9 @@ interface ThermalSlipItem {
 interface ThermalSlipProps {
     lotNumber: string
     dateTime: string
-    roomNumber: string
+    roomNumber?: string
     guestName: string
+    guestLabel?: string
     attendantName?: string
     items: ThermalSlipItem[]
     subtotal: number
@@ -24,6 +25,7 @@ export default function ThermalSlip({
     dateTime,
     roomNumber,
     guestName,
+    guestLabel = 'GUEST',
     attendantName = 'Staff',
     items,
     subtotal,
@@ -51,12 +53,14 @@ export default function ThermalSlip({
                         <span>DATE & TIME</span>
                         <span>{dateTime}</span>
                     </div>
+                    {roomNumber && (
+                        <div className="flex justify-between">
+                            <span>ROOM NO.</span>
+                            <span className="font-bold">{roomNumber}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between">
-                        <span>ROOM NO.</span>
-                        <span className="font-bold">{roomNumber}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>GUEST</span>
+                        <span>{guestLabel}</span>
                         <span>{guestName}</span>
                     </div>
                     {attendantName && (
