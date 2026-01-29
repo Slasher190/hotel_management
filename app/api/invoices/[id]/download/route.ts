@@ -50,7 +50,11 @@ export async function GET(
     if (invoice.booking) {
       const checkIn = new Date(invoice.booking.checkInDate)
       const checkout = invoice.booking.checkoutDate ? new Date(invoice.booking.checkoutDate) : new Date()
-      days = Math.ceil((checkout.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
+      const diffTime = checkout.getTime() - checkIn.getTime()
+      days = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24))) // Enforce minimum 1 day
+    } else {
+      // For manual bills, use the stored number of days or default to 1
+      days = Math.max(1, invoice.numberOfDays || 1)
     }
 
     // Prepare food items for FOOD invoices (kitchen bills)
@@ -133,7 +137,7 @@ export async function GET(
       businessPhoneNumber: invoice.businessPhoneNumber || null,
       roomNumber: invoice.booking?.room.roomNumber || invoice.roomNumber || undefined,
       roomType: invoice.booking?.room.roomType.name || invoice.roomType || undefined,
-      particulars: invoice.particulars || null,
+      particulars: invoice.particulars || invoice.roomType || null,
       rentPerDay: invoice.rentPerDay || 0,
       numberOfDays: invoice.numberOfDays || 1,
       checkInDate: invoice.booking?.checkInDate || invoice.checkInDate || undefined,

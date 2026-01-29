@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       roundOff,
       paymentMode,
       showGst = true, // Default to true, but can be unchecked
+      roomType, // Optional: passed from manual form
     } = await request.json()
 
     // Get hotel settings
@@ -116,11 +117,11 @@ export async function POST(request: NextRequest) {
         businessPhoneNumber: businessPhoneNumber || null,
         purpose: purpose || null,
         roomNumber: roomNumber || null,
-        roomType: booking?.room.roomType.name || null,
-        particulars: particulars || null,
+        roomType: booking?.room.roomType.name || roomType || null,
+        particulars: particulars || roomType || null,
 
         rentPerDay: Number.parseFloat(rentPerDay) || 0,
-        numberOfDays: Number.parseInt(numberOfDays) || 1,
+        numberOfDays: Math.max(1, Number.parseInt(numberOfDays) || 1), // Enforce minimum 1 day
         checkInDate: checkInDate ? new Date(checkInDate) : null,
         checkOutDate: checkOutDate ? new Date(checkOutDate) : null,
         adults: Number.parseInt(adults) || 1,
@@ -144,12 +145,10 @@ export async function POST(request: NextRequest) {
     // Calculate days if booking exists
     let days = 0
     if (booking) {
-      days = Math.ceil(
-        (booking.checkoutDate
-          ? new Date(booking.checkoutDate).getTime()
-          : Date.now() - new Date(booking.checkInDate).getTime()) /
-        (1000 * 60 * 60 * 24)
-      )
+      const diffTime = (booking.checkoutDate
+        ? new Date(booking.checkoutDate).getTime()
+        : Date.now() - new Date(booking.checkInDate).getTime())
+      days = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24))) // Enforce minimum 1 day
     }
 
     // Generate PDF using utility function
@@ -174,10 +173,10 @@ export async function POST(request: NextRequest) {
       designation: designation || null,
       businessPhoneNumber: businessPhoneNumber || null,
       roomNumber: roomNumber || booking?.room.roomNumber,
-      roomType: booking?.room.roomType.name,
-      particulars: particulars || null,
+      roomType: booking?.room.roomType.name || roomType,
+      particulars: particulars || roomType || null,
       rentPerDay: Number.parseFloat(rentPerDay) || 0,
-      numberOfDays: Number.parseInt(numberOfDays) || 1,
+      numberOfDays: Math.max(1, Number.parseInt(numberOfDays) || 1), // Enforce minimum 1 day
       checkInDate: checkInDate ? new Date(checkInDate) : booking?.checkInDate,
       checkoutDate: checkOutDate ? new Date(checkOutDate) : booking?.checkoutDate || undefined,
       adults: Number.parseInt(adults) || 1,

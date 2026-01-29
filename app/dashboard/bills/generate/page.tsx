@@ -212,6 +212,12 @@ export default function BillGeneratorPage() {
 
     try {
       const token = localStorage.getItem('token')
+
+      // Get room type name from selected roomTypeId
+      const selectedRoomType = roomTypes.find(rt => rt.id === formData.roomTypeId)
+      const roomTypeName = selectedRoomType ? selectedRoomType.name : ''
+      const particularsText = roomTypeName // Use Room Type Name as Particulars
+
       const response = await fetch('/api/bills/generate', {
         method: 'POST',
         headers: {
@@ -220,6 +226,8 @@ export default function BillGeneratorPage() {
         },
         body: JSON.stringify({
           ...formData,
+          roomType: roomTypeName, // Send room type name
+          particulars: particularsText, // Send room type name as particulars
           roomCharges: calculations.roomCharges,
           tariff: calculations.tariff,
           foodCharges: calculations.foodCharges,
