@@ -453,7 +453,7 @@ export default function AddFoodPage() {
               <button
                 type="submit"
                 disabled={adding}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="px-4 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold disabled:opacity-50 flex items-center gap-2"
               >
                 {adding ? 'Adding...' : 'Add Food Item'}
               </button>
@@ -628,7 +628,9 @@ export default function AddFoodPage() {
           }).replace(/\//g, '-')}
           roomNumber={booking.room.roomNumber}
           guestName={booking.guestName}
-          attendantName="Staff"
+          attendantName={
+            Array.from(new Set(printableBill.foodOrders.map(o => o.chefName).filter(Boolean))).join(', ') || 'Staff'
+          }
           items={printableBill.foodOrders.map(order => ({
             id: order.id,
             name: order.foodItem.name + (order.chefName ? ` (Chef: ${order.chefName})` : ''),
