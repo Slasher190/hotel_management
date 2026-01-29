@@ -75,7 +75,10 @@ export default function ExpensesPage() {
                 setExpenses(expensesData.expenses || [])
                 setTotalPages(expensesData.pagination?.pages || 1)
             }
-            if (staffRes.ok) setStaffList(staffData)
+            if (staffRes.ok) {
+                const staffOnly = (staffData as Staff[]).filter(s => s.role === 'STAFF')
+                setStaffList(staffOnly)
+            }
         } catch (error) {
             console.error('Error fetching data:', error)
             toast.error('Failed to load data')
