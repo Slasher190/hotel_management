@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireStaffOrManager } from '@/lib/role-auth'
 import { generateBillPDF } from '@/lib/pdf-utils'
+import { getCurrentDate } from '@/lib/date-utils'
 
 // Generate backdated bill
 export async function POST(request: NextRequest) {
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     const totalAmount = baseTotal + gstAmount - advance + roundOffValue
 
     // Generate invoice number
-    const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    const invoiceNumber = `INV-${getCurrentDate().getTime()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
     // Save invoice to database (for history)
     // Manual bills are completely independent - no bookingId required
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
         advanceAmount: advance,
         roundOff: roundOffValue,
         totalAmount,
-        billDate: billDate ? new Date(billDate) : new Date(),
+        billDate: billDate ? new Date(billDate) : getCurrentDate(),
       },
     })
 
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
     if (booking) {
       const diffTime = (booking.checkoutDate
         ? new Date(booking.checkoutDate).getTime()
-        : Date.now() - new Date(booking.checkInDate).getTime())
+        : getCurrentDate().getTime() - new Date(booking.checkInDate).getTime())
       days = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24))) // Enforce minimum 1 day
     }
 
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
       invoiceNumber,
       visitorRegistrationNumber: visitorRegistrationNumber || null,
       billNumber: billNumber || null,
-      billDate: billDate || new Date(),
+      billDate: billDate || getCurrentDate(),
       guestName,
       guestAddress: guestAddress || null,
       guestState: guestState || null,

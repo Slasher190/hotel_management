@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireManager, requireStaffOrManager } from '@/lib/role-auth'
 import { generateBillPDF } from '@/lib/pdf-utils'
+import { getCurrentDate } from '@/lib/date-utils'
 
 export async function POST(
   request: NextRequest,
@@ -65,7 +66,7 @@ export async function POST(
       return NextResponse.json({ error: 'Booking already checked out' }, { status: 400 })
     }
 
-    const checkoutDateTime = checkoutDate ? new Date(checkoutDate) : new Date()
+    const checkoutDateTime = checkoutDate ? new Date(checkoutDate) : getCurrentDate()
 
     // Calculate totals using editable baseAmount and tariff
     // If user is Staff, use the original booking room price to prevent tampering
@@ -133,7 +134,7 @@ export async function POST(
     })
 
     // Generate Invoice Number
-    const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    const invoiceNumber = `INV-${getCurrentDate().getTime()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
     // Prepare food items for PDF (itemized)
     // Sort by creation date

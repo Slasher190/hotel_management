@@ -1,13 +1,19 @@
+// Returns YYYY-MM-DD in IST
 export function getLocalDateISOString(date = new Date()): string {
-    const offset = date.getTimezoneOffset()
-    const localDate = new Date(date.getTime() - (offset * 60 * 1000))
-    return localDate.toISOString().split('T')[0]
+    const d = new Date(date)
+    // Add 5 hours 30 minutes to get IST "wall clock" time in UTC object
+    const istOffset = 5.5 * 60 * 60 * 1000
+    const istDate = new Date(d.getTime() + istOffset)
+    return istDate.toISOString().split('T')[0]
 }
 
+// Returns YYYY-MM-DDTHH:mm in IST (compatible with datetime-local input)
 export function getLocalDateTimeISOString(date = new Date()): string {
-    const offset = date.getTimezoneOffset()
-    const localDate = new Date(date.getTime() - (offset * 60 * 1000))
-    return localDate.toISOString().slice(0, 16)
+    const d = new Date(date)
+    // Add 5 hours 30 minutes to get IST
+    const istOffset = 5.5 * 60 * 60 * 1000
+    const istDate = new Date(d.getTime() + istOffset)
+    return istDate.toISOString().slice(0, 16)
 }
 
 export function maskIdNumber(idNumber: string | null | undefined, idType?: string): string {

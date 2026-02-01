@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { formatDateIST, formatDateTimeIST } from './date-utils'
 
 /**
  * Data structure for bill generation
@@ -75,26 +76,14 @@ export function formatCurrency(amount: number): string {
  * Format date for display
  */
 export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  return formatDateIST(date)
 }
 
 /**
  * Format date and time for display
  */
 export function formatDateTime(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatDateTimeIST(date)
 }
 
 /**

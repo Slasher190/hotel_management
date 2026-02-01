@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { startOfDayIST, endOfDayIST } from '@/lib/date-utils'
 import { prisma } from '@/lib/prisma'
 import { requireStaffOrManager } from '@/lib/role-auth'
 import { Prisma } from '@prisma/client'
@@ -46,10 +47,18 @@ export async function GET(request: NextRequest) {
     if (dateFrom || dateTo) {
       where.createdAt = {}
       if (dateFrom) {
-        where.createdAt.gte = new Date(dateFrom)
+        where.createdAt.gte = startOfDayIST(dateFrom)
       }
       if (dateTo) {
-        where.createdAt.lte = new Date(dateTo)
+        where.createdAt.lte = endOfDayIST(dateTo)
+      }
+
+      // Validate date range: dateFrom should be <= dateTo
+      if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+        return NextResponse.json(
+          { error: 'Date From must be less than or equal to Date To' },
+          { status: 400 }
+        )
       }
     }
     if (minAmount || maxAmount) {

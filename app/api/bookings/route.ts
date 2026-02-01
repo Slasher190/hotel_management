@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { startOfDayIST, endOfDayIST, getCurrentDate } from '@/lib/date-utils'
 import { prisma } from '@/lib/prisma'
 import { requireStaffOrManager, requireManager } from '@/lib/role-auth'
 import { Prisma, BookingStatus } from '@prisma/client'
@@ -43,16 +44,12 @@ export async function GET(request: NextRequest) {
     if (dateFrom || dateTo) {
       where.checkInDate = {}
       if (dateFrom) {
-        // dateFrom should be the start of the day (00:00:00)
-        const fromDate = new Date(dateFrom)
-        fromDate.setHours(0, 0, 0, 0)
-        where.checkInDate.gte = fromDate
+        // dateFrom should be the start of the day in IST
+        where.checkInDate.gte = startOfDayIST(dateFrom)
       }
       if (dateTo) {
-        // dateTo should be the end of the day (23:59:59)
-        const toDate = new Date(dateTo)
-        toDate.setHours(23, 59, 59, 999)
-        where.checkInDate.lte = toDate
+        // dateTo should be the end of the day in IST
+        where.checkInDate.lte = endOfDayIST(dateTo)
       }
       // Validate date range: dateFrom should be <= dateTo
       if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
@@ -183,7 +180,7 @@ export async function POST(request: NextRequest) {
         mattresses: parseInt(mattresses) || 0,
         roomPrice: parseFloat(roomPrice),
         discount: parseFloat(discount) || 0,
-        checkInDate: checkInDate ? new Date(checkInDate) : undefined,
+        checkInDate: checkInDate ? new Date(checkInDate) : getCurrentDate(),
         status: 'ACTIVE',
       },
     })

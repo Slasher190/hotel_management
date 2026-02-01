@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, format } from 'date-fns'
+import { startOfDayIST, endOfDayIST, getISTDate } from '@/lib/date-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,9 +12,34 @@ export async function GET(request: NextRequest) {
     }
 
     const monthParam = request.nextUrl.searchParams.get('month')
-    const month = monthParam ? new Date(monthParam + '-01') : new Date()
-    const start = startOfMonth(month)
-    const end = endOfMonth(month)
+    let start, end
+
+    if (monthParam) {
+      // monthParam is YYYY-MM
+      start = startOfDayIST(`${monthParam}-01`)
+      // Get last day of month by creating a date and finding endOfMonth
+      // We can rely on date-fns endOfMonth on the parsed date, then formatted back to string to pass to endOfDayIST
+      // or easier: just add 1 month to start and subtract 1ms? No, variable days.
+
+      const parts = monthParam.split('-')
+      const year = parseInt(parts[0])
+      const month = parseInt(parts[1])
+      // Last day of month
+      const lastDay = new Date(year, month, 0).getDate() // day 0 of next month is last day of this month
+      end = endOfDayIST(`${monthParam}-${lastDay}`)
+    } else {
+      // Current month in IST
+      const nowIST = getISTDate()
+      const currentYear = nowIST.getFullYear()
+      const currentMonth = nowIST.getMonth() + 1 // 1-indexed
+
+      // Pad month
+      const monthStr = currentMonth.toString().padStart(2, '0')
+      start = startOfDayIST(`${currentYear}-${monthStr}-01`)
+
+      const lastDay = new Date(currentYear, currentMonth, 0).getDate()
+      end = endOfDayIST(`${currentYear}-${monthStr}-${lastDay}`)
+    }
 
     // Total bookings for the month
     const totalBookings = await prisma.booking.count({
@@ -97,7 +123,7 @@ export async function GET(request: NextRequest) {
           { status: 'PENDING' },
         ],
         toDate: {
-          gte: new Date(), // Only count tours that haven't ended
+          gte: getISTDate(), // Only count tours that haven't ended in IST logic
         },
       },
     })
