@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireManager, requireStaffOrManager } from '@/lib/role-auth'
 import { generateBillPDF } from '@/lib/pdf-utils'
+import { getCurrentDate } from '@/lib/date-utils'
 
 export async function POST(
   request: NextRequest,
@@ -65,7 +66,64 @@ export async function POST(
       return NextResponse.json({ error: 'Booking already checked out' }, { status: 400 })
     }
 
-    const checkoutDateTime = checkoutDate ? new Date(checkoutDate) : new Date()
+    // Check if food orders exist, if so ensuring Master Kitchen Bill is generated
+    if (booking.foodOrders.length > 0) {
+      const masterBill = await prisma.invoice.findFirst({
+        where: {
+          bookingId: id,
+          invoiceType: 'KITCHEN_MASTER',
+        },
+      })
+
+      if (!masterBill) {
+        // Auto-generate Master Kitchen Bill
+        const subtotal = booking.foodOrders.reduce((sum, order) => sum + (order.foodItem.price * order.quantity), 0)
+        const finalDiscount = 0 // Default to 0 discount for auto-generated bills during checkout
+
+        // Generate Master Invoice with retry logic
+        let masterInvoice
+        let attempts = 0
+        const maxAttempts = 5
+
+        while (attempts < maxAttempts) {
+          try {
+            // Use IST date for invoice number generation
+            const dateStr = getCurrentDate().toISOString().slice(2, 10).replace(/-/g, '')
+            const count = await prisma.invoice.count({
+              where: {
+                invoiceNumber: {
+                  startsWith: `MST-${dateStr}`
+                }
+              }
+            })
+            const invoiceNumber = `MST-${dateStr}-${(count + 1).toString().padStart(3, '0')}`
+
+            masterInvoice = await prisma.invoice.create({
+              data: {
+                bookingId: id,
+                invoiceNumber,
+                invoiceType: 'KITCHEN_MASTER',
+                guestName: booking?.guestName || 'Guest',
+                totalAmount: subtotal - finalDiscount,
+                foodCharges: subtotal,
+                discount: finalDiscount,
+                billDate: getCurrentDate(),
+              }
+            })
+            break
+          } catch (error: any) {
+            if (error.code === 'P2002' && attempts < maxAttempts - 1) {
+              attempts++
+              await new Promise(resolve => setTimeout(resolve, 50 * attempts))
+              continue
+            }
+            throw error
+          }
+        }
+      }
+    }
+
+    const checkoutDateTime = checkoutDate ? new Date(checkoutDate) : getCurrentDate()
 
     // Calculate totals using editable baseAmount and tariff
     // If user is Staff, use the original booking room price to prevent tampering
@@ -133,7 +191,7 @@ export async function POST(
     })
 
     // Generate Invoice Number
-    const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    const invoiceNumber = `INV-${getCurrentDate().getTime()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
     // Prepare food items for PDF (itemized)
     // Sort by creation date
@@ -244,9 +302,7 @@ export async function POST(
     // Generate PDF using utility function - use invoice data for all fields
     const doc = generateBillPDF(settings, {
       invoiceNumber,
-      billNumber: booking.visitorRegistrationNumber?.toString(), // Use visitor no as bill no / register no? Image has both.
-      // Actually image has: Visitor's Register Sr. No. AND Bill No.
-      // We'll pass both.
+      billNumber: booking.billNumber || null,
       visitorRegistrationNumber: booking.visitorRegistrationNumber?.toString(),
       billDate: checkoutDateTime,
 

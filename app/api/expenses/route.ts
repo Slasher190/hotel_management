@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
+import { getCurrentDate } from '@/lib/date-utils'
 
 // Get expenses
 export async function GET(request: NextRequest) {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
                 recipient,
                 description,
                 amount: Number(amount),
-                date: date ? new Date(date) : new Date(),
+                date: date ? new Date(date) : getCurrentDate(),
             },
             include: {
                 user: {
