@@ -302,9 +302,7 @@ export async function POST(
     // Generate PDF using utility function - use invoice data for all fields
     const doc = generateBillPDF(settings, {
       invoiceNumber,
-      billNumber: booking.visitorRegistrationNumber?.toString(), // Use visitor no as bill no / register no? Image has both.
-      // Actually image has: Visitor's Register Sr. No. AND Bill No.
-      // We'll pass both.
+      billNumber: booking.billNumber || null,
       visitorRegistrationNumber: booking.visitorRegistrationNumber?.toString(),
       billDate: checkoutDateTime,
 
