@@ -20,6 +20,14 @@ enum BookingStatus {
   CHECKED_OUT
 }
 
+enum ReservationStatus {
+  PENDING       // Awaiting confirmation
+  CONFIRMED     // Reservation confirmed
+  CANCELLED     // Guest cancelled
+  NO_SHOW       // Guest didn't arrive
+  COMPLETED     // Converted to active booking
+}
+
 enum PaymentMode {
   CASH
   ONLINE
@@ -101,7 +109,8 @@ model Room {
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
-  bookings Booking[]
+  bookings     Booking[]
+  reservations Reservation[]
 
   @@map("rooms")
 }
@@ -142,9 +151,10 @@ model Booking {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  foodOrders FoodOrder[]
-  invoices   Invoice[]
-  payments   Payment[]
+  foodOrders  FoodOrder[]
+  invoices    Invoice[]
+  payments    Payment[]
+  reservation Reservation?
 
   @@map("bookings")
 }
@@ -289,4 +299,41 @@ model Expense {
   user        User     @relation(fields: [staffId], references: [id])
 
   @@map("expenses")
+}
+
+model Reservation {
+  id                String            @id @default(cuid())
+  reservationNumber String            @unique
+  roomId            String
+  room              Room              @relation(fields: [roomId], references: [id])
+  
+  // Guest Information
+  guestName         String
+  guestEmail        String?
+  guestMobile       String
+  guestAddress      String?
+  
+  // Booking Details
+  checkInDate       DateTime
+  checkOutDate      DateTime
+  expectedArrival   String?           // e.g., "2:00 PM"
+  numberOfNights    Int               @default(1)
+  adults            Int               @default(1)
+  children          Int               @default(0)
+  
+  // Pricing
+  roomRate          Float
+  advanceAmount     Float             @default(0)
+  totalAmount       Float             @default(0)
+  specialRequests   String?
+  
+  // Status & Tracking
+  status            ReservationStatus @default(PENDING)
+  bookingId         String?           @unique
+  booking           Booking?          @relation(fields: [bookingId], references: [id])
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("reservations")
 }

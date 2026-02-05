@@ -12,6 +12,9 @@ interface DashboardStats {
   availableRooms: number
   occupiedRooms: number
   activeTours: number
+  pendingReservations?: number
+  confirmedReservations?: number
+  todayArrivals?: number
 }
 
 export default function DashboardPage() {
@@ -121,6 +124,20 @@ export default function DashboardPage() {
       href: '/dashboard/tours',
       roles: ['ADMIN', 'MANAGER', 'STAFF'],
     },
+    {
+      title: 'Today\'s Arrivals',
+      value: stats?.todayArrivals || 0,
+      icon: '🛬',
+      href: '/dashboard/reservations?status=CONFIRMED',
+      roles: ['ADMIN', 'MANAGER', 'STAFF'],
+    },
+    {
+      title: 'Pending Reservations',
+      value: stats?.pendingReservations || 0,
+      icon: '📅',
+      href: '/dashboard/reservations?status=PENDING',
+      roles: ['ADMIN', 'MANAGER', 'STAFF'],
+    },
   ].filter(card => !card.roles || card.roles.includes(userRole || 'ADMIN')) // Default to ADMIN view if role not found, or maybe safe default? Assuming ADMIN for now if undefined to avoid hiding everything on load, but clearer is to wait.
   // Actually, better to assume restricted if unsure, but for UX 'ADMIN' default usually for dev. 
   // Let's stick to: if userRole is set, filter. If not set yet (loading), maybe show empty?
@@ -209,6 +226,13 @@ export default function DashboardPage() {
           >
             <span className="text-xl">➕</span>
             <span className="text-sm sm:text-base">Add New Booking</span>
+          </Link>
+          <Link
+            href="/dashboard/reservations/new"
+            className="px-4 py-3 sm:px-6 sm:py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 text-center font-semibold flex items-center justify-center gap-2 min-h-[44px]"
+          >
+            <span className="text-xl">📅</span>
+            <span className="text-sm sm:text-base">New Reservation</span>
           </Link>
           <Link
             href="/dashboard/bookings?status=ACTIVE"

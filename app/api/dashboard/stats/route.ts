@@ -131,6 +131,32 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Reservation stats
+    const pendingReservations = await prisma.reservation.count({
+      where: {
+        status: 'PENDING',
+      },
+    })
+
+    const confirmedReservations = await prisma.reservation.count({
+      where: {
+        status: 'CONFIRMED',
+      },
+    })
+
+    // Today's arrivals (confirmed reservations with check-in today)
+    const todayStart = startOfDayIST(getISTDate().toISOString().split('T')[0])
+    const todayEnd = endOfDayIST(getISTDate().toISOString().split('T')[0])
+    const todayArrivals = await prisma.reservation.count({
+      where: {
+        status: 'CONFIRMED',
+        checkInDate: {
+          gte: todayStart,
+          lte: todayEnd,
+        },
+      },
+    })
+
     return NextResponse.json({
       totalBookings,
       activeBookings,
@@ -140,6 +166,9 @@ export async function GET(request: NextRequest) {
       availableRooms,
       occupiedRooms,
       activeTours,
+      pendingReservations,
+      confirmedReservations,
+      todayArrivals,
     })
   } catch (error) {
     console.error('Dashboard stats error:', error)

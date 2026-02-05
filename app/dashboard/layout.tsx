@@ -32,6 +32,7 @@ export default function DashboardLayout({
   const allNavItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '📊', managerOnly: false },
     { href: '/dashboard/bookings', label: 'Bookings', icon: '📋', managerOnly: false },
+    { href: '/dashboard/reservations', label: 'Reservations', icon: '📅', managerOnly: false },
     { href: '/dashboard/checkout', label: 'Checkout', icon: '✅', managerOnly: false },
     { href: '/dashboard/payments', label: 'Payments', icon: '💳', managerOnly: false },
     { href: '/dashboard/tours', label: 'Tours & Travel', icon: '🚌', managerOnly: false },
