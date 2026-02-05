@@ -23,6 +23,7 @@ interface KitchenBill {
   gstEnabled: boolean
   createdAt: string
   billDate: string | null
+  discount?: number
   foodOrders: Array<{
     id: string
     quantity: number
@@ -39,6 +40,15 @@ interface Booking {
   room: {
     roomNumber: string
   }
+  foodOrders: Array<{
+    id: string
+    quantity: number
+    createdAt: string
+    foodItem: {
+      name: string
+      price: number
+    }
+  }>
 }
 
 export default function KitchenBillsPage() {
@@ -87,25 +97,24 @@ export default function KitchenBillsPage() {
         setBills(fetchedBills)
 
         // Check for existing Master Bill
-        // We look for invoiceNumber starting with 'MST-' which indicates a finalised Master Bill
         const foundMaster = fetchedBills.find(b => b.invoiceNumber.startsWith('MST-'))
         if (foundMaster) {
           setMasterBill(foundMaster)
-          // If master exists, use its discount
-          // We need to fetch discount from invoice found. The interface 'KitchenBill' in page.tsx currently has:
-          // totalAmount, foodCharges, gstAmount. It doesn't have 'discount'.
-          // I need to update the interface to include 'discount'.
-          // For now, I can calculate discount = foodCharges - totalAmount (approx).
-          setComplimentaryDiscount(foundMaster.foodCharges - foundMaster.totalAmount)
+          // Use discount from DB if available, else calculate
+          const discount = foundMaster.discount !== undefined
+            ? foundMaster.discount
+            : (foundMaster.foodCharges - foundMaster.totalAmount)
+          setComplimentaryDiscount(discount)
         } else {
           setMasterBill(null)
+          setComplimentaryDiscount(0)
         }
 
       } else {
         toast.error('Failed to fetch kitchen bills')
       }
 
-      // Fetch booking details for header
+      // Fetch booking details for header and ALL food orders
       const bookingRes = await fetch(`/api/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -182,7 +191,6 @@ export default function KitchenBillsPage() {
         toast.success('Kitchen bill generated successfully!')
         fetchBills() // Refresh the list
       } else {
-        // Parse error to see if it's just "no unpaid items"
         const errorData = await response.json().catch(() => ({}))
         if (response.status === 400 && errorData.error?.includes('No unpaid food orders')) {
           toast.success('All items are already billed. Updating view...')
@@ -242,6 +250,19 @@ export default function KitchenBillsPage() {
 
   // Calculate Master Bill Totals
   const getAllFoodItems = (): KitchenBillItem[] => {
+    // If master bill exists, we should ideally use its items, but items are not linked to master bill cleanly in all cases.
+    // Ideally we use ALL food orders from the booking details as the source of truth for the Master Bill (Consolidated).
+    if (booking?.foodOrders) {
+      return booking.foodOrders.map(order => ({
+        id: order.id,
+        name: order.foodItem.name,
+        quantity: order.quantity,
+        amount: order.foodItem.price * order.quantity,
+        orderTime: order.createdAt
+      })).sort((a, b) => new Date(a.orderTime).getTime() - new Date(b.orderTime).getTime())
+    }
+
+    // Fallback if booking details not loaded (should generally be loaded) or empty
     const items: KitchenBillItem[] = []
     bills.forEach(bill => {
       if (bill.foodOrders) {
@@ -256,13 +277,17 @@ export default function KitchenBillsPage() {
         })
       }
     })
-    // Sort by time
     return items.sort((a, b) => new Date(a.orderTime).getTime() - new Date(b.orderTime).getTime())
   }
 
   const masterItems = getAllFoodItems()
-  const masterSubtotal = masterItems.reduce((sum, item) => sum + item.amount, 0)
-  const masterTotal = Math.max(0, masterSubtotal - complimentaryDiscount)
+  const derivedSubtotal = masterItems.reduce((sum, item) => sum + item.amount, 0)
+
+  // If Master Bill is final, prefer its stored values to ensure consistency
+  const masterSubtotal = masterBill ? masterBill.foodCharges : derivedSubtotal
+  const masterTotal = masterBill
+    ? masterBill.totalAmount
+    : Math.max(0, derivedSubtotal - complimentaryDiscount)
 
   const handlePrintMasterBill = () => {
     setPrintingMasterBill(true)
