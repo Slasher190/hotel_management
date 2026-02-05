@@ -11,15 +11,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const fromParam = request.nextUrl.searchParams.get('from')
+    const toParam = request.nextUrl.searchParams.get('to')
     const monthParam = request.nextUrl.searchParams.get('month')
+
     let start, end
 
-    if (monthParam) {
+    if (fromParam && toParam) {
+      start = startOfDayIST(fromParam)
+      end = endOfDayIST(toParam)
+    } else if (monthParam) {
       // monthParam is YYYY-MM
       start = startOfDayIST(`${monthParam}-01`)
-      // Get last day of month by creating a date and finding endOfMonth
-      // We can rely on date-fns endOfMonth on the parsed date, then formatted back to string to pass to endOfDayIST
-      // or easier: just add 1 month to start and subtract 1ms? No, variable days.
 
       const parts = monthParam.split('-')
       const year = parseInt(parts[0])
