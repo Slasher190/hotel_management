@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/middleware-auth'
 import { Prisma } from '@prisma/client'
+import { startOfDayIST, endOfDayIST, getISTDate } from '@/lib/date-utils'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import * as XLSX from 'xlsx'
 
@@ -12,14 +13,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const fromParam = request.nextUrl.searchParams.get('from')
+    const toParam = request.nextUrl.searchParams.get('to')
     const monthParam = request.nextUrl.searchParams.get('month')
     const format = request.nextUrl.searchParams.get('format') || 'excel'
     const gstFilter = request.nextUrl.searchParams.get('gst') === 'true'
     const paymentStatus = request.nextUrl.searchParams.get('paymentStatus')
 
-    const month = monthParam ? new Date(monthParam + '-01') : new Date()
-    const start = startOfMonth(month)
-    const end = endOfMonth(month)
+    let start, end
+
+    if (fromParam && toParam) {
+      start = startOfDayIST(fromParam)
+      end = endOfDayIST(toParam)
+    } else if (monthParam) {
+      start = startOfDayIST(`${monthParam}-01`)
+      const parts = monthParam.split('-')
+      const year = parseInt(parts[0])
+      const m = parseInt(parts[1])
+      const lastDay = new Date(year, m, 0).getDate()
+      end = endOfDayIST(`${monthParam}-${lastDay}`)
+    } else {
+      const now = getISTDate()
+      const currentYear = now.getFullYear()
+      const currentMonth = now.getMonth() + 1
+      const monthStr = currentMonth.toString().padStart(2, '0')
+      start = startOfDayIST(`${currentYear}-${monthStr}-01`)
+      const lastDay = new Date(currentYear, currentMonth, 0).getDate()
+      end = endOfDayIST(`${currentYear}-${monthStr}-${lastDay}`)
+    }
 
     const where: Prisma.BookingWhereInput = {
       checkInDate: {

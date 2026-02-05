@@ -17,13 +17,18 @@ interface DashboardStats {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7))
+  // Initialize with current month range
+  const [dateFrom, setDateFrom] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  })
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10))
   const [showStats, setShowStats] = useState(false) // Hidden by default
 
   const fetchDashboardStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/dashboard/stats?month=${currentMonth}`, {
+      const response = await fetch(`/api/dashboard/stats?from=${dateFrom}&to=${dateTo}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -38,7 +43,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentMonth])
+  }, [dateFrom, dateTo])
 
   useEffect(() => {
     fetchDashboardStats()
@@ -126,16 +131,29 @@ export default function DashboardPage() {
     <div className="space-y-6 sm:space-y-8">
       {/* Month Selector and Show Stats Button */}
       <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex-1">
-          <label className="block text-sm font-semibold text-[#111827] mb-3">
-            📅 Select Month
-          </label>
-          <input
-            type="month"
-            value={currentMonth}
-            onChange={(e) => setCurrentMonth(e.target.value)}
-            className="w-full sm:w-auto px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] text-[#111827] font-medium bg-white"
-          />
+        <div className="flex-1 flex flex-col sm:flex-row gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-[#111827] mb-2">
+              📅 From
+            </label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full sm:w-auto px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] text-[#111827] font-medium bg-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-[#111827] mb-2">
+              To
+            </label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full sm:w-auto px-4 py-3 border border-[#CBD5E1] rounded-lg focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] text-[#111827] font-medium bg-white"
+            />
+          </div>
         </div>
         <button
           onClick={() => setShowStats(!showStats)}

@@ -50,7 +50,11 @@ interface ReportData {
 function ReportsContent() {
   const [reportData, setReportData] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [dateFrom, setDateFrom] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  })
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10))
   const [gstFilter, setGstFilter] = useState(false)
   const [paymentFilter, setPaymentFilter] = useState('')
   const [userRole, setUserRole] = useState('')
@@ -71,14 +75,15 @@ function ReportsContent() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1)
-  }, [month, gstFilter, paymentFilter])
+  }, [dateFrom, dateTo, gstFilter, paymentFilter])
 
   const fetchReports = useCallback(async () => {
     try {
       setLoading(true)
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
-        month,
+        from: dateFrom,
+        to: dateTo,
         page: page.toString(),
         limit: limit.toString(),
         ...(gstFilter && { gst: 'true' }),
@@ -100,7 +105,7 @@ function ReportsContent() {
     } finally {
       setLoading(false)
     }
-  }, [month, gstFilter, paymentFilter, page])
+  }, [dateFrom, dateTo, gstFilter, paymentFilter, page])
 
   useEffect(() => {
     fetchReports()
@@ -110,7 +115,8 @@ function ReportsContent() {
     try {
       const token = localStorage.getItem('token')
       const params = new URLSearchParams({
-        month,
+        from: dateFrom,
+        to: dateTo,
         format,
         ...(gstFilter && { gst: 'true' }),
         ...(paymentFilter && { paymentStatus: paymentFilter }),
@@ -127,7 +133,7 @@ function ReportsContent() {
         const url = globalThis.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `report-${month}.${format === 'excel' ? 'xlsx' : 'csv'}`
+        a.download = `report-${dateFrom}-to-${dateTo}.${format === 'excel' ? 'xlsx' : 'csv'}`
         document.body.appendChild(a)
         a.click()
         globalThis.URL.revokeObjectURL(url)
@@ -154,7 +160,7 @@ function ReportsContent() {
           <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
             📊 Reports
           </h2>
-          <p className="text-sm sm:text-base text-[#64748B] font-medium">View and export monthly booking reports</p>
+          <p className="text-sm sm:text-base text-[#64748B] font-medium">View and export booking reports</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <button
@@ -203,15 +209,25 @@ function ReportsContent() {
 
       <div className="bg-white rounded-lg border border-[#CBD5E1] p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6 flex-wrap">
-          <div>
-            <label htmlFor="month" className="block text-sm font-semibold text-[#111827] mb-3">📅 Month</label>
-            <input
-              id="month"
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-            />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">📅 From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#111827] mb-2">To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-semibold text-[#111827] mb-3">🔧 Filters</label>
