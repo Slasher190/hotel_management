@@ -92,7 +92,7 @@ export default function DashboardPage() {
       roles: ['ADMIN', 'MANAGER', 'STAFF'],
     },
     {
-      title: 'Monthly Revenue',
+      title: 'Total Revenue',
       value: `₹${(stats?.totalRevenue || 0).toLocaleString('en-IN')}`,
       icon: '💰',
       roles: ['ADMIN', 'MANAGER'], // Stats for Managers too
