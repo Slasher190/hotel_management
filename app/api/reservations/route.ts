@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         }
 
         const {
-            roomId,
+            roomIds,
             guestName,
             guestEmail,
             guestMobile,
@@ -170,9 +170,9 @@ export async function POST(request: NextRequest) {
         } = await request.json()
 
         // Validate required fields
-        if (!roomId || !guestName || !guestMobile || !checkInDate || !checkOutDate || !roomRate) {
+        if (!roomIds || !Array.isArray(roomIds) || roomIds.length === 0 || !guestName || !guestMobile || !checkInDate || !checkOutDate || !roomRate) {
             return NextResponse.json(
-                { error: 'Room, guest name, mobile, check-in date, check-out date, and room rate are required' },
+                { error: 'Rooms, guest name, mobile, check-in date, check-out date, and room rate are required' },
                 { status: 400 }
             )
         }
@@ -188,60 +188,62 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Check room exists
-        const room = await prisma.room.findUnique({
-            where: { id: roomId },
-            include: { roomType: true },
-        })
-
-        if (!room) {
-            return NextResponse.json({ error: 'Room not found' }, { status: 404 })
-        }
-
-        // Check availability
-        const isAvailable = await checkRoomAvailability(roomId, checkIn, checkOut)
-        if (!isAvailable) {
-            return NextResponse.json(
-                { error: 'Room is not available for the selected dates' },
-                { status: 400 }
-            )
+        // Check availability for all rooms
+        for (const roomId of roomIds) {
+            const isAvailable = await checkRoomAvailability(roomId, checkIn, checkOut)
+            if (!isAvailable) {
+                return NextResponse.json(
+                    { error: 'One or more selected rooms are not available for the selected dates' },
+                    { status: 400 }
+                )
+            }
         }
 
         // Calculate number of nights
         const numberOfNights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
-        const totalAmount = parseFloat(roomRate) * numberOfNights
 
-        // Create reservation
-        const reservation = await prisma.reservation.create({
-            data: {
-                reservationNumber: generateReservationNumber(),
-                roomId,
-                guestName,
-                guestEmail: guestEmail || null,
-                guestMobile,
-                guestAddress: guestAddress || null,
-                checkInDate: checkIn,
-                checkOutDate: checkOut,
-                expectedArrival: expectedArrival || null,
-                numberOfNights,
-                adults: parseInt(adults) || 1,
-                children: parseInt(children) || 0,
-                roomRate: parseFloat(roomRate),
-                advanceAmount: parseFloat(advanceAmount) || 0,
-                totalAmount,
-                specialRequests: specialRequests || null,
-                status: 'PENDING',
-            },
-            include: {
-                room: {
-                    include: {
-                        roomType: true,
+        // Split rate and advance across rooms
+        const numRooms = roomIds.length;
+        const totalRoomRate = parseFloat(roomRate);
+        const ratePerRoom = totalRoomRate / numRooms;
+        const totalAmountPerRoom = ratePerRoom * numberOfNights;
+        const advancePerRoom = (parseFloat(advanceAmount) || 0) / numRooms;
+
+        // Create reservations in a transaction
+        const reservations = await prisma.$transaction(
+            roomIds.map((roomId) =>
+                prisma.reservation.create({
+                    data: {
+                        reservationNumber: generateReservationNumber(),
+                        roomId,
+                        guestName,
+                        guestEmail: guestEmail || null,
+                        guestMobile,
+                        guestAddress: guestAddress || null,
+                        checkInDate: checkIn,
+                        checkOutDate: checkOut,
+                        expectedArrival: expectedArrival || null,
+                        numberOfNights,
+                        adults: Math.max(1, Math.ceil((parseInt(adults) || 1) / numRooms)),
+                        children: Math.floor((parseInt(children) || 0) / numRooms),
+                        roomRate: ratePerRoom,
+                        advanceAmount: advancePerRoom,
+                        totalAmount: totalAmountPerRoom,
+                        specialRequests: specialRequests || null,
+                        status: 'PENDING',
                     },
-                },
-            },
-        })
+                    include: {
+                        room: {
+                            include: {
+                                roomType: true,
+                            },
+                        },
+                    },
+                })
+            )
+        )
 
-        return NextResponse.json(reservation, { status: 201 })
+        return NextResponse.json(reservations, { status: 201 })
     } catch (error) {
         console.error('Error creating reservation:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
