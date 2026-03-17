@@ -12,6 +12,8 @@ interface Booking {
   guestMobile: string | null
   idType: string
   idNumber: string | null
+  guestGstNumber: string | null
+  companyName: string | null
   additionalGuests: number
   additionalGuestCharges: number
   mattresses: number
@@ -77,6 +79,8 @@ export default function BookingDetailPage() {
     tariff: number
     checkInDate: string
     checkoutDate: string
+    guestGstNumber: string
+    companyName: string
   }>({
     guestName: '',
     idType: '',
@@ -88,6 +92,8 @@ export default function BookingDetailPage() {
     tariff: 0,
     checkInDate: '',
     checkoutDate: '',
+    guestGstNumber: '',
+    companyName: '',
   })
   const [loading, setLoading] = useState(true)
 
@@ -124,6 +130,8 @@ export default function BookingDetailPage() {
           tariff: data.tariff || 0,
           checkInDate: new Date(data.checkInDate).toISOString().slice(0, 16),
           checkoutDate: data.checkoutDate ? new Date(data.checkoutDate).toISOString().slice(0, 16) : '',
+          guestGstNumber: data.guestGstNumber || '',
+          companyName: data.companyName || '',
         })
       } else if (response.status === 404) {
         setBooking(null)
@@ -322,6 +330,24 @@ export default function BookingDetailPage() {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Guest GST Number</label>
+              <input
+                type="text"
+                value={editData.guestGstNumber}
+                onChange={(e) => setEditData({ ...editData, guestGstNumber: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+              <input
+                type="text"
+                value={editData.companyName}
+                onChange={(e) => setEditData({ ...editData, companyName: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Room Price (₹) *</label>
               <input
                 type="number"
@@ -453,6 +479,18 @@ export default function BookingDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-900 font-medium">ID Number:</span>
                   <span className="font-semibold text-gray-900">{booking.idNumber}</span>
+                </div>
+              )}
+              {booking.guestGstNumber && (
+                <div className="flex justify-between">
+                  <span className="text-gray-900 font-medium">GST Number:</span>
+                  <span className="font-semibold text-gray-900">{booking.guestGstNumber}</span>
+                </div>
+              )}
+              {booking.companyName && (
+                <div className="flex justify-between">
+                  <span className="text-gray-900 font-medium">Company Name:</span>
+                  <span className="font-semibold text-gray-900">{booking.companyName}</span>
                 </div>
               )}
               {booking.additionalGuests > 0 && (

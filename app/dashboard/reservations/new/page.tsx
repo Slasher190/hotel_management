@@ -31,7 +31,7 @@ export default function NewReservationPage() {
     const [unavailableRooms, setUnavailableRooms] = useState<Room[]>([])
 
     const [formData, setFormData] = useState({
-        roomId: '',
+        roomIds: [] as string[],
         guestName: '',
         guestEmail: '',
         guestMobile: '',
@@ -95,11 +95,22 @@ export default function NewReservationPage() {
                 setAvailableRooms(data.availableRooms)
                 setUnavailableRooms(data.unavailableRooms)
 
-                // Reset room selection if currently selected room is unavailable
-                const selectedStillAvailable = data.availableRooms.some((r: Room) => r.id === formData.roomId)
-                if (!selectedStillAvailable) {
-                    setFormData(prev => ({ ...prev, roomId: '', roomRate: '' }))
-                }
+                // Keep only those selected rooms that are still available
+                const availableIds = new Set(data.availableRooms.map((r: Room) => r.id));
+
+                setFormData(prev => {
+                    const newSelectedIds = prev.roomIds.filter((id) => availableIds.has(id));
+                    let newRoomRate = 0;
+                    for (const id of newSelectedIds) {
+                        const room = data.availableRooms.find((r: Room) => r.id === id);
+                        if (room) newRoomRate += room.roomType.price;
+                    }
+                    return {
+                        ...prev,
+                        roomIds: newSelectedIds,
+                        roomRate: newSelectedIds.length > 0 ? newRoomRate.toString() : ''
+                    };
+                })
             }
         } catch {
             toast.error('Failed to check availability')
@@ -109,11 +120,28 @@ export default function NewReservationPage() {
     }
 
     const handleRoomSelect = (room: Room) => {
-        setFormData(prev => ({
-            ...prev,
-            roomId: room.id,
-            roomRate: room.roomType.price.toString(),
-        }))
+        setFormData(prev => {
+            const isSelected = prev.roomIds.includes(room.id);
+            let newRoomIds;
+            if (isSelected) {
+                newRoomIds = prev.roomIds.filter(id => id !== room.id);
+            } else {
+                newRoomIds = [...prev.roomIds, room.id];
+            }
+
+            let newRoomRate = 0;
+            availableRooms.forEach(r => {
+                if (newRoomIds.includes(r.id)) {
+                    newRoomRate += r.roomType.price;
+                }
+            });
+
+            return {
+                ...prev,
+                roomIds: newRoomIds,
+                roomRate: newRoomRate > 0 ? newRoomRate.toString() : '',
+            };
+        })
     }
 
     const calculateTotal = () => {
@@ -127,8 +155,8 @@ export default function NewReservationPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!formData.roomId) {
-            toast.error('Please select a room')
+        if (formData.roomIds.length === 0) {
+            toast.error('Please select at least one room')
             return
         }
 
@@ -272,9 +300,9 @@ export default function NewReservationPage() {
                                                 key={room.id}
                                                 type="button"
                                                 onClick={() => handleRoomSelect(room)}
-                                                className={`p-4 rounded-lg border-2 transition-all duration-150 text-left ${formData.roomId === room.id
-                                                        ? 'border-[#8E0E1C] bg-[#8E0E1C]/5'
-                                                        : 'border-[#CBD5E1] hover:border-[#8E0E1C]/50'
+                                                className={`p-4 rounded-lg border-2 transition-all duration-150 text-left ${formData.roomIds.includes(room.id)
+                                                    ? 'border-[#8E0E1C] bg-[#8E0E1C]/5'
+                                                    : 'border-[#CBD5E1] hover:border-[#8E0E1C]/50'
                                                     }`}
                                             >
                                                 <div className="font-bold text-lg text-[#111827]">{room.roomNumber}</div>
@@ -447,9 +475,9 @@ export default function NewReservationPage() {
                 </div>
 
                 {/* Summary */}
-                {formData.roomId && nights > 0 && (
+                {formData.roomIds.length > 0 && nights > 0 && (
                     <div className="bg-[#8E0E1C]/5 rounded-lg border border-[#8E0E1C]/20 p-4 sm:p-6">
-                        <h3 className="text-lg font-bold text-[#111827] mb-4">📋 Booking Summary</h3>
+                        <h3 className="text-lg font-bold text-[#111827] mb-4">📋 Booking Summary ({formData.roomIds.length} Room{formData.roomIds.length > 1 ? 's' : ''})</h3>
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span className="text-[#64748B]">Room Rate:</span>
@@ -482,7 +510,7 @@ export default function NewReservationPage() {
                 <div className="flex gap-4">
                     <button
                         type="submit"
-                        disabled={loading || !formData.roomId}
+                        disabled={loading || formData.roomIds.length === 0}
                         className="flex-1 px-6 py-4 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? '⏳ Creating...' : '📅 Create Reservation'}

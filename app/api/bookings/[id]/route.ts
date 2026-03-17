@@ -74,6 +74,8 @@ export async function PATCH(
       'tariff',
       'checkInDate',
       'checkoutDate',
+      'guestGstNumber',
+      'companyName',
     ]
 
     const dataToUpdate: Record<string, unknown> = {}
