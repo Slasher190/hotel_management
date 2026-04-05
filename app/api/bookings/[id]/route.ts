@@ -119,3 +119,45 @@ export async function PATCH(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+// Delete booking
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = requireManager(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized - Manager access required' }, { status: 403 })
+    }
+
+    const { id } = await params
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { roomId: true, status: true },
+    })
+
+    if (!booking) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    }
+
+    // Delete booking (cascade handles related records)
+    await prisma.booking.delete({
+      where: { id },
+    })
+
+    // If booking was ACTIVE, update room to AVAILABLE
+    if (booking.status === 'ACTIVE') {
+      await prisma.room.update({
+        where: { id: booking.roomId },
+        data: { status: 'AVAILABLE' },
+      })
+    }
+
+    return NextResponse.json({ message: 'Booking deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting booking:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

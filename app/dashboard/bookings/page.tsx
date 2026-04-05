@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Pagination from '@/app/components/Pagination'
 import { useUserRole } from '@/lib/useUserRole'
+import Modal from '@/app/components/Modal'
 
 interface Booking {
   id: string
@@ -30,7 +31,7 @@ function BookingsContent() {
   const searchParams = useSearchParams()
   const statusFilter = searchParams.get('status')
   const paymentPending = searchParams.get('paymentPending')
-  const { canWrite } = useUserRole()
+  const { canWrite, canDelete } = useUserRole()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -41,18 +42,23 @@ function BookingsContent() {
   const [dateTo, setDateTo] = useState('')
   const [roomNumber, setRoomNumber] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; bookingId: string | null; guestName: string }>({
+    isOpen: false,
+    bookingId: null,
+    guestName: '',
+  })
 
   const fetchBookings = useCallback(async () => {
     try {
       const token = localStorage.getItem('token')
       const params = new URLSearchParams()
-      
+
       if (paymentPending === 'true') {
         params.append('paymentPending', 'true')
       } else if (statusFilter) {
         params.append('status', statusFilter)
       }
-      
+
       if (showAll) {
         params.append('showAll', 'true')
       } else {
@@ -72,7 +78,7 @@ function BookingsContent() {
       if (roomNumber) {
         params.append('roomNumber', roomNumber)
       }
-      
+
       const response = await fetch(`/api/bookings?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -101,6 +107,32 @@ function BookingsContent() {
     fetchBookings()
   }, [fetchBookings])
 
+  const handleDeleteBooking = async () => {
+    if (!deleteModal.bookingId) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/bookings/${deleteModal.bookingId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        toast.success('Booking deleted successfully!')
+        fetchBookings()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Failed to delete booking')
+      }
+    } catch {
+      toast.error('An error occurred while deleting booking')
+    } finally {
+      setDeleteModal({ isOpen: false, bookingId: null, guestName: '' })
+    }
+  }
+
   if (loading) {
     return (
       <div className="text-center py-16">
@@ -112,311 +144,325 @@ function BookingsContent() {
 
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-        <div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
-            📋 Bookings
-          </h2>
-          <p className="text-sm sm:text-base text-[#64748B] font-medium">Manage all hotel bookings and guest check-ins</p>
-        </div>
-        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
-          <Link
-            href="/dashboard/police-verification"
-            className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
-          >
-            <span>📄</span>
-            <span>Police Verification</span>
-          </Link>
-          {canWrite && (
+    <>
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, bookingId: null, guestName: '' })}
+        onConfirm={handleDeleteBooking}
+        title="Delete Booking"
+        message={`Are you sure you want to delete the booking for "${deleteModal.guestName}"? This will permanently remove all associated food orders, invoices, and payments. This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonClass="bg-[#8E0E1C] hover:opacity-90"
+      />
+      <div className="space-y-6 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+          <div>
+            <h2 className="text-2xl sm:text-4xl font-bold text-[#111827] mb-2">
+              📋 Bookings
+            </h2>
+            <p className="text-sm sm:text-base text-[#64748B] font-medium">Manage all hotel bookings and guest check-ins</p>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
             <Link
-              href="/dashboard/bookings/new"
+              href="/dashboard/police-verification"
               className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
             >
-              <span className="text-xl">➕</span>
-              <span>New Check-In</span>
+              <span>📄</span>
+              <span>Police Verification</span>
             </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <label htmlFor="search" className="block text-sm font-semibold text-[#111827] mb-2">🔍 Search</label>
-            <input
-              id="search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setPage(1)
-              }}
-              placeholder="Search by guest name..."
-              className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-            />
+            {canWrite && (
+              <Link
+                href="/dashboard/bookings/new"
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold flex items-center gap-2 min-h-[44px] text-sm sm:text-base"
+              >
+                <span className="text-xl">➕</span>
+                <span>New Check-In</span>
+              </Link>
+            )}
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-4 py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
-          >
-            {showFilters ? '🙈 Hide Filters' : '🔧 Show Filters'}
-          </button>
-          {(searchQuery || dateFrom || dateTo || roomNumber) && (
-            <button
-              onClick={() => {
-                setSearchQuery('')
-                setDateFrom('')
-                setDateTo('')
-                setRoomNumber('')
-                setPage(1)
-              }}
-              className="px-4 py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
-            >
-              🗑️ Clear
-            </button>
-          )}
         </div>
 
-        {showFilters && (
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t border-[#CBD5E1]">
-            <div>
-              <label htmlFor="dateFrom" className="block text-sm font-semibold text-[#111827] mb-2">📅 Check-In From</label>
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg border border-[#CBD5E1] p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1 w-full">
+              <label htmlFor="search" className="block text-sm font-semibold text-[#111827] mb-2">🔍 Search</label>
               <input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                max={dateTo || undefined}
-                onChange={(e) => {
-                  const selectedDate = e.target.value
-                  if (!dateTo || selectedDate <= dateTo) {
-                    setDateFrom(selectedDate)
-                    setPage(1)
-                  } else {
-                    toast.error('Check-In From cannot be after Check-In To')
-                  }
-                }}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="dateTo" className="block text-sm font-semibold text-[#111827] mb-2">📅 Check-In To</label>
-              <input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                min={dateFrom || undefined}
-                onChange={(e) => {
-                  const selectedDate = e.target.value
-                  if (!dateFrom || selectedDate >= dateFrom) {
-                    setDateTo(selectedDate)
-                    setPage(1)
-                  } else {
-                    toast.error('Check-In To cannot be before Check-In From')
-                  }
-                }}
-                className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="roomNumber" className="block text-sm font-semibold text-[#111827] mb-2">🏨 Room Number</label>
-              <input
-                id="roomNumber"
+                id="search"
                 type="text"
-                value={roomNumber}
+                value={searchQuery}
                 onChange={(e) => {
-                  setRoomNumber(e.target.value)
+                  setSearchQuery(e.target.value)
                   setPage(1)
                 }}
-                placeholder="Filter by room number..."
+                placeholder="Search by guest name..."
                 className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
               />
             </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-4 py-3 bg-[#F8FAFC] border border-[#CBD5E1] text-[#111827] rounded-lg hover:bg-[#F1F5F9] transition-colors duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
+            >
+              {showFilters ? '🙈 Hide Filters' : '🔧 Show Filters'}
+            </button>
+            {(searchQuery || dateFrom || dateTo || roomNumber) && (
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setDateFrom('')
+                  setDateTo('')
+                  setRoomNumber('')
+                  setPage(1)
+                }}
+                className="px-4 py-3 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold min-h-[44px] text-sm sm:text-base"
+              >
+                🗑️ Clear
+              </button>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="flex gap-2 sm:gap-3 flex-wrap items-center">
-        <Link
-          href="/dashboard/bookings"
-          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
-            !statusFilter && !paymentPending
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
-        >
-          All
-        </Link>
-        <Link
-          href="/dashboard/bookings?status=ACTIVE"
-          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
-            statusFilter === 'ACTIVE'
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
-        >
-          ✅ Active
-        </Link>
-        <Link
-          href="/dashboard/bookings?status=CHECKED_OUT"
-          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
-            statusFilter === 'CHECKED_OUT' && !paymentPending
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
-        >
-          🚪 Checked Out
-        </Link>
-        <Link
-          href="/dashboard/bookings?paymentPending=true"
-          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
-            paymentPending === 'true'
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
-        >
-          ⏳ Payment Pending
-        </Link>
-        <button
-          onClick={() => {
-            setShowAll(!showAll)
-            setPage(1)
-          }}
-          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${
-            showAll
-              ? 'bg-[#8E0E1C] text-white'
-              : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
-          }`}
-        >
-          {showAll ? '📄 Show Paginated' : '📋 Show All'}
-        </button>
-      </div>
+          {showFilters && (
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t border-[#CBD5E1]">
+              <div>
+                <label htmlFor="dateFrom" className="block text-sm font-semibold text-[#111827] mb-2">📅 Check-In From</label>
+                <input
+                  id="dateFrom"
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  onChange={(e) => {
+                    const selectedDate = e.target.value
+                    if (!dateTo || selectedDate <= dateTo) {
+                      setDateFrom(selectedDate)
+                      setPage(1)
+                    } else {
+                      toast.error('Check-In From cannot be after Check-In To')
+                    }
+                  }}
+                  className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                />
+              </div>
+              <div>
+                <label htmlFor="dateTo" className="block text-sm font-semibold text-[#111827] mb-2">📅 Check-In To</label>
+                <input
+                  id="dateTo"
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => {
+                    const selectedDate = e.target.value
+                    if (!dateFrom || selectedDate >= dateFrom) {
+                      setDateTo(selectedDate)
+                      setPage(1)
+                    } else {
+                      toast.error('Check-In To cannot be before Check-In From')
+                    }
+                  }}
+                  className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                />
+              </div>
+              <div>
+                <label htmlFor="roomNumber" className="block text-sm font-semibold text-[#111827] mb-2">🏨 Room Number</label>
+                <input
+                  id="roomNumber"
+                  type="text"
+                  value={roomNumber}
+                  onChange={(e) => {
+                    setRoomNumber(e.target.value)
+                    setPage(1)
+                  }}
+                  placeholder="Filter by room number..."
+                  className="w-full px-4 py-3 border border-[#CBD5E1] rounded-lg text-[#111827] focus:ring-2 focus:ring-[#8E0E1C] focus:border-[#8E0E1C] font-medium bg-white"
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
-      <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-[#CBD5E1]">
-            <thead className="bg-[#8E0E1C]">
-              <tr>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                  👤 Guest Name
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                  🏨 Room
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider hidden sm:table-cell">
-                  📅 Check-In
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                  💰 Room Price
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                  📊 Status
-                </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                  ⚡ Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-[#CBD5E1]">
-              {bookings.map((booking) => (
-                <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-[#111827]">{booking.guestName}</div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-[#111827]">
-                      <span className="font-bold text-[#8E0E1C]">{booking.room.roomNumber}</span>
-                      <span className="text-[#64748B]"> ({booking.room.roomType.name})</span>
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
-                    <div className="text-sm font-medium text-[#64748B]">
-                      {new Date(booking.checkInDate).toLocaleString('en-IN', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-[#111827]">
-                      ₹{booking.roomPrice.toLocaleString('en-IN')}
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <div className="flex flex-col gap-2">
-                      <span
-                        className={`px-2 py-1 text-xs font-bold rounded-full ${
-                          booking.status === 'ACTIVE'
-                            ? 'bg-[#8E0E1C] text-white'
-                            : 'bg-[#64748B] text-white'
-                        }`}
-                      >
-                        {booking.status}
-                      </span>
-                      {booking.status === 'CHECKED_OUT' && booking.payments && booking.payments.length > 0 && (
+        <div className="flex gap-2 sm:gap-3 flex-wrap items-center">
+          <Link
+            href="/dashboard/bookings"
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${!statusFilter && !paymentPending
+                ? 'bg-[#8E0E1C] text-white'
+                : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+              }`}
+          >
+            All
+          </Link>
+          <Link
+            href="/dashboard/bookings?status=ACTIVE"
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === 'ACTIVE'
+                ? 'bg-[#8E0E1C] text-white'
+                : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+              }`}
+          >
+            ✅ Active
+          </Link>
+          <Link
+            href="/dashboard/bookings?status=CHECKED_OUT"
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${statusFilter === 'CHECKED_OUT' && !paymentPending
+                ? 'bg-[#8E0E1C] text-white'
+                : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+              }`}
+          >
+            🚪 Checked Out
+          </Link>
+          <Link
+            href="/dashboard/bookings?paymentPending=true"
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${paymentPending === 'true'
+                ? 'bg-[#8E0E1C] text-white'
+                : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+              }`}
+          >
+            ⏳ Payment Pending
+          </Link>
+          <button
+            onClick={() => {
+              setShowAll(!showAll)
+              setPage(1)
+            }}
+            className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold transition-colors duration-150 min-h-[44px] flex items-center ${showAll
+                ? 'bg-[#8E0E1C] text-white'
+                : 'bg-white text-[#111827] hover:bg-[#F8FAFC] border border-[#CBD5E1]'
+              }`}
+          >
+            {showAll ? '📄 Show Paginated' : '📋 Show All'}
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg border border-[#CBD5E1] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-[#CBD5E1]">
+              <thead className="bg-[#8E0E1C]">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    👤 Guest Name
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    🏨 Room
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider hidden sm:table-cell">
+                    📅 Check-In
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    💰 Room Price
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
+                    📊 Status
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
+                    ⚡ Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-[#CBD5E1]">
+                {bookings.map((booking) => (
+                  <tr key={booking.id} className="hover:bg-[#F8FAFC] transition-colors duration-150">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">{booking.guestName}</div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-[#111827]">
+                        <span className="font-bold text-[#8E0E1C]">{booking.room.roomNumber}</span>
+                        <span className="text-[#64748B]"> ({booking.room.roomType.name})</span>
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                      <div className="text-sm font-medium text-[#64748B]">
+                        {new Date(booking.checkInDate).toLocaleString('en-IN', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-[#111827]">
+                        ₹{booking.roomPrice.toLocaleString('en-IN')}
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <div className="flex flex-col gap-2">
                         <span
-                          className={`px-2 py-1 text-xs font-bold rounded-full ${
-                            booking.payments.some((p) => p.status === 'PENDING')
+                          className={`px-2 py-1 text-xs font-bold rounded-full ${booking.status === 'ACTIVE'
                               ? 'bg-[#8E0E1C] text-white'
                               : 'bg-[#64748B] text-white'
-                          }`}
+                            }`}
                         >
-                          {booking.payments.some((p) => p.status === 'PENDING') ? 'Payment Pending' : 'Paid'}
+                          {booking.status}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-2 flex-wrap">
-                      {booking.status === 'ACTIVE' && (
-                        <>
-                          <Link
-                            href={`/dashboard/bookings/${booking.id}/add-food`}
-                            className="px-3 py-1.5 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
-                            title="Add Food Items"
+                        {booking.status === 'CHECKED_OUT' && booking.payments && booking.payments.length > 0 && (
+                          <span
+                            className={`px-2 py-1 text-xs font-bold rounded-full ${booking.payments.some((p) => p.status === 'PENDING')
+                                ? 'bg-[#8E0E1C] text-white'
+                                : 'bg-[#64748B] text-white'
+                              }`}
                           >
-                            🍽️
-                          </Link>
-                          <Link
-                            href={`/dashboard/checkout/${booking.id}`}
+                            {booking.payments.some((p) => p.status === 'PENDING') ? 'Payment Pending' : 'Paid'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-2 flex-wrap">
+                        {booking.status === 'ACTIVE' && (
+                          <>
+                            <Link
+                              href={`/dashboard/bookings/${booking.id}/add-food`}
+                              className="px-3 py-1.5 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                              title="Add Food Items"
+                            >
+                              🍽️
+                            </Link>
+                            <Link
+                              href={`/dashboard/checkout/${booking.id}`}
+                              className="px-3 py-1.5 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                            >
+                              Checkout
+                            </Link>
+                          </>
+                        )}
+                        <Link
+                          href={`/dashboard/bookings/${booking.id}`}
+                          className="px-3 py-1.5 bg-[#64748B] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                        >
+                          👁️ View
+                        </Link>
+                        {canDelete && (
+                          <button
+                            onClick={() => setDeleteModal({ isOpen: true, bookingId: booking.id, guestName: booking.guestName })}
                             className="px-3 py-1.5 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
+                            title="Delete Booking"
                           >
-                            Checkout
-                          </Link>
-                        </>
-                      )}
-                      <Link
-                        href={`/dashboard/bookings/${booking.id}`}
-                        className="px-3 py-1.5 bg-[#64748B] text-white rounded-lg hover:opacity-90 transition-opacity duration-150 font-semibold text-xs min-h-[44px] flex items-center"
-                      >
-                        👁️ View
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!showAll && totalPages > 1 && (
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
-        )}
-        {bookings.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">📋</div>
-            <div className="text-lg font-semibold text-[#64748B]">No bookings found</div>
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+          {!showAll && totalPages > 1 && (
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          )}
+          {bookings.length === 0 && (
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">📋</div>
+              <div className="text-lg font-semibold text-[#64748B]">No bookings found</div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
