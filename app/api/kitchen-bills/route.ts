@@ -2,9 +2,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { headers } from 'next/headers'
-import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+import { verifyToken } from '@/lib/auth'
 
 async function getUser(req: Request) {
   const headersList = await headers()
@@ -12,12 +10,7 @@ async function getUser(req: Request) {
 
   if (!token) return null
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string }
-    return decoded
-  } catch {
-    return null
-  }
+  return verifyToken(token)
 }
 
 export async function GET(req: Request) {

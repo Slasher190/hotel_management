@@ -36,6 +36,10 @@ export default function ExpensesPage() {
     const [staffList, setStaffList] = useState<Staff[]>([])
     const [loading, setLoading] = useState(true)
     const [showAddModal, setShowAddModal] = useState(false)
+    const [viewDescModal, setViewDescModal] = useState<{ isOpen: boolean; description: string }>({
+        isOpen: false,
+        description: '',
+    })
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({
         isOpen: false,
         id: null,
@@ -257,7 +261,20 @@ export default function ExpensesPage() {
                                     </td>
                                     <td className="px-6 py-4 text-sm text-[#111827]">{expense.user.name}</td>
                                     <td className="px-6 py-4 text-sm text-[#111827]">{expense.recipient}</td>
-                                    <td className="px-6 py-4 text-sm text-[#64748B] max-w-xs truncate">{expense.description}</td>
+                                    <td className="px-6 py-4 text-sm text-[#64748B] max-w-xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="truncate">{expense.description}</span>
+                                            {expense.description.length > 20 && (
+                                                <button
+                                                    onClick={() => setViewDescModal({ isOpen: true, description: expense.description })}
+                                                    className="text-sky-500 hover:text-sky-700 shrink-0 cursor-pointer"
+                                                    title="View Full Description"
+                                                >
+                                                    See More
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 text-sm font-bold text-[#111827] text-right">
                                         ₹{expense.amount.toLocaleString('en-IN')}
                                     </td>
@@ -401,6 +418,27 @@ export default function ExpensesPage() {
                                         </button>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {
+                    viewDescModal.isOpen && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white rounded-lg shadow-lg p-5 max-w-md w-full border border-[#CBD5E1] flex flex-col max-h-[80vh]">
+                                <h3 className="text-lg font-bold text-[#111827] mb-4">Expense Description</h3>
+                                <div className="flex-1 overflow-y-auto mb-4 p-3 bg-gray-50 border border-gray-100 rounded-lg text-sm text-[#334155] whitespace-pre-wrap leading-relaxed">
+                                    {viewDescModal.description}
+                                </div>
+                                <div className="flex justify-end pt-2 border-t border-[#CBD5E1]">
+                                    <button
+                                        onClick={() => setViewDescModal({ isOpen: false, description: '' })}
+                                        className="px-6 py-2 bg-[#8E0E1C] text-white rounded-lg hover:opacity-90 font-semibold text-sm transition-opacity"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )
